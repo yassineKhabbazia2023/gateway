@@ -9,7 +9,7 @@
           "Port": 5041
         }
       ],
-      "UpstreamPathTemplate": "gtw/wallet",
+      "UpstreamPathTemplate": "/gtw/wallet",
       "UpstreamHttpMethod": [ "Get" ]
     },
     {
@@ -21,7 +21,7 @@
           "Port": 5041
         }
       ],
-      "UpstreamPathTemplate": "gtw/ged",
+      "UpstreamPathTemplate": "/gtw/ged",
       "UpstreamHttpMethod": [ "Get","Post","Put" ]
     }
     

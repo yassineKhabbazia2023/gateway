@@ -7,6 +7,9 @@ Accept: application/json
 ###
 GET {{ApiGateway_HostAddress}}/gtw/ged
 Accept: application/json
+###
+GET {{ApiGateway_HostAddress}}/gtw/ged-toto?page=1
+Accept: application/json
 
 ###
 GET {{ApiGateway_HostAddress}}/gtw/ged-compta

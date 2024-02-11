@@ -20,6 +20,7 @@ public static class ServiceExtensions
         services.AddControllers().
             AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy= JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
+        services.AddHealthChecks();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         //TODO this should use a feature flag in order to disable or enable it  
         ConfigureMockService(services);
