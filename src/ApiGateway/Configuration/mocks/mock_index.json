@@ -1,0 +1,13 @@
+[
+  {
+    "downstreamUri": "/weatherForecast",
+    "httpVerb": "GET",
+    "responseMockJsonFile": "wallet_mock.json"
+  },  {
+    "downstreamUri": "/ged-social",
+    "httpVerb": "GET",
+    "responseMockJsonFile": "ged_mock.json"
+  }
+  
+]
+
