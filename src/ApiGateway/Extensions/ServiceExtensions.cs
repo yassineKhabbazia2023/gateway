@@ -31,7 +31,7 @@ public static class ServiceExtensions
 
         services.AddHttpClient<IWalletService, WalletService>(client =>
             {
-                client.BaseAddress = new Uri(configuration["BaseUrlOfYourService"] );
+                client.BaseAddress = new Uri(configuration["BaseUrlOfYourService"]! );
             } )
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))  //Set lifetime to five minutes
             .AddPolicyHandler(GetRetryPolicy());

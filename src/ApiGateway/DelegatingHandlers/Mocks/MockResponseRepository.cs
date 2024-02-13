@@ -35,7 +35,7 @@ public class MockResponseRepository : IMockResponseRepository
         foreach (var config in routeConfigs)
         {
             var key = $"{config.HttpVerb}:{config.DownstreamUri}".ToLower();
-            RouteToFileMap[key] = Path.Combine(Path.GetDirectoryName(_indexFileName), config.ResponseMockJsonFile);
+            RouteToFileMap[key] = Path.Combine(Path.GetDirectoryName(_indexFileName)!, config.ResponseMockJsonFile);
         }
     }
 

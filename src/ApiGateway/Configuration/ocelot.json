@@ -10,7 +10,9 @@
         }
       ],
       "UpstreamPathTemplate": "/gtw/wallet",
-      "UpstreamHttpMethod": [ "Get" ]
+      "UpstreamHttpMethod": [
+        "Get"
+      ]
     },
     {
       "DownstreamPathTemplate": "/ged-social",
@@ -22,9 +24,28 @@
         }
       ],
       "UpstreamPathTemplate": "/gtw/ged",
-      "UpstreamHttpMethod": [ "Get","Post","Put" ]
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/ged-compta",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5041
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/ged-compta",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put"
+      ]
     }
-    
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://localhost:5063"

@@ -1,13 +1,22 @@
 [
   {
-    "downstreamUri": "/weatherForecast",
-    "httpVerb": "GET",
-    "responseMockJsonFile": "wallet_mock.json"
-  },  {
-    "downstreamUri": "/ged-social",
-    "httpVerb": "GET",
-    "responseMockJsonFile": "ged_mock.json"
+    "DownstreamUri": "/weatherForecast",
+    "HttpVerb": "GET",
+    "ResponseMockJsonFile": "wallet_mock.json"
+  },
+  {
+    "DownstreamUri": "/gedSocial",
+    "HttpVerb": "GET",
+    "ResponseMockJsonFile": "ged_mock.json"
+  },
+  {
+    "DownstreamUri": "/ged-compta",
+    "HttpVerb": "GET",
+    "ResponseMockJsonFile": "ged_compta.json"
+  },
+  {
+    "DownstreamUri": " /ged-social-compta?page=1",
+    "HttpVerb": "GET",
+    "ResponseMockJsonFile": "ged_compta1.json"
   }
-  
 ]
-

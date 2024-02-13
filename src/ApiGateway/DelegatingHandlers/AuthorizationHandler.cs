@@ -1,3 +1,5 @@
+
+
 namespace ApiGateway.DelegatingHandlers;
 
 public class AuthorizationHandler:DelegatingHandler
@@ -13,5 +15,7 @@ public class AuthorizationHandler:DelegatingHandler
         _logger.LogInformation("Checking if the user is authorized");
         // Custom logic here
         return await base.SendAsync(request, cancellationToken);
+        
     }
+    
 }

@@ -5,7 +5,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger) : IAut
     public bool IsAllowed(HttpRequestMessage request)
     { 
         //TODO Add message if user authentication  succeed or fail    
-         //logger.LogInformation(""); 
+         logger.LogInformation(" Add message if user authentication  succeed or fail "); 
         return true; 
     }
 }
