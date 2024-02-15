@@ -28,6 +28,7 @@ extends:
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
+    sonarExclusions: '**/Extensions/TempFileHelper.cs'
     layer: Domain
     domain: exp
     resource:
@@ -37,6 +38,3 @@ extends:
       tests: tests\**\*.csproj
       type: webApp
     dotnetcore: 8.x
-    sonarExclusions: |
-      **
-   
