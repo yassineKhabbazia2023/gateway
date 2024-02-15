@@ -54,7 +54,7 @@ public static class ServiceExtensions
     {
         BuildOcelotConfigFile(configuration);
         // Configuration loading
-        configuration.AddJsonFile(TempFileHelper.GetOcelotTempDir()  , optional: false, reloadOnChange: true);
+        configuration.AddJsonFile(TempFileHelper.GetOcelotTempDir()  , optional: true, reloadOnChange: true);
     }
 
     private static void BuildOcelotConfigFile(ConfigurationManager configuration)
