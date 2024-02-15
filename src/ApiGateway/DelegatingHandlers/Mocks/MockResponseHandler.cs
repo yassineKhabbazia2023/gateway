@@ -9,13 +9,12 @@ public class MockResponseHandler(IMockResponseRepository responseRepository) : D
     {
         if (request.RequestUri == null) return base.SendAsync(request, cancellationToken);
         var routeKey = $"{request.Method}:{request.RequestUri.AbsolutePath}".ToLower();
-        var (success, fullPathFile) = responseRepository.GetResponseFullPathFile(routeKey);
+        var (success, jsonContent) = responseRepository.GetJsonContent(routeKey);
         if (!success)
             return base.SendAsync(request, cancellationToken);
-        var jsonResponse = File.ReadAllText(fullPathFile);
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(jsonResponse, Encoding.UTF8, "application/json")
+            Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
         };
         return Task.FromResult(response);
     }

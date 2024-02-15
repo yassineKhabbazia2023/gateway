@@ -1,11 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Abstractions;
 using System.Text.Json;
 using ApiGateway.Configuration;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Security;
 using ApiGateway.Wallet;
+using LiteDB;
 using Ocelot.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -44,9 +44,10 @@ public static class ServiceExtensions
 
     private static void ConfigureMockService(IServiceCollection services)
     {
+        
+        var databasePath = $"Filename={MocksConstants.FileDbName}";
+        services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase(databasePath));
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
-        services.AddSingleton<IFileWatcherService, FileWatcherService>();
-        services.AddSingleton<IFileSystem, FileSystem>();
     }
 
     public static void AddJsonConfiguration(this ConfigurationManager configuration)
@@ -57,12 +58,14 @@ public static class ServiceExtensions
 
     private static string BuildOcelotConfigFile(ConfigurationManager configuration)
     {
-        var mockRepoPath = configuration["OCELOT_CONFIG_PATH"];
-        if (string.IsNullOrWhiteSpace(mockRepoPath))
+        var ocelotConfig = configuration["OCELOT_CONFIG"];
+        if (string.IsNullOrWhiteSpace(ocelotConfig))
         {
-            throw new NullReferenceException("OCELOT_CONFIG_PATH");
+            throw new NullReferenceException("OCELOT_CONFIG");
         }
-        return Path.Combine(mockRepoPath, "ocelot.json");
+        
+        File.WriteAllText(ConfigConstants.OcelotConfigFile, ocelotConfig);
+        return ConfigConstants.OcelotConfigFile;
     }
 
     private  static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()

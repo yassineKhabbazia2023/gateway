@@ -10,7 +10,7 @@ namespace ApiGateway.UnitTests
         {
             // Arrange
             var mockRepo = new Mock<IMockResponseRepository>();
-            mockRepo.Setup(repo => repo.GetResponseFullPathFile(It.IsAny<string>()))
+            mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
                     .Returns((false, null)!);
 
             var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test");
@@ -43,7 +43,7 @@ namespace ApiGateway.UnitTests
             File.WriteAllText(mockFilePath, mockResponseContent);
 
             var mockRepo = new Mock<IMockResponseRepository>();
-            mockRepo.Setup(repo => repo.GetResponseFullPathFile(It.IsAny<string>()))
+            mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
                 .Returns((true, mockFilePath));
 
             var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test");

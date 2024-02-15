@@ -1,52 +1,15 @@
-using System.Text.Json;
-using System.IO.Abstractions;
+using ApiGateway.Mocks.Models;
+using LiteDB;
 
 namespace ApiGateway.DelegatingHandlers.Mocks;
 
-public class MockResponseRepository : IMockResponseRepository
+public class MockResponseRepository(ILiteDatabase liteDatabase) : IMockResponseRepository
 {
-    private readonly IFileSystem _fileSystem;
-    private readonly string _indexFileName;
-    private Dictionary<string, string> RouteToFileMap { get; }
-    public MockResponseRepository(IConfiguration configuration, IFileSystem fileSystem, IFileWatcherService fileWatcherService)
+    private ILiteCollection<MockIndexDoc> _mockResponses=liteDatabase.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
+
+    public (bool, string? JsonContent) GetJsonContent(string routeKey)
     {
-        _fileSystem = fileSystem;
-        var mocksFolderPath = configuration["MOCK_REPOSITORY_PATH"];
-        Guard.Against.NullOrWhiteSpace(mocksFolderPath);
-        _indexFileName = $"{mocksFolderPath}/mock_index.json";
-        fileWatcherService.StartWatching(_indexFileName, LoadMappings);
-        RouteToFileMap = new Dictionary<string, string>();
-        LoadMappings();
+        var mockResponse = _mockResponses.FindOne(x => x.Id ==routeKey);
+        return mockResponse != null ? (true, mockResponse.JsonContent) : (false, null)!;
     }
-
-    private void LoadMappings()
-    {
-        RouteToFileMap.Clear();
-        if (!_fileSystem.File.Exists(_indexFileName))
-        {
-            throw new FileNotFoundException("Cannot find the index file for mock_index.json");
-        }
-        var indexFileContent = _fileSystem.File.ReadAllText(_indexFileName);
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var routeConfigs = JsonSerializer.Deserialize<List<MockedRouteConfig>>(indexFileContent, options);
-
-        if (routeConfigs == null) return;
-
-        foreach (var config in routeConfigs)
-        {
-            var key = $"{config.HttpVerb}:{config.DownstreamUri}".ToLower();
-            RouteToFileMap[key] = Path.Combine(Path.GetDirectoryName(_indexFileName)!, config.ResponseMockJsonFile);
-        }
-    }
-
-    public (bool Success, string FullPathFile) GetResponseFullPathFile(string routeKey)
-    {
-        if (!RouteToFileMap.TryGetValue(routeKey, out var filePath) || !_fileSystem.File.Exists(filePath))
-        {
-            return (false, null)!;
-        }
-
-        return (true, filePath);
-    }
-    
 }
