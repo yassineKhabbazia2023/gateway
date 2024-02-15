@@ -37,6 +37,6 @@ extends:
       tests: tests\**\*.csproj
       type: webApp
     dotnetcore: 8.x
-    sonarQube:
-          sonarExclusions: |
-            **
+    sonarExclusions: |
+      **
+   
