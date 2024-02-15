@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using ApiGateway.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Mocks;
