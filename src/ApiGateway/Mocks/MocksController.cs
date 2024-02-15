@@ -31,7 +31,7 @@ public class MocksController : ControllerBase
     /// <param name="request"></param>
     /// <param name="fileUpdate"></param>
     /// <returns></returns>
-    [HttpPost("modify-mock-response"), DisableRequestSizeLimit]
+    [HttpPost("modify-mock-response")]
     public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request, [FromForm] MockEntryFileUpdate? fileUpdate)
     {
         if (fileUpdate?.File == null || request == null)
