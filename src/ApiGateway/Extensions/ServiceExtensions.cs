@@ -44,29 +44,33 @@ public static class ServiceExtensions
 
     private static void ConfigureMockService(IServiceCollection services)
     {
-        
-        var databasePath = $"Filename={MocksConstants.FileDbName}";
+
+        var databasePath = TempFileHelper.GetLiteDbTempDir();
         services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase(databasePath));
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
     }
 
     public static void AddJsonConfiguration(this ConfigurationManager configuration)
     {
+        BuildOcelotConfigFile(configuration);
         // Configuration loading
-        configuration.AddJsonFile( BuildOcelotConfigFile(configuration) , optional: false, reloadOnChange: true);
+        configuration.AddJsonFile(TempFileHelper.GetOcelotTempDir()  , optional: false, reloadOnChange: true);
     }
 
-    private static string BuildOcelotConfigFile(ConfigurationManager configuration)
+    private static void BuildOcelotConfigFile(ConfigurationManager configuration)
     {
         var ocelotConfig = configuration["OCELOT_CONFIG"];
+          
         if (string.IsNullOrWhiteSpace(ocelotConfig))
         {
             throw new NullReferenceException("OCELOT_CONFIG");
         }
+        //due to an issue in how application are deployed (azure web container)
         
-        File.WriteAllText(ConfigConstants.OcelotConfigFile, ocelotConfig);
-        return ConfigConstants.OcelotConfigFile;
+        File.WriteAllText(TempFileHelper.GetOcelotTempDir(), ocelotConfig);
+        
     }
+    //this is a temp fix it should be changed 
 
     private  static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     {

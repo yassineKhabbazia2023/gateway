@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ApiGateway.Configuration;
+using ApiGateway.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Mocks;
@@ -13,7 +14,7 @@ namespace ApiGateway.Mocks;
 
 public class OcelotConfigurationController(IConfiguration configuration) : ControllerBase
 {
-    private string OcelotConfigPath => ConfigConstants.OcelotConfigFile;
+    private string OcelotConfigPath =>  TempFileHelper.GetOcelotTempDir();
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
     {
