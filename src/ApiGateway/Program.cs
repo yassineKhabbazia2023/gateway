@@ -6,12 +6,19 @@ builder.Services.AddApiGatewayServices(builder.Configuration);
 builder.Configuration.AddJsonConfiguration();
 var app = builder.Build(); 
 app.UseRouting();
-if (app.Environment.IsDevelopment())
+app.UseSwagger(option =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    option.RouteTemplate = "/gateway/api/{documentName}/api.json";
+});
 
+var assemblyName =typeof(Program).Assembly.GetName().Name;
+
+app.UseSwaggerUI(c =>
+{
+    c.EnableTryItOutByDefault();
+    c.SwaggerEndpoint("/gateway/api/v1/api.json", $"{assemblyName} v1");
+    c.RoutePrefix = "api";
+});
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();

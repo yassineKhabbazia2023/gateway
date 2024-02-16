@@ -6,6 +6,7 @@ using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Security;
 using ApiGateway.Wallet;
 using LiteDB;
+using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -24,10 +25,8 @@ public static class ServiceExtensions
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         //TODO this should use a feature flag in order to disable or enable it  
         ConfigureMockService(services);
-        services.AddSwaggerGen(cfg =>
-        {
-            cfg.DocumentFilter<HideOcelotControllersFilter>();
-        });
+       AddSwaggerConfig(services);
+        
 
         services.AddHttpClient<IWalletService, WalletService>(client =>
             {
@@ -40,6 +39,45 @@ public static class ServiceExtensions
             AddDelegatingHandler<AuthenticationHandler>(true)
             .AddDelegatingHandler<AuthorizationHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
+    }
+
+    private static void AddSwaggerConfig(IServiceCollection services)
+    {
+        services.AddSwaggerGen(config =>
+        {
+            config.DocumentFilter<HideOcelotControllersFilter>();
+            config.AddServer(new OpenApiServer()
+            {
+                Url = "/gateway"
+            });
+            config.AddServer(new OpenApiServer()
+            {
+                Url = "/"
+            });
+            config.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Description = "Please enter token",
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                BearerFormat = "JWT",
+                Scheme = "bearer"
+            });
+            config.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type=ReferenceType.SecurityScheme,
+                            Id="Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
     }
 
     private static void ConfigureMockService(IServiceCollection services)

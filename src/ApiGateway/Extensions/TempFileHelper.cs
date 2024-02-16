@@ -1,6 +1,8 @@
 using ApiGateway.Configuration;
 using ApiGateway.DelegatingHandlers.Mocks;
 
+namespace ApiGateway.Extensions;
+
 public static class TempFileHelper
 {
     private static string? ocelotTempDir;

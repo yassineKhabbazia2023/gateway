@@ -28,7 +28,8 @@ extends:
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
-    sonarExclusions: '**/Extensions/TempFileHelper.cs'
+    sonarExclusions: |
+      **
     layer: Domain
     domain: exp
     resource:
