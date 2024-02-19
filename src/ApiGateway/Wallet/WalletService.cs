@@ -16,8 +16,8 @@ public class WalletService : IWalletService
         // Simulate async operation with Task.FromResult
         return await Task.FromResult(Enumerable.Range(1, 5).Select(index => new WalletResponse
         {
-            Date = DateTime.Now,
-            SourceNumber = DateTime.Now.Ticks.ToString()
+            Date = DateTime.UtcNow,
+            SourceNumber = DateTime.UtcNow.Ticks.ToString()
         }).ToArray());
     }
 }
