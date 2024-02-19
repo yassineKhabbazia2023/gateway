@@ -13,7 +13,9 @@ namespace ApiGateway.Mocks;
 
 public class OcelotConfigurationController() : ControllerBase
 {
-    private static string OcelotConfigPath =>  TempFileHelper.GetOcelotTempDir();
+    private static string OcelotConfigPath =>
+        TempFileHelper.GetOcelotTempDir();
+
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
     {
@@ -21,6 +23,7 @@ public class OcelotConfigurationController() : ControllerBase
         {
             return NotFound("Ocelot configuration file not found.");
         }
+
         var ocelotConfigJson = await System.IO.File.ReadAllTextAsync(OcelotConfigPath);
         return Ok(ocelotConfigJson);
     }
@@ -32,7 +35,8 @@ public class OcelotConfigurationController() : ControllerBase
         try
         {
             using var doc = JsonDocument.Parse(jsonContent);
-            await System.IO.File.WriteAllTextAsync(OcelotConfigPath, jsonContent);
+            await System.IO.File.WriteAllTextAsync(OcelotConfigPath,
+                jsonContent);
             return Ok("Ocelot configuration updated successfully.");
         }
         catch (JsonException ex)

@@ -11,9 +11,10 @@ namespace ApiGateway.UnitTests.Mocks
             // Arrange
             var mockRepo = new Mock<IMockResponseRepository>();
             mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
-                    .Returns((false, null)!);
+                .Returns((false, null)!);
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test");
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                "http://localhost/test");
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
                 InnerHandler = new TestHandler(new(HttpStatusCode.BadRequest))
@@ -22,11 +23,14 @@ namespace ApiGateway.UnitTests.Mocks
             var invoker = new HttpMessageInvoker(mockResponseHandler);
 
             // Act
-            var response = await invoker.SendAsync(request, new());
+            var response = await invoker.SendAsync(request,
+                new());
 
             // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            response.StatusCode.Should()
+                .Be(HttpStatusCode.BadRequest);
         }
+
         [Fact]
         public async Task SendAsync_RequestWithQueryParameters_MatchesCorrectly()
         {
@@ -40,21 +44,28 @@ namespace ApiGateway.UnitTests.Mocks
             mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
                 .Returns<string>(key => (true, expectedContentWithQuery));
 
-            var requestWithQuery = new HttpRequestMessage(HttpMethod.Get, testUriWithQuery);
+            var requestWithQuery = new HttpRequestMessage(HttpMethod.Get,
+                testUriWithQuery);
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
-                InnerHandler = new TestHandler(new HttpResponseMessage(HttpStatusCode.OK)) // Default fallback, won't be used in successful match
+                InnerHandler =
+                    new TestHandler(
+                        new HttpResponseMessage(HttpStatusCode
+                            .OK)) // Default fallback, won't be used in successful match
             };
 
             var invoker = new HttpMessageInvoker(mockResponseHandler);
 
             // Act
-            var responseWithQuery = await invoker.SendAsync(requestWithQuery, new CancellationToken());
+            var responseWithQuery = await invoker.SendAsync(requestWithQuery,
+                new CancellationToken());
             var contentWithQuery = await responseWithQuery.Content.ReadAsStringAsync();
 
             // Assert
-            responseWithQuery.StatusCode.Should().Be(HttpStatusCode.OK);
-            contentWithQuery.Should().Be(expectedContentWithQuery);
+            responseWithQuery.StatusCode.Should()
+                .Be(HttpStatusCode.OK);
+            contentWithQuery.Should()
+                .Be(expectedContentWithQuery);
         }
 
         [Fact]
@@ -64,24 +75,28 @@ namespace ApiGateway.UnitTests.Mocks
             var mockRepo = new Mock<IMockResponseRepository>();
             mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
                 .Returns((false, null));
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/invalidpath");
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                "http://localhost/invalidpath");
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
-                InnerHandler = new TestHandler(new HttpResponseMessage(HttpStatusCode.NotFound)) // Fallback response setup
+                InnerHandler =
+                    new TestHandler(new HttpResponseMessage(HttpStatusCode.NotFound)) // Fallback response setup
             };
 
             var invoker = new HttpMessageInvoker(mockResponseHandler);
 
             // Act
-            var response = await invoker.SendAsync(request, new CancellationToken());
+            var response = await invoker.SendAsync(request,
+                new CancellationToken());
 
             // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.NotFound); // Verifying fallback response is returned
+            response.StatusCode.Should()
+                .Be(HttpStatusCode.NotFound); // Verifying fallback response is returned
         }
 
 
 
-       
+
 
         private class TestHandler : DelegatingHandler
         {
@@ -92,7 +107,8 @@ namespace ApiGateway.UnitTests.Mocks
                 _response = response;
             }
 
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+                CancellationToken cancellationToken)
             {
                 return Task.FromResult(_response);
             }

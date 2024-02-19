@@ -12,7 +12,8 @@ public class WalletServiceTests
     public WalletServiceTests()
     {
         _loggerMock = new();
-        _service = new(new(), _loggerMock.Object);
+        _service = new(new(),
+            _loggerMock.Object);
     }
 
     [Fact]
@@ -23,8 +24,10 @@ public class WalletServiceTests
         var responses = await _service.GetResponsesAsync();
 
         // Assert
-        responses.Should().HaveCount(5);
-        responses.Should().AllBeOfType<WalletResponse>();
-     
+        responses.Should()
+            .HaveCount(5);
+        responses.Should()
+            .AllBeOfType<WalletResponse>();
+
     }
 }

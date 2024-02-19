@@ -11,7 +11,8 @@ public class TempFileHelperTests
         var path = TempFileHelper.GetOcelotTempDir();
 
         // Assert
-        path.Should().NotBeNullOrEmpty();
+        path.Should()
+            .NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -21,7 +22,9 @@ public class TempFileHelperTests
         var path = TempFileHelper.GetOcelotTempDir();
 
         // Assert
-        Directory.Exists(Path.GetDirectoryName(path)).Should().BeTrue();
+        Directory.Exists(Path.GetDirectoryName(path))
+            .Should()
+            .BeTrue();
     }
 
     [Fact]
@@ -32,7 +35,8 @@ public class TempFileHelperTests
         var path2 = TempFileHelper.GetOcelotTempDir();
 
         // Assert
-        path1.Should().Be(path2);
+        path1.Should()
+            .Be(path2);
     }
     // Assuming the above tests for GetOcelotTempDir are part of the same class
 
@@ -43,7 +47,8 @@ public class TempFileHelperTests
         var path = TempFileHelper.GetLiteDbTempDir();
 
         // Assert
-        path.Should().NotBeNullOrEmpty();
+        path.Should()
+            .NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -53,7 +58,9 @@ public class TempFileHelperTests
         var path = TempFileHelper.GetLiteDbTempDir();
 
         // Assert
-        Directory.Exists(Path.GetDirectoryName(path)).Should().BeTrue();
+        Directory.Exists(Path.GetDirectoryName(path))
+            .Should()
+            .BeTrue();
     }
 
     [Fact]
@@ -64,6 +71,7 @@ public class TempFileHelperTests
         var path2 = TempFileHelper.GetLiteDbTempDir();
 
         // Assert
-        path1.Should().Be(path2);
+        path1.Should()
+            .Be(path2);
     }
 }

@@ -3,6 +3,7 @@ using ApiGateway.Wallet.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.UnitTests.Wallet;
+
 /// <summary>
 ///This class is just for a template demo purpose and should fixed later S
 /// </summary>
@@ -26,16 +27,20 @@ public class WalletDesktopControllerTests
             new()
         };
 
-        _mockWalletService.Setup(service => service.GetResponsesAsync()).ReturnsAsync(mockResponses);
+        _mockWalletService.Setup(service => service.GetResponsesAsync())
+            .ReturnsAsync(mockResponses);
 
         // Act
         var result = await _controller.Get();
 
         // Assert
         var okResult = result.Result as OkObjectResult;
-        okResult.Should().NotBeNull();
-        okResult?.StatusCode.Should().Be(200); 
+        okResult.Should()
+            .NotBeNull();
+        okResult?.StatusCode.Should()
+            .Be(200);
         var returnedResponses = okResult!.Value as IEnumerable<WalletResponse>;
-        returnedResponses.Should().BeEquivalentTo(mockResponses);
+        returnedResponses.Should()
+            .BeEquivalentTo(mockResponses);
     }
 }

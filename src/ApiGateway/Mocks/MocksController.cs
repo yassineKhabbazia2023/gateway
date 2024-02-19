@@ -24,7 +24,7 @@ public class MocksController : ControllerBase
 
         return Ok(mockIndexes);
     }
-    
+
     /// <summary>
     /// It will update or insert a new response mock json response
     /// </summary>
@@ -32,22 +32,26 @@ public class MocksController : ControllerBase
     /// <param name="fileUpdate"></param>
     /// <returns></returns>
     [HttpPost("modify-mock-response")]
-    public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request, [FromForm] MockEntryFileUpdate? fileUpdate)
+    public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request,
+        [FromForm] MockEntryFileUpdate? fileUpdate)
     {
         if (fileUpdate?.File == null || request == null)
         {
             return BadRequest("Invalid mock response update provided.");
         }
-    
-        if (!fileUpdate.File.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+
+        if (!fileUpdate.File.FileName.EndsWith(".json",
+                StringComparison.OrdinalIgnoreCase))
         {
             return BadRequest("Only JSON files are accepted.");
         }
+
         string fileContent;
         using (var streamReader = new StreamReader(fileUpdate.File.OpenReadStream()))
         {
             fileContent = await streamReader.ReadToEndAsync();
         }
+
         try
         {
             System.Text.Json.JsonSerializer.Deserialize<object>(fileContent);
@@ -56,14 +60,15 @@ public class MocksController : ControllerBase
         {
             return BadRequest("The file content is not valid JSON.");
         }
+
         var mockIndexDoc = new MockIndexDoc
         {
             DownstreamUri = request.DownstreamUri,
             HttpVerb = request.HttpVerb,
-            JsonContent = fileContent, 
+            JsonContent = fileContent,
         };
-        mockIndexDoc.Id = mockIndexDoc.GenerateId(); 
-    
+        mockIndexDoc.Id = mockIndexDoc.GenerateId();
+
         var mockIndexCollection = _database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
         var existingDoc = mockIndexCollection.FindById(mockIndexDoc.Id);
         if (existingDoc != null)

@@ -12,7 +12,8 @@ public class MockResponseRepositoryTests
 
     public MockResponseRepositoryTests()
     {
-        _liteDatabaseMock.Setup(db => db.GetCollection<MockIndexDoc>(It.IsAny<string>(),BsonAutoId.ObjectId))
+        _liteDatabaseMock.Setup(db => db.GetCollection<MockIndexDoc>(It.IsAny<string>(),
+                BsonAutoId.ObjectId))
             .Returns(_mockResponsesCollectionMock.Object);
     }
 
@@ -22,8 +23,10 @@ public class MockResponseRepositoryTests
         // Arrange
         var routeKey = _fixture.Create<string>();
         var expectedMockIndexDoc = _fixture.Build<MockIndexDoc>()
-            .With(doc => doc.Id, routeKey)
-            .With(doc => doc.JsonContent, _fixture.Create<string>())
+            .With(doc => doc.Id,
+                routeKey)
+            .With(doc => doc.JsonContent,
+                _fixture.Create<string>())
             .Create();
 
         _mockResponsesCollectionMock.Setup(m => m.FindOne(It.IsAny<Expression<Func<MockIndexDoc, bool>>>()))
@@ -35,8 +38,10 @@ public class MockResponseRepositoryTests
         var (exists, jsonContent) = repository.GetJsonContent(routeKey);
 
         // Assert
-        exists.Should().BeTrue();
-        jsonContent.Should().Be(expectedMockIndexDoc.JsonContent);
+        exists.Should()
+            .BeTrue();
+        jsonContent.Should()
+            .Be(expectedMockIndexDoc.JsonContent);
     }
 
     [Fact]
@@ -54,7 +59,9 @@ public class MockResponseRepositoryTests
         var (exists, jsonContent) = repository.GetJsonContent(routeKey);
 
         // Assert
-        exists.Should().BeFalse();
-        jsonContent.Should().BeNull();
+        exists.Should()
+            .BeFalse();
+        jsonContent.Should()
+            .BeNull();
     }
 }
