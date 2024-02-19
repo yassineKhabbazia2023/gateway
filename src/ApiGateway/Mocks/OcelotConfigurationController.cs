@@ -11,7 +11,7 @@ namespace ApiGateway.Mocks;
 //TODO this is a temporary solution to provide some flexibility for frontend 
 //TODO: Note it should not be delivered as it for Rec or prod Feature flag should excludes this  
 
-public class OcelotConfigurationController(IConfiguration configuration) : ControllerBase
+public class OcelotConfigurationController() : ControllerBase
 {
     private static string OcelotConfigPath =>  TempFileHelper.GetOcelotTempDir();
     [HttpGet]

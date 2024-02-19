@@ -1,6 +1,6 @@
 namespace ApiGateway.Configuration;
 
-public class ConfigConstants
+public static class ConfigConstants
 {
   public const string  OcelotConfigFile="ocelot.json";    
 }

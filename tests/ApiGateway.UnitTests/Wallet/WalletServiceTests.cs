@@ -2,7 +2,7 @@ using ApiGateway.Wallet;
 using ApiGateway.Wallet.Models;
 using Microsoft.Extensions.Logging;
 
-namespace ApiGateway.UnitTests;
+namespace ApiGateway.UnitTests.Wallet;
 
 public class WalletServiceTests
 {

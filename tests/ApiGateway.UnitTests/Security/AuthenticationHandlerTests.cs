@@ -2,7 +2,7 @@ using System.Net;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.Security;
 
-namespace ApiGateway.UnitTests;
+namespace ApiGateway.UnitTests.Security;
 
 public class AuthenticationHandlerTests
 {

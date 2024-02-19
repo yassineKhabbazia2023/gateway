@@ -28,8 +28,6 @@ extends:
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
-    sonarExclusions: |
-      **
     layer: Domain
     domain: exp
     resource:

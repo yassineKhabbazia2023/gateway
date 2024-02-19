@@ -50,7 +50,7 @@ public class MocksController : ControllerBase
         }
         try
         {
-            var jsonCheck = System.Text.Json.JsonSerializer.Deserialize<object>(fileContent);
+            System.Text.Json.JsonSerializer.Deserialize<object>(fileContent);
         }
         catch (System.Text.Json.JsonException)
         {
