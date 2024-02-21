@@ -1,5 +1,5 @@
 using ApiGateway.Wallet.Models;
-using Azure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Wallet;
@@ -7,6 +7,7 @@ namespace ApiGateway.Wallet;
 ///  Note: this controller is just for a template demo purpose. It should be fixed later 
 [ApiController]
 [Route("api/wallet")]
+[Authorize]
 public class WalletController(
     IWalletService walletService)
     : ControllerBase
