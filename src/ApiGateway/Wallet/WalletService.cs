@@ -20,7 +20,7 @@ public class WalletService : IWalletService
         // Simulate async operation with Task.FromResult
         return await Task.FromResult(Enumerable.Range(1,
                 5)
-            .Select(index => new WalletResponse
+            .Select(_ => new WalletResponse
             {
                 Date = DateTime.UtcNow,
                 SourceNumber = DateTime.UtcNow.Ticks.ToString()
@@ -30,6 +30,6 @@ public class WalletService : IWalletService
     public async Task<IEnumerable<AccountPageResponse>> GetAccountsAsync(int i, int page = 1)
     {
         _logger.LogDebug("Calling account service with page {Page}",page); 
-        return await  _httpClient.GetFromJsonAsync<IEnumerable<AccountPageResponse>>($"/acccount?page={1}"); 
+        return await  _httpClient.GetFromJsonAsync<IEnumerable<AccountPageResponse>>($"/account?page={1}"); 
     }
 }
