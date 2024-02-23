@@ -16,10 +16,10 @@ public static class SecurityServiceExtensions
                         ServerAddress = new Uri(configuration["IdentityServiceApiUrl"] ?? string.Empty),
                         AzureActiveDirectoryClientCredentials =
                         {
-                            ClientId =configuration["ConstellationClientId"],
-                            ClientSecret = configuration["ConstellationSecret"],
-                            Scope = configuration["ConstellationAudience"],
-                            Tenant = configuration["ConstellationTenant"],
+                            ClientId =configuration["AADClientId"],
+                            ClientSecret = configuration["AADSecret"],
+                            Scope = configuration["AADAudience"],
+                            Tenant = configuration["AADTenant"],
                         },
                     }, out string[] schemeNames);
 
