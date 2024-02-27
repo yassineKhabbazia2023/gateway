@@ -11,20 +11,19 @@ namespace ApiGateway.Mocks;
 //TODO this is a temporary solution to provide some flexibility for frontend 
 //TODO: Note it should not be delivered as it for Rec or prod Feature flag should excludes this  
 
-public class OcelotConfigurationController() : ControllerBase
+public class OcelotConfigurationController(IConfiguration configuration) : ControllerBase
 {
-    private static string OcelotConfigPath =>
-        TempFileHelper.GetOcelotTempDir();
+   
 
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
     {
-        if (!System.IO.File.Exists(OcelotConfigPath))
+        if (!System.IO.File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)))
         {
             return NotFound("Ocelot configuration file not found.");
         }
 
-        var ocelotConfigJson = await System.IO.File.ReadAllTextAsync(OcelotConfigPath);
+        var ocelotConfigJson = await System.IO.File.ReadAllTextAsync(FileHelper.GetOcelotConfigFullPathName(configuration));
         return Ok(ocelotConfigJson);
     }
 
@@ -35,8 +34,7 @@ public class OcelotConfigurationController() : ControllerBase
         try
         {
             using var doc = JsonDocument.Parse(jsonContent);
-            await System.IO.File.WriteAllTextAsync(OcelotConfigPath,
-                jsonContent);
+            await System.IO.File.WriteAllTextAsync(FileHelper.GetOcelotConfigFullPathName(configuration), jsonContent);
             return Ok("Ocelot configuration updated successfully.");
         }
         catch (JsonException ex)

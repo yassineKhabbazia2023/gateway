@@ -26,7 +26,7 @@ public static class ServiceExtensions
         services.AddHealthChecks();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         //TODO this should use a feature flag in order to disable or enable it  
-        ConfigureMockService(services);
+        ConfigureMockService(services,configuration);
         AddSwaggerConfig(services);
 
 
@@ -83,37 +83,22 @@ public static class ServiceExtensions
         });
     }
 
-    private static void ConfigureMockService(IServiceCollection services)
+    private static void ConfigureMockService(IServiceCollection services, IConfiguration configuration)
     {
 
-        var databasePath = TempFileHelper.GetLiteDbTempDir();
+        var databasePath = FileHelper.GetLiteDbDir(configuration);
         services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase(databasePath));
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
     }
 
     public static void AddJsonConfiguration(this ConfigurationManager configuration)
     {
-        BuildOcelotConfigFile(configuration);
         // Configuration loading
-        configuration.AddJsonFile(TempFileHelper.GetOcelotTempDir(),
+        configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: true,
             reloadOnChange: true);
     }
-
-    private static void BuildOcelotConfigFile(ConfigurationManager configuration)
-    {
-        var ocelotConfig = configuration["OCELOT_CONFIG"];
-
-        if (string.IsNullOrWhiteSpace(ocelotConfig))
-        {
-            throw new NullReferenceException("OCELOT_CONFIG");
-        }
-        //due to an issue in how application are deployed (azure web container)
-
-        File.WriteAllText(TempFileHelper.GetOcelotTempDir(),
-            ocelotConfig);
-
-    }
+    
     //this is a temp fix it should be changed 
 
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
