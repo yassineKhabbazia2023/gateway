@@ -16,8 +16,7 @@ namespace ApiGateway.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceExtensions
 {
-    public static void AddApiGatewayServices(this IServiceCollection services,
-        IConfiguration configuration)
+    public static void AddApiGatewayServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Add services to the container.
         services.AddControllers()
@@ -95,7 +94,7 @@ public static class ServiceExtensions
     {
         
         // Configuration loading
-        Console.WriteLine("***************************************************" + FileHelper.GetOcelotConfigFullPathName(configuration));
+        Console.WriteLine("***************************************************" + FileHelper.GetOcelotConfigFullPathName(configuration) + "--------------------" + File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)));
         configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: false,
             reloadOnChange: true);
