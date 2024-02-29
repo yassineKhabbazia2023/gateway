@@ -3,6 +3,7 @@ using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiGatewayServices(builder.Configuration);
+builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Configuration.AddJsonConfiguration();
 var app = builder.Build();
 app.UseRouting();
@@ -18,6 +19,8 @@ app.UseSwaggerUI(c =>
         $"{assemblyName} v1");
     c.RoutePrefix = "api";
 });
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();

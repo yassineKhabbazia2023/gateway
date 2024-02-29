@@ -1,5 +1,7 @@
-namespace ApiGateway.Wallet;
+using System.Diagnostics.CodeAnalysis;
 
+namespace ApiGateway.Wallet.Models;
+[ExcludeFromCodeCoverage]
 public class AccountResponse
 {
     
@@ -11,6 +13,7 @@ public class AccountResponse
 }
 
 
+[ExcludeFromCodeCoverage]
 public class AccountPageResponse:AccountResponse
 {
     public int TotalCount { get; init; }

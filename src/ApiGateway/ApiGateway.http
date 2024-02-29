@@ -2,6 +2,7 @@
 
 GET {{ApiGateway_HostAddress}}/gtw/wallet
 Accept: application/json
+Authorization: Bearer "Token Goes here"
 
 
 ###
@@ -14,3 +15,4 @@ Accept: application/json
 ###
 GET {{ApiGateway_HostAddress}}/gtw/ged-compta
 Accept: application/json
+Authorization: Bearer "Token goes here" 
