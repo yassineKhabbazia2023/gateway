@@ -30,4 +30,8 @@
     <ProjectReference Include="..\..\src\ApiGateway\ApiGateway.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Security\" />
+  </ItemGroup>
+
 </Project>

@@ -3,13 +3,14 @@ using System.Text.Json;
 using ApiGateway.Configuration;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
-using ApiGateway.Security;
+using ApiGateway.Exceptions;
 using ApiGateway.Wallet;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
+using static System.Boolean;
 
 namespace ApiGateway.Extensions;
 
@@ -23,7 +24,6 @@ public static class ServiceExtensions
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
         services.AddHealthChecks();
-        services.AddSingleton<IAuthenticationService, AuthenticationService>();
         //TODO this should use a feature flag in order to disable or enable it  
         ConfigureMockService(services,configuration);
         AddSwaggerConfig(services);
@@ -37,7 +37,6 @@ public static class ServiceExtensions
             .AddPolicyHandler(GetRetryPolicy());
 
         services.AddOcelot()
-            .AddDelegatingHandler<AuthenticationHandler>(true)
             .AddDelegatingHandler<AuthorizationHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
     }
@@ -92,6 +91,49 @@ public static class ServiceExtensions
 
     public static void AddJsonConfiguration(this ConfigurationManager configuration)
     {
+
+        BuildOcelotConfigFile(configuration);
+        if (UseLocalOcelotConfig(configuration))
+        {
+            configuration.AddJsonFile(GetOcelotPath(configuration),
+                optional: false,
+                reloadOnChange: true);    
+        }
+        else
+        { 
+            // Configuration loading
+            configuration.AddJsonFile(GetOcelotPath(configuration),
+                optional: true,
+                reloadOnChange: true);  
+        }
+        
+    }
+
+    private static string GetOcelotPath(IConfiguration configuration)
+    {
+        return UseLocalOcelotConfig(configuration) ? "configuration/ocelot.json" : TempFileHelper.GetOcelotTempDir();
+    }
+
+    private static bool UseLocalOcelotConfig(IConfiguration configuration)
+    {
+        return TryParse(configuration["USE_LOCAL_OCELOT"],
+            out var useLocalOcelotConfig) && useLocalOcelotConfig;
+    }
+
+    private static void BuildOcelotConfigFile(ConfigurationManager configuration)
+    {
+        var ocelotConfig = configuration["OCELOT_CONFIG"];
+
+        if (string.IsNullOrWhiteSpace(ocelotConfig))
+        {
+            throw new InvalidConfigException( InvalidConfigException.MissingConfigMessage("OCELOT_CONFIG"));
+        }
+        //due to an issue in how application are deployed (azure web container)
+
+        File.WriteAllText(TempFileHelper.GetOcelotTempDir(),
+            ocelotConfig);
+
+    }
         // Configuration loading
         configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: false,
@@ -111,3 +153,4 @@ public static class ServiceExtensions
                     retryAttempt)));
     }
 }
+
