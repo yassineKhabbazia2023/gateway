@@ -1,3 +1,4 @@
+using ApiGateway.Exceptions;
 using Microsoft.Extensions.Configuration;
 using ApiGateway.Extensions;
 
@@ -13,7 +14,7 @@ namespace ApiGateway.UnitTests.Extensions
             configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null); 
 
             // Act & Assert
-            Assert.Throws<NullReferenceException>(() => FileHelper.GetOcelotConfigFullPathName(configMock.Object));
+            Assert.Throws<InvalidConfigException>(() => FileHelper.GetOcelotConfigFullPathName(configMock.Object));
         }
 
         [Fact]
@@ -58,7 +59,7 @@ namespace ApiGateway.UnitTests.Extensions
             configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null);
 
             // Act & Assert
-            Assert.Throws<NullReferenceException>(() => FileHelper.GetLiteDbDir(configMock.Object));
+            Assert.Throws<InvalidConfigException>(() => FileHelper.GetLiteDbDir(configMock.Object));
         }
         
     }
