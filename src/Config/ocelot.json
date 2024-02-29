@@ -1,0 +1,58 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_account}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
+      "UpstreamHttpMethod": [
+        "Get"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_account}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/accounts/{accountId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_account}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}",
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    }
+  ],
+  "GlobalConfiguration": {
+   "BaseUrl": "https://#{Ocelot_config_BaseUrl}#/gateway/api"
+  }
+}

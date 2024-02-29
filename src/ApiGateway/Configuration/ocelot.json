@@ -12,9 +12,10 @@
       "UpstreamPathTemplate": "/gtw/wallet",
       "UpstreamHttpMethod": [
         "Get"
-      ],"AuthenticationOptions": {
-      "AuthenticationProviderKey": "AAD"
-    }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "AAD"
+      }
     },
     {
       "DownstreamPathTemplate": "/ged-social",
@@ -30,9 +31,10 @@
         "Get",
         "Post",
         "Put"
-      ],"AuthenticationOptions": {
-      "AuthenticationProviderKey": "AAD"
-    }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "AAD"
+      }
     },
     {
       "DownstreamPathTemplate": "/ged-compta",
@@ -50,7 +52,7 @@
         "Put"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": ["AAD","GIGYA MyPulse v2"]
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
       }
     }
   ],
