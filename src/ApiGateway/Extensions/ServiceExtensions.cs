@@ -92,9 +92,7 @@ public static class ServiceExtensions
 
     public static void AddJsonConfiguration(this ConfigurationManager configuration)
     {
-        
         // Configuration loading
-        Console.WriteLine("***************************************************" + FileHelper.GetOcelotConfigFullPathName(configuration) + "--------------------" + File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)));
         configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: false,
             reloadOnChange: true);

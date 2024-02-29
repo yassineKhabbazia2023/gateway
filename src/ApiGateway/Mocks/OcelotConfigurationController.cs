@@ -18,7 +18,6 @@ public class OcelotConfigurationController(IConfiguration configuration) : Contr
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
     { 
-        Console.WriteLine("*************************************************** 1" + FileHelper.GetOcelotConfigFullPathName(configuration));
         if (!System.IO.File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)))
         {
             return NotFound("Ocelot configuration file not found.");

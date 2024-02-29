@@ -1,5 +1,4 @@
 using ApiGateway.Wallet.Models;
-using Azure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Wallet;

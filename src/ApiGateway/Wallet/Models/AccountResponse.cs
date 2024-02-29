@@ -1,4 +1,4 @@
-namespace ApiGateway.Wallet;
+namespace ApiGateway.Wallet.Models;
 
 public class AccountResponse
 {
