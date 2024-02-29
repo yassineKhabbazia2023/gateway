@@ -1,5 +1,6 @@
 using ApiGateway.Configuration;
 using ApiGateway.DelegatingHandlers.Mocks;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.Extensions;
 
@@ -15,7 +16,7 @@ public static class FileHelper
          var configFullPathName = configuration[ConfigConstants.OcelotConfigPath];
         if (string.IsNullOrWhiteSpace(configFullPathName))
         {
-            throw new NullReferenceException(configFullPathName);
+            throw new InvalidConfigException(configFullPathName);
         }
         return configFullPathName;
     }
