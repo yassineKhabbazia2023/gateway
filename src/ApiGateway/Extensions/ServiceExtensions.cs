@@ -24,12 +24,12 @@ public static class ServiceExtensions
         services.AddHealthChecks();
         //TODO this should use a feature flag in order to disable or enable it  
         ConfigureMockService(services,configuration);
-        AddSwaggerConfig(services);
+        AddSwaggerConfig(services, configuration);
 
 
         services.AddHttpClient<IWalletService, WalletService>(client =>
             {
-                client.BaseAddress = new Uri(configuration["BaseUrlOfYourService"]!);
+                client.BaseAddress = new Uri(configuration["WalletApiBaseUrl"]!);
             })
             .SetHandlerLifetime(TimeSpan.FromMinutes(5)) //Set lifetime to five minutes
             .AddPolicyHandler(GetRetryPolicy());
@@ -39,44 +39,60 @@ public static class ServiceExtensions
             .AddDelegatingHandler<MockResponseHandler>(true);
     }
 
-    private static void AddSwaggerConfig(IServiceCollection services)
+    private static void AddSwaggerConfig(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSwaggerGen(config =>
-        {
-            config.DocumentFilter<HideOcelotControllersFilter>();
-            config.AddServer(new OpenApiServer()
-            {
-                Url = "/gateway"
-            });
-            config.AddServer(new OpenApiServer()
-            {
-                Url = "/"
-            });
-            config.AddSecurityDefinition("Bearer",
-                new OpenApiSecurityScheme
-                {
-                    In = ParameterLocation.Header,
-                    Description = "Please enter token",
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
-                    BearerFormat = "JWT",
-                    Scheme = "bearer"
-                });
-            config.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
+        services.AddSwaggerForOcelot(configuration,
+          (o) =>
+          {
+              o.GenerateDocsDocsForGatewayItSelf(opt =>
+              {
+                  opt.GatewayDocsTitle = "Gateway";
+                  opt.GatewayDocsOpenApiInfo = new()
+                  {
+                      Title = "Gateway",
+                      Version = "v1",
+                  };
+                  opt.DocumentFilter<HideOcelotControllersFilter>();
+                  opt.AddSecurityDefinition("Bearer",
                     new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
-            });
-        });
+                        In = ParameterLocation.Header,
+                        Description = "Please enter token",
+                        Name = "Authorization",
+                        Type = SecuritySchemeType.Http,
+                        BearerFormat = "JWT",
+                        Scheme = "bearer"
+                    });
+                  opt.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                  {
+                      {
+                          new OpenApiSecurityScheme
+                          {
+                              Reference = new OpenApiReference
+                              {
+                                  Type = ReferenceType.SecurityScheme,
+                                  Id = "Bearer"
+                              },
+                              Scheme = "oauth2",
+                              Name = "Bearer",
+                              In = ParameterLocation.Header,
+                          },
+                          new List<string>()
+                      }
+                  });
+              });
+          },
+          config =>
+          {
+              config.AddServer(new OpenApiServer()
+              {
+                  Url = "/gateway"
+              });
+              config.AddServer(new OpenApiServer()
+              {
+                  Url = "/"
+              });
+          });
     }
 
     private static void ConfigureMockService(IServiceCollection services, IConfiguration configuration)

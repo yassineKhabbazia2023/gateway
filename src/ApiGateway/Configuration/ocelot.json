@@ -1,21 +1,39 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/weatherforecast",
-      "DownstreamScheme": "http",
+      "DownstreamPathTemplate": "/weatherforecast/{everything}",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5041
+          "Port": 60774
         }
       ],
-      "UpstreamPathTemplate": "/gtw/wallet",
+      "UpstreamPathTemplate": "/weatherforecast/{everything}",
       "UpstreamHttpMethod": [
         "Get"
       ],
+      "SwaggerKey": "weatherforecast"
+    },
+    {
+      "DownstreamPathTemplate": "/wallet/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev28.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/wallet/api/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put"
+      ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "AAD"
-      }
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      },
+      "SwaggerKey": "wallet"
     },
     {
       "DownstreamPathTemplate": "/ged-social",
@@ -54,6 +72,30 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
       }
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "weatherforecast",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Weatherforecast API",
+          "Version": "v1",
+          "Url": "https://localhost:60774/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "wallet",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Experience.Wallet",
+          "Version": "v1",
+          "Url": "https://api-dev28.dev.kpmg-pulse.fr/wallet/api/v1/api.json"
+        }
+      ]
     }
   ],
   "GlobalConfiguration": {

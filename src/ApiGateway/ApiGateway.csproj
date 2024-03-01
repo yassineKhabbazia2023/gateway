@@ -15,7 +15,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
     <PackageReference Include="LiteDB" Version="5.0.17" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.2" />
+    <PackageReference Include="MMLib.SwaggerForOcelot" Version="8.1.0" />
     <PackageReference Include="NRedisStack" Version="0.11.0" />
     <PackageReference Include="Ocelot" Version="23.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />

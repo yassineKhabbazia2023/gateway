@@ -7,18 +7,30 @@ builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Configuration.AddJsonConfiguration();
 var app = builder.Build();
 app.UseRouting();
-app.UseSwagger(option => { option.RouteTemplate = "/gateway/api/{documentName}/api.json"; });
 
-var assemblyName = typeof(Program).Assembly.GetName()
-    .Name;
-
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.EnableTryItOutByDefault();
-    c.SwaggerEndpoint("/gateway/api/v1/api.json",
-        $"{assemblyName} v1");
-    c.RoutePrefix = "api";
-});
+    app.UseSwaggerForOcelotUI(opt =>
+    {
+        opt.PathToSwaggerGenerator = "/swagger/docs";
+    }, c =>
+    {
+        c.EnableTryItOutByDefault();
+        c.RoutePrefix = "api";
+    });
+}
+else
+{
+    app.UseSwaggerForOcelotUI(opt =>
+    {
+        opt.DownstreamSwaggerEndPointBasePath = "/gateway/swagger/docs";
+    }, c =>
+    {
+        c.EnableTryItOutByDefault();
+        c.RoutePrefix = "api";
+    });
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseEndpoints(endpoints =>
@@ -27,5 +39,6 @@ app.UseEndpoints(endpoints =>
     endpoints.MapHealthChecks("health");
 });
 
+app.UseSwagger();
 await app.UseOcelot();
 app.Run();
