@@ -16,7 +16,7 @@ public static class FileHelper
          var configFullPathName = configuration[ConfigConstants.OcelotConfigPath];
         if (string.IsNullOrWhiteSpace(configFullPathName))
         {
-            throw new InvalidConfigException(configFullPathName);
+            throw new InvalidConfigException(ConfigConstants.OcelotConfigPath);
         }
         return configFullPathName;
     }

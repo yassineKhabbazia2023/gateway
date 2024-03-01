@@ -100,7 +100,7 @@ public static class ServiceExtensions
         return HttpPolicyExtensions
             .HandleTransientHttpError()
             .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-            .WaitAndRetryAsync(6,
+            .WaitAndRetryAsync(ConfigConstants.HttpClientRetryAttempt,
                 retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
                     retryAttempt)));
     }
