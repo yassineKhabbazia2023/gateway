@@ -1,7 +1,41 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "DownstreamPathTemplate": "/offer/api/offers",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/offer/api/offers",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/offer/api/offers/{offerId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/offer/api/offers/{offerId}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/account/api/roles/signatory/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -11,14 +45,14 @@
       ],
       "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
       "UpstreamHttpMethod": [
-        "Get"
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
       }
     },
     {
-      "DownstreamPathTemplate": "/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
+      "DownstreamPathTemplate": "/account/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -35,7 +69,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/accounts/{accountId}",
+      "DownstreamPathTemplate": "/account/api/accounts/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
