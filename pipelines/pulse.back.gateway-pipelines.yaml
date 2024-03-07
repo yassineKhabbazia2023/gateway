@@ -32,7 +32,7 @@ extends:
     domain: exp
     resource:
       id: '02'
-      name: gateway
+      name: desktop
       path: src\ApiGateway\ApiGateway.csproj
       tests: tests\**\*.csproj
       type: webApp
