@@ -52,7 +52,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
+      "DownstreamPathTemplate": "/account/api/accounts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -60,7 +60,7 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/?search={search}&pageNumber={pageNumber}&pageSize={pageSize}&contactId={contactId}",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -84,9 +84,50 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
       }
+    },
+    {
+      "DownstreamPathTemplate": "/contact/api/contacts/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_contact}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/contact/api/contacts/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "Account",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Account",
+          "Version": "v1",
+          "Url": "https://#{Domain_Ocelot_config_account}#/account/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "Offer",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Offer",
+          "Version": "v1",
+          "Url": "https://#{Domain_Ocelot_config_offer}#/offer/api/v1/api.json"
+        }
+      ]
     }
   ],
   "GlobalConfiguration": {
-   "BaseUrl": "https://#{Ocelot_config_BaseUrl}#/gateway/api"
+    "BaseUrl": "https://#{Ocelot_config_BaseUrl}#/gateway/api"
   }
 }
