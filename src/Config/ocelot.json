@@ -35,6 +35,23 @@
       }
     },
     {
+      "DownstreamPathTemplate": "account/api/accounts?contactId={userId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts?contactId={userId}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
       "DownstreamPathTemplate": "/account/api/roles/signatory/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
