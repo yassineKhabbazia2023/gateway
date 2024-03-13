@@ -1,11 +1,11 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/offer/api/offers",
+      "DownstreamPathTemplate": "/api/offers",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Host": "https://fr#{env_id}#offapp01offer.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -14,15 +14,18 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "/offer/api/offers/{offerId}",
+      "DownstreamPathTemplate": "/api/offers/{offerId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Host": "https://fr#{env_id}#offapp01offer.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -31,15 +34,18 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "account/api/accounts?contactId={userId}",
+      "DownstreamPathTemplate": "/api/accounts?contactId={userId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_offer}#",
+          "Host": "https://fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -48,15 +54,18 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/roles/signatory/{accountId}",
+      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_account}#",
+          "Host": "https://fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -65,15 +74,18 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_account}#",
+          "Host": "https://fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -82,15 +94,18 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/{accountId}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_account}#",
+          "Host": "https://fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -99,15 +114,18 @@
         "PATCH"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
-      "DownstreamPathTemplate": "/contact/api/contacts/{everything}",
+      "DownstreamPathTemplate": "/api/contacts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_contact}#",
+          "Host": "https://fr#{env_id}#cntapp01contact.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -116,7 +134,10 @@
         "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     }
   ],
@@ -128,7 +149,7 @@
         {
           "Name": "Pulse.Back.Account",
           "Version": "v1",
-          "Url": "https://#{Domain_Ocelot_config_account}#/account/api/v1/api.json"
+          "Url": "https://fr#{env_id}#accapp01account.azurewebsites.net/account/api/v1/api.json"
         }
       ]
     },
@@ -139,12 +160,12 @@
         {
           "Name": "Pulse.Back.Offer",
           "Version": "v1",
-          "Url": "https://#{Domain_Ocelot_config_offer}#/offer/api/v1/api.json"
+          "Url": "https://fr#{env_id}#offapp01offer.azurewebsites.net/offer/api/v1/api.json"
         }
       ]
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://#{Ocelot_config_BaseUrl}#/gateway/api"
+    "BaseUrl": "https://api-#{env_id}#.#{env}#.kpmg-pulse.fr/desktop/api"
   }
 }

@@ -1,0 +1,82 @@
+parameters:
+- name: devIndex
+  type: number
+  default: 0
+- name: deployType
+  type: string
+  default: 'standard'
+
+stages:
+- stage: build
+  displayName: 'Build'
+  jobs:
+  - job: build
+    displayName: 'Build'
+    steps:
+    - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
+    - publish: $(Build.SourcesDirectory)/pipelines
+      artifact: Module
+- ${{ if ne(parameters.devIndex, 0) }}:
+  - stage: deploy_DEV
+    ${{ if lt(parameters.devIndex, 10) }}:
+      displayName: 'Development-dev0${{ parameters.devIndex }}'
+      pool: Pulse-dev0${{ parameters.devIndex }}
+    ${{ else }}:
+      displayName: 'Development-dev${{ parameters.devIndex }}'
+      pool: Pulse-dev${{ parameters.devIndex }}
+    jobs:
+    - deployment: deploy
+      displayName: 'Updating main'
+      environment: DEV
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Module
+
+            - template: update-config.yaml
+              parameters:
+                ${{ if lt(parameters.devIndex, 10) }}:
+                  environment: dev0${{ parameters.devIndex }}
+                ${{ else }}:
+                  environment: dev${{ parameters.devIndex }}
+                subscription: PULSE-DEV
+- ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
+  - stage: deploy_ITG
+    displayName: 'Integration'
+    pool: Pulse-itg01
+    jobs:
+    - deployment: deploy
+      displayName: 'Updating main'
+      environment: ITG
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Module
+
+            - template: update-config.yaml
+              parameters:
+                environment: itg01
+                subscription: PULSE-ITG
+- ${{ if or(and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')), and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'developToRec'))) }}:
+  - stage: deploy_REC
+    displayName: 'Recette'
+    pool: Pulse-rec01
+    jobs:
+    - deployment: deploy
+      displayName: 'Updating main'
+      environment: REC
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Module
+
+            - template: update-config.yaml
+              parameters:
+                environment: rec01
+                subscription: PULSE-REC

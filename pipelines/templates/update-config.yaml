@@ -1,0 +1,18 @@
+
+parameters:
+- name: environment
+  type: string
+- name: subscription
+  type: string
+  default: PULSE-DEV
+
+steps:
+- task: AzureCLI@2
+  displayName: "Updating config file ocelot.json"
+  inputs:
+    azureSubscription: ${{ parameters.subscription }}
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      Import-Module $Env:PIPELINE_WORKSPACE/Module/Deployment
+      Set-EnvironmentVariables -Environment ${{ parameters.environment }}

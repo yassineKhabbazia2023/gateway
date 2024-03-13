@@ -46,10 +46,10 @@ public static class ServiceExtensions
           {
               o.GenerateDocsDocsForGatewayItSelf(opt =>
               {
-                  opt.GatewayDocsTitle = "Gateway";
+                  opt.GatewayDocsTitle = "Desktop";
                   opt.GatewayDocsOpenApiInfo = new()
                   {
-                      Title = "Gateway",
+                      Title = "Desktop",
                       Version = "v1",
                   };
                   opt.DocumentFilter<HideOcelotControllersFilter>();
@@ -86,7 +86,7 @@ public static class ServiceExtensions
           {
               config.AddServer(new OpenApiServer()
               {
-                  Url = "/gateway"
+                  Url = "/desktop"
               });
               config.AddServer(new OpenApiServer()
               {
