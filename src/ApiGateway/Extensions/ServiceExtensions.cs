@@ -46,10 +46,10 @@ public static class ServiceExtensions
           {
               o.GenerateDocsDocsForGatewayItSelf(opt =>
               {
-                  opt.GatewayDocsTitle = "Desktop";
+                  opt.GatewayDocsTitle = "API Gateway Desktop";
                   opt.GatewayDocsOpenApiInfo = new()
                   {
-                      Title = "Desktop",
+                      Title = "API Gateway Desktop",
                       Version = "v1",
                   };
                   opt.DocumentFilter<HideOcelotControllersFilter>();
