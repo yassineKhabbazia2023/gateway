@@ -9,14 +9,28 @@ builder.Configuration.AddJsonConfiguration();
 var app = builder.Build();
 app.UseRouting();
 
-app.UseSwaggerForOcelotUI(opt =>
+if (app.Environment.IsDevelopment())
 {
-    opt.DownstreamSwaggerEndPointBasePath = "/swagger/docs";
-}, c =>
+    app.UseSwaggerForOcelotUI(opt =>
+    {
+        opt.PathToSwaggerGenerator = "/swagger/docs";
+    }, c =>
+    {
+        c.EnableTryItOutByDefault();
+        c.RoutePrefix = "api";
+    });
+}
+else
 {
-    c.EnableTryItOutByDefault();
-    c.RoutePrefix = "api";
-});
+    app.UseSwaggerForOcelotUI(opt =>
+    {
+        opt.DownstreamSwaggerEndPointBasePath = "/desktop/swagger/docs";
+    }, c =>
+    {
+        c.EnableTryItOutByDefault();
+        c.RoutePrefix = "api";
+    });
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
