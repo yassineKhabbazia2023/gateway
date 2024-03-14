@@ -15,4 +15,4 @@ steps:
     scriptLocation: inlineScript
     inlineScript: |
       Import-Module $Env:PIPELINE_WORKSPACE/Module/Deployment
-      Set-EnvironmentVariables -Environment ${{ parameters.environment }}
+      Set-EnvironmentVariables -Environment ${{ parameters.environment }} -Subscription ${{ parameters.subscription }}

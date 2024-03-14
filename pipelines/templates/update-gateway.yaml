@@ -26,7 +26,7 @@ stages:
       pool: Pulse-dev${{ parameters.devIndex }}
     jobs:
     - deployment: deploy
-      displayName: 'Updating main'
+      displayName: 'Updating config'
       environment: DEV
       strategy:
         runOnce:
@@ -48,7 +48,7 @@ stages:
     pool: Pulse-itg01
     jobs:
     - deployment: deploy
-      displayName: 'Updating main'
+      displayName: 'Updating config'
       environment: ITG
       strategy:
         runOnce:
@@ -67,7 +67,7 @@ stages:
     pool: Pulse-rec01
     jobs:
     - deployment: deploy
-      displayName: 'Updating main'
+      displayName: 'Updating config'
       environment: REC
       strategy:
         runOnce:

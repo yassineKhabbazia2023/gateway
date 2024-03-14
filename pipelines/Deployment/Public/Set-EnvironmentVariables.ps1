@@ -30,7 +30,10 @@ Typically, this is done during a pipeline by using the AzureCLI@2 task.
     [String]$Environment,
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [String] $WorkingFolder = "$($Env:PIPELINE_WORKSPACE)/Module"
+    [String] $WorkingFolder = "$($Env:PIPELINE_WORKSPACE)/Module",
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [String] $Subscription
   )
 
   try 
@@ -43,12 +46,15 @@ Typically, this is done during a pipeline by using the AzureCLI@2 task.
     $SourcePath = "$($WorkingFolder)/ocelot.json"
     Set-Content -Path $SourcePath -Value $sourceContent
 
+    az account set --subscription $Subscription
+
     $expRg = "fr$($Environment)exp"
+    $accountName = "$($expRg)sa01"    
+    $AccountKey = $(az storage account keys list -g $expRg -n $accountName --query [0].value -o tsv)
+
     $shareName = 'desktop'
     $targetFile = 'ocelot.json'
-    $AccountKey = (Get-AzStorageAccountKey -ResourceGroupName $expRg -Name "$($expRg)sa01")[0].Value
-
-    az storage file upload --account-name "$($expRg)sa01" --account-key "$AccountKey" --path $targetFile --share-name $shareName --source $SourcePath
+    az storage file upload --account-name $accountName --account-key "$AccountKey" --path $targetFile --share-name $shareName --source $SourcePath
   }
   finally
   {
