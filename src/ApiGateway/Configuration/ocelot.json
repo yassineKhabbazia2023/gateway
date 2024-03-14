@@ -1,21 +1,6 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/weatherforecast/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 60774
-        }
-      ],
-      "UpstreamPathTemplate": "/weatherforecast/{everything}",
-      "UpstreamHttpMethod": [
-        "Get"
-      ],
-      "SwaggerKey": "weatherforecast"
-    },
-    {
       "DownstreamPathTemplate": "/wallet/api/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -36,38 +21,68 @@
       "SwaggerKey": "wallet"
     },
     {
-      "DownstreamPathTemplate": "/ged-social",
-      "DownstreamScheme": "http",
+      "DownstreamPathTemplate": "/offer/api/offers",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5041
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/ged",
+      "UpstreamPathTemplate": "/gtw/offer/api/offers",
       "UpstreamHttpMethod": [
-        "Get",
-        "Post",
-        "Put"
+        "GET"
       ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "AAD"
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
       }
     },
     {
-      "DownstreamPathTemplate": "/ged-compta",
-      "DownstreamScheme": "http",
+      "DownstreamPathTemplate": "/offer/api/offers/{offerId}",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5041
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/ged-compta",
+      "UpstreamPathTemplate": "/gtw/offer/api/offers/{offerId}",
       "UpstreamHttpMethod": [
-        "Get",
-        "Post",
-        "Put"
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/account/api/accounts/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/account/api/accounts/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
@@ -76,13 +91,13 @@
   ],
   "SwaggerEndPoints": [
     {
-      "Key": "weatherforecast",
+      "Key": "account",
       "TransformByOcelotConfig": false,
       "Config": [
         {
-          "Name": "Weatherforecast API",
+          "Name": "Account API",
           "Version": "v1",
-          "Url": "https://localhost:60774/swagger/v1/swagger.json"
+          "Url": "https://api-dev78.dev.kpmg-pulse.fr/account/api/v1/api.json"
         }
       ]
     },
@@ -99,6 +114,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "http://localhost:5063"
+    "BaseUrl": "https://localhost:60090/api"
   }
 }

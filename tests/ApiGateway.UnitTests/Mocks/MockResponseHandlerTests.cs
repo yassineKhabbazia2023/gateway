@@ -17,7 +17,7 @@ namespace ApiGateway.UnitTests.Mocks
                 "http://localhost/test");
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
-                InnerHandler = new TestHandler(new(HttpStatusCode.BadRequest))
+                InnerHandler = new MockHttpMessageHandler(new(HttpStatusCode.BadRequest))
             };
 
             var invoker = new HttpMessageInvoker(mockResponseHandler);
@@ -49,7 +49,7 @@ namespace ApiGateway.UnitTests.Mocks
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
                 InnerHandler =
-                    new TestHandler(
+                    new MockHttpMessageHandler(
                         new HttpResponseMessage(HttpStatusCode
                             .OK)) // Default fallback, won't be used in successful match
             };
@@ -80,7 +80,7 @@ namespace ApiGateway.UnitTests.Mocks
             var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
             {
                 InnerHandler =
-                    new TestHandler(new HttpResponseMessage(HttpStatusCode.NotFound)) // Fallback response setup
+                    new MockHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.NotFound)) // Fallback response setup
             };
 
             var invoker = new HttpMessageInvoker(mockResponseHandler);
@@ -92,26 +92,6 @@ namespace ApiGateway.UnitTests.Mocks
             // Assert
             response.StatusCode.Should()
                 .Be(HttpStatusCode.NotFound); // Verifying fallback response is returned
-        }
-
-
-
-
-
-        private class TestHandler : DelegatingHandler
-        {
-            private readonly HttpResponseMessage _response;
-
-            public TestHandler(HttpResponseMessage response)
-            {
-                _response = response;
-            }
-
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-                CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_response);
-            }
         }
     }
 }

@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using ApiGateway.Cache;
 using ApiGateway.Configuration;
+using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Wallet;
@@ -18,6 +20,9 @@ public static class ServiceExtensions
     public static void AddApiGatewayServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Add services to the container.
+        services.AddScoped<IContactService, ContactService>();
+        services.AddScoped<ICacheService, CacheService>();
+        services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
@@ -36,6 +41,7 @@ public static class ServiceExtensions
 
         services.AddOcelot()
             .AddDelegatingHandler<AuthorizationHandler>(true)
+            .AddDelegatingHandler<ContactHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
     }
 
@@ -119,5 +125,14 @@ public static class ServiceExtensions
             .WaitAndRetryAsync(ConfigConstants.HttpClientRetryAttempt,
                 retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
                     retryAttempt)));
+    }
+
+    private static void RegisterApplicationInsights(this IServiceCollection services, IConfiguration configuration)
+    {
+        var applicationInsightsConexionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        services.AddApplicationInsightsTelemetry(options =>
+        {
+            options.ConnectionString = applicationInsightsConexionString;
+        });
     }
 }

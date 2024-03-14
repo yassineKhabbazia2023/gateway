@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 .idea
 src/ApiGateway/mocks.db
+/.vscode/launch.json

@@ -21,10 +21,11 @@
     <PackageReference Include="NRedisStack" Version="0.11.0" />
     <PackageReference Include="Ocelot" Version="23.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+	<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
+	<PackageReference Include="Serilog.Extensions.Logging.ApplicationInsights" Version="1.1.0" />
    
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Cache\" />
     <Folder Include="Ged\" />
     <Folder Include="Mandat\" />
     <Folder Include="Offer\" />
