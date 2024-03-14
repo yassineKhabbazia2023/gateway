@@ -41,6 +41,26 @@
       }
     },
     {
+      "DownstreamPathTemplate": "/api/subscription/{subscriptionId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#offapp01offer.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{subscriptionId}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "DownstreamPathTemplate": "/api/accounts?contactId={userId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
