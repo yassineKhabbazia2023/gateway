@@ -105,7 +105,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "#{Domain_Ocelot_config_account}#",
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],

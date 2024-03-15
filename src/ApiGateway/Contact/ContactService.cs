@@ -28,7 +28,7 @@ public class ContactService : IContactService
             }
 
             var contactResult = JsonSerializer.Deserialize<PagingResult>(jsonString);
-            if (contactResult != null && contactResult.Items!.Count > 0)
+            if (contactResult != null && contactResult.Items?.Count > 0)
             {
                 return contactResult.Items[0].Id.ToString();
             }

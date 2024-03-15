@@ -114,6 +114,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:60090/api"
+    "BaseUrl": "https://localhost:50160/api"
   }
 }
