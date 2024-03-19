@@ -1,7 +1,7 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/offer/api/offers",
+      "DownstreamPathTemplate": "/api/offers",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -21,7 +21,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/offer/api/offers/{offerId}",
+      "DownstreamPathTemplate": "/api/offers/{offerId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -41,7 +41,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/offer/api/subscription/{subscriptionId}",
+      "DownstreamPathTemplate": "/api/subscription/{subscriptionId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -61,7 +61,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/roles/signatory/{accountId}",
+      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -81,7 +81,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -101,7 +101,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -118,7 +118,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/{accountId}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -138,7 +138,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/favorites/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -158,7 +158,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/contact/api/contacts/{everything}",
+      "DownstreamPathTemplate": "/api/contacts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
