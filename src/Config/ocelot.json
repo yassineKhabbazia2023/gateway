@@ -101,7 +101,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -118,7 +118,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/account/api/accounts/{accountId}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -146,7 +146,7 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/api/favorites/currentuser/{everything}",
+      "UpstreamPathTemplate": "/gtw/account/api/favorites/currentuser/{everything}",
       "UpstreamHttpMethod": [
         "PATCH"
       ],
