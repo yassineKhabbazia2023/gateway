@@ -288,6 +288,17 @@
           "Url": "https://fr#{env_id}#offapp01offer.azurewebsites.net/offer/api/v1/api.json"
         }
       ]
+    },
+    {
+      "Key": "Contact",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Contact",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#cntapp01contact.azurewebsites.net/contact/api/v1/api.json"
+        }
+      ]
     }
   ],
   "GlobalConfiguration": {
