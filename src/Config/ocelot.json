@@ -205,7 +205,7 @@
       ],
       "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{everything}",
       "UpstreamHttpMethod": [
-        "GET"
+        "GET", "PATCH"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
