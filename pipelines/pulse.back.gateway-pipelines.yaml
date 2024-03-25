@@ -28,6 +28,7 @@ extends:
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
+    sonarExclusions: '**/Program.cs, **/Extensions/SecurityServiceExtensions.cs'
     layer: Domain
     domain: exp
     resource:
