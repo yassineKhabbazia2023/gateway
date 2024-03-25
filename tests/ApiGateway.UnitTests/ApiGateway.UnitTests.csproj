@@ -11,6 +11,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Security\**" />
+    <Compile Remove="Services\**" />
+    <EmbeddedResource Remove="Security\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Security\**" />
+    <None Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoFixture" Version="4.18.1" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
@@ -28,11 +37,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ApiGateway\ApiGateway.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Security\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

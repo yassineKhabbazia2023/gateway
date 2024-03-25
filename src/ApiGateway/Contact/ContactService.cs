@@ -1,24 +1,46 @@
 ﻿using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
-using Kpmg.Constellation.Security.Claims;
+using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ApiGateway.Contact;
 
 public class ContactService : IContactService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient httpClient;
 
-    public ContactService(
-        IHttpClientFactory httpClientFactory)
+    public ContactService(HttpClient httpClient)
     {
-        _httpClientFactory = httpClientFactory;
+        this.httpClient = httpClient;
     }
 
-    public async Task<string?> GetContactAsync(string contactApiUri, string userEmail)
+    public async Task<Models.Contact?> GetContactAsync(string userEmail)
     {
-        var httpClient = _httpClientFactory.CreateClient("contact_client");
-        var response = await httpClient.GetAsync(ContactUrl(contactApiUri!, userEmail));
+        var uri = ContactUrl(userEmail);
+        var response = await httpClient.GetAsync(uri);
+        if (response.IsSuccessStatusCode)
+        {
+            var jsonString = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(jsonString))
+            {
+                return null;
+            }
+
+            var contactResult = JsonSerializer.Deserialize<PagingResult>(jsonString);
+            if (contactResult != null && contactResult.Items?.Count > 0)
+            {
+                return contactResult.Items[0];
+            }
+
+            throw new ContactNotFoundException();
+        }
+
+        return null;
+    }
+
+    public async Task<string?> GetContactIdAsync(string userEmail)
+    {
+        var response = await httpClient.GetAsync(ContactUrl(userEmail));
         if (response.IsSuccessStatusCode)
         {
             var jsonString = await response.Content.ReadAsStringAsync();
@@ -37,8 +59,8 @@ public class ContactService : IContactService
         return null;
     }
 
-    private string ContactUrl(string contactApiUri, string userEmail) =>
-        $"{contactApiUri}/contact/api/contacts?Type={GetUserType(userEmail)}&Email={userEmail}";
+    private string ContactUrl(string userEmail) =>
+        $"contacts?Type={GetUserType(userEmail)}&Email={userEmail}";
 
     private static string GetUserType(string userEmail) =>
         userEmail.EndsWith("@kpmg.fr", StringComparison.OrdinalIgnoreCase) ? "Collaborator" : "Customer";

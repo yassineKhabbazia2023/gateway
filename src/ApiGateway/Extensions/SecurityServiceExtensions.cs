@@ -1,4 +1,5 @@
 using Kpmg.AspNetCore.Authentication.ConstellationIdentityService;
+using Kpmg.Constellation.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
 namespace ApiGateway.Extensions;
@@ -32,6 +33,8 @@ public static class SecurityServiceExtensions
                 });
         
         services.AddConstellationHttpClient();
+
+        services.AddSingleton<IUserContext, AspNetCoreUserContext>();
     }
   
 }

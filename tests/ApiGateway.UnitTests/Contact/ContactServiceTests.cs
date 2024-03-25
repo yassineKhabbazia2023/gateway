@@ -1,30 +1,252 @@
 ﻿using System.Net;
 using System.Text;
-using System.Text.Json;
 using ApiGateway.Contact;
+using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Moq.Protected;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace ApiGateway.UnitTests.Contact;
 
 public class ContactServiceTests
 {
-    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-
-    public ContactServiceTests()
+    [Fact]
+    public async Task GetContactAsync_WhenContactReturnNotFoundError_ShouldReturnNull()
     {
-        _mockHttpClientFactory = new Mock<IHttpClientFactory>(MockBehavior.Strict);
+        var httpResponseMessage = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.NotFound
+        };
+
+        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
+
+        var client = new HttpClient(mockContactOperationHandler.Object);
+        client.BaseAddress = new Uri("http://xyz.fr");
+
+        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
+           "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+           {
+               req.Method.Should().Be(HttpMethod.Get);
+               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+           }).ReturnsAsync(httpResponseMessage).Verifiable();
+
+        var contactService = new ContactService(client);
+
+        var result = await contactService.GetContactAsync("jdoe@test.fr");
+
+        mockContactOperationHandler.Verify();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactAsync_WhenContactApiResponseNotSuccessfull_ShouldReturnNull()
+    {
+        var contact = new ApiGateway.Contact.Models.Contact()
+        {
+            Id = 1,
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "jdoe@test.fr"
+        };
+
+        var pagedContact = new PagingResult()
+        {
+            Items = new List<ApiGateway.Contact.Models.Contact>()
+            {
+                contact
+            }
+        };
+
+        var httpResponseMessage = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = null
+        };
+
+        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
+
+        var client = new HttpClient(mockContactOperationHandler.Object);
+        client.BaseAddress = new Uri("http://xyz.fr");
+
+        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
+           "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+           {
+               req.Method.Should().Be(HttpMethod.Get);
+               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+           }).ReturnsAsync(httpResponseMessage).Verifiable();
+
+        var contactService = new ContactService(client);
+
+        var result = await contactService.GetContactAsync("jdoe@test.fr");
+
+        mockContactOperationHandler.Verify();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactAsync_WhenContactApiReturnNull_ShouldReturnNull()
+    {
+        var contact = new ApiGateway.Contact.Models.Contact()
+        {
+            Id = 1,
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "jdoe@test.fr"
+        };
+
+        var pagedContact = new PagingResult()
+        {
+            Items = new List<ApiGateway.Contact.Models.Contact>()
+            {
+                contact
+            }
+        };
+
+        var httpResponseMessage = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = null
+        };
+
+        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
+
+        var client = new HttpClient(mockContactOperationHandler.Object);
+        client.BaseAddress = new Uri("http://xyz.fr");
+
+        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
+           "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+           {
+               req.Method.Should().Be(HttpMethod.Get);
+               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+           }).ReturnsAsync(httpResponseMessage).Verifiable();
+
+        var contactService = new ContactService(client);
+
+        var result = await contactService.GetContactAsync("jdoe@test.fr");
+
+        mockContactOperationHandler.Verify();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactAsync_WhenContactNotFound_ShouldReturnNull()
+    {
+        var contact = new ApiGateway.Contact.Models.Contact()
+        {
+            Id = 1,
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "jdoe@test.fr"
+        };
+
+        var pagedContact = new PagingResult()
+        {
+            Items = new List<ApiGateway.Contact.Models.Contact>()
+        };
+
+        var httpResponseMessage = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonConvert.SerializeObject(pagedContact, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            }), Encoding.UTF8, "application/json")
+        };
+
+        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
+
+        var client = new HttpClient(mockContactOperationHandler.Object);
+        client.BaseAddress = new Uri("http://xyz.fr");
+
+        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
+           "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+           {
+               req.Method.Should().Be(HttpMethod.Get);
+               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+           }).ReturnsAsync(httpResponseMessage).Verifiable();
+
+        var contactService = new ContactService(client);
+
+        Func<Task> act = async () =>
+        {
+            await contactService.GetContactAsync("jdoe@test.fr");
+        };
+
+        await act.Should().ThrowAsync<ContactNotFoundException>();
+
+        mockContactOperationHandler.Verify();
     }
 
     [Fact]
     public async Task GetContactAsync_ShouldReturnContact()
     {
+        var contact = new ApiGateway.Contact.Models.Contact()
+        {
+            Id = 1,
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "jdoe@test.fr"
+        };
+
+        var pagedContact = new PagingResult()
+        {
+            Items = new List<ApiGateway.Contact.Models.Contact>()
+            {
+                contact
+            }
+        };
+
+        var httpResponseMessage = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonConvert.SerializeObject(pagedContact, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            }), Encoding.UTF8, "application/json")
+        };
+
+        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
+
+        var client = new HttpClient(mockContactOperationHandler.Object);
+        client.BaseAddress = new Uri("http://xyz.fr");
+
+        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
+           "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+           {
+               req.Method.Should().Be(HttpMethod.Get);
+               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+           }).ReturnsAsync(httpResponseMessage).Verifiable();
+
+        var contactService = new ContactService(client);
+                
+        var result = await contactService.GetContactAsync("jdoe@test.fr");
+
+        mockContactOperationHandler.Verify();
+        result.Should().BeEquivalentTo(contact);
+    }
+
+    [Fact]
+    public async Task GetContactIdAsync_ShouldReturnContact()
+    {
         // Arrange
         int contactId = 2;
         var userEmail = "user@example.com";
-        var contactApiUri = "https://contact-domain.api";
 
         PagingResult pagingResult = new PagingResult()
         {
@@ -33,7 +255,7 @@ public class ContactServiceTests
             new ApiGateway.Contact.Models.Contact { Id = contactId },
         }
         };
-        var jsonString = JsonSerializer.Serialize(pagingResult);
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(pagingResult);
 
         var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         mockHttpMessageHandler.Protected()
@@ -49,23 +271,28 @@ public class ContactServiceTests
             });
 
         var mockHttpClient = new HttpClient(mockHttpMessageHandler.Object);
-        _mockHttpClientFactory.Setup(x => x.CreateClient("contact_client")).Returns(mockHttpClient);
+        mockHttpClient.BaseAddress = new Uri("http://xyz.fr");
 
-        var contactService = new ContactService(_mockHttpClientFactory.Object);
+        var contactService = new ContactService(mockHttpClient);
 
         // Act
-        var result = await contactService.GetContactAsync(contactApiUri, userEmail);
+        var result = await contactService.GetContactIdAsync(userEmail);
 
         // Assert
         result.Should().Be(contactId.ToString());
     }
 
     [Fact]
-    public async Task GetContactAsync_EmptyResponse_ReturnsNull()
+    public async Task GetContactIdAsync_WhenContactNotFound_ShouldReturnNull()
     {
         // Arrange
         var userEmail = "user@example.com";
-        var contactApiUri = "https://contact-domain.api";
+
+        PagingResult pagingResult = new PagingResult()
+        {
+            Items = new List<ApiGateway.Contact.Models.Contact>()
+        };
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(pagingResult);
 
         var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         mockHttpMessageHandler.Protected()
@@ -76,16 +303,109 @@ public class ContactServiceTests
             )
             .ReturnsAsync(new HttpResponseMessage
             {
-                StatusCode = HttpStatusCode.OK
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
             });
 
         var mockHttpClient = new HttpClient(mockHttpMessageHandler.Object);
-        _mockHttpClientFactory.Setup(x => x.CreateClient("contact_client")).Returns(mockHttpClient);
+        mockHttpClient.BaseAddress = new Uri("http://xyz.fr");
 
-        var contactService = new ContactService(_mockHttpClientFactory.Object);
+        var contactService = new ContactService(mockHttpClient);
 
         // Act
-        var result = await contactService.GetContactAsync(contactApiUri, userEmail);
+        var result = await contactService.GetContactIdAsync(userEmail);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactIdAsync_WhenContactApiResponseNotSuccessfull_ShouldReturnNull()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest,
+                Content = null
+            });
+
+        var mockHttpClient = new HttpClient(mockHttpMessageHandler.Object);
+        mockHttpClient.BaseAddress = new Uri("http://xyz.fr");
+
+        var contactService = new ContactService(mockHttpClient);
+
+        // Act
+        var result = await contactService.GetContactIdAsync(userEmail);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactIdAsync_WhenContactApiReturnNull_ShouldReturnNull()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest,
+                Content = null
+            });
+
+        var mockHttpClient = new HttpClient(mockHttpMessageHandler.Object);
+        mockHttpClient.BaseAddress = new Uri("http://xyz.fr");
+
+        var contactService = new ContactService(mockHttpClient);
+
+        // Act
+        var result = await contactService.GetContactIdAsync(userEmail);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetContactIdAsync_WhenContactReturnNotFoundError_ShouldReturnNull()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.NotFound
+            });
+
+        var mockHttpClient = new HttpClient(mockHttpMessageHandler.Object);
+        mockHttpClient.BaseAddress = new Uri("http://xyz.fr");
+
+        var contactService = new ContactService(mockHttpClient);
+
+        // Act
+        var result = await contactService.GetContactIdAsync(userEmail);
 
         // Assert
         result.Should().BeNull();

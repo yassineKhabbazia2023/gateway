@@ -31,6 +31,12 @@ public static class ServiceExtensions
         ConfigureMockService(services,configuration);
         AddSwaggerConfig(services, configuration);
 
+        services.AddHttpClient<IContactService, ContactService>(client =>
+            {
+                client.BaseAddress = new Uri(configuration["ContactApiUri"]!);
+            })
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5)) //Set lifetime to five minutes
+            .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IWalletService, WalletService>(client =>
             {
@@ -103,7 +109,6 @@ public static class ServiceExtensions
 
     private static void ConfigureMockService(IServiceCollection services, IConfiguration configuration)
     {
-
         var databasePath = FileHelper.GetLiteDbDir(configuration);
         services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase(databasePath));
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
@@ -115,7 +120,6 @@ public static class ServiceExtensions
         configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: false,
             reloadOnChange: true);
-        
     }
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     {

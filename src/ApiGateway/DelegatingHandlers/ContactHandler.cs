@@ -66,9 +66,7 @@ public class ContactHandler : DelegatingHandler
         if (string.IsNullOrWhiteSpace(contactId))
         {
             var contactService = scope.ServiceProvider.GetRequiredService<IContactService>();
-            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-            var contactApiUri = configuration.GetValue<string>("ContactApiUri");
-            contactId = await contactService.GetContactAsync(contactApiUri!, userEmail);
+            contactId = await contactService.GetContactIdAsync(userEmail);
 
             if (string.IsNullOrWhiteSpace(contactId))
             {

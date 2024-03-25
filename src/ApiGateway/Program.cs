@@ -1,11 +1,16 @@
+using ApiGateway.Configuration;
+using ApiGateway.Contact;
 using ApiGateway.Extensions;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiGatewayServices(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
+
 builder.Configuration.AddJsonConfiguration();
+
 var app = builder.Build();
 app.UseRouting();
 

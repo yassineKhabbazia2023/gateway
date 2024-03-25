@@ -8,6 +8,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Ged\**" />
+    <Compile Remove="Mandat\**" />
+    <Compile Remove="Offer\**" />
+    <Compile Remove="Security\**" />
+    <Content Remove="Ged\**" />
+    <Content Remove="Mandat\**" />
+    <Content Remove="Offer\**" />
+    <Content Remove="Security\**" />
+    <EmbeddedResource Remove="Ged\**" />
+    <EmbeddedResource Remove="Mandat\**" />
+    <EmbeddedResource Remove="Offer\**" />
+    <EmbeddedResource Remove="Security\**" />
+    <None Remove="Ged\**" />
+    <None Remove="Mandat\**" />
+    <None Remove="Offer\**" />
+    <None Remove="Security\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Ardalis.GuardClauses" Version="4.4.0" />
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.1.0" />
@@ -24,12 +43,6 @@
 	<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
 	<PackageReference Include="Serilog.Extensions.Logging.ApplicationInsights" Version="1.1.0" />
    
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Ged\" />
-    <Folder Include="Mandat\" />
-    <Folder Include="Offer\" />
-    <Folder Include="Security\" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="Configuration\ocelot.json">

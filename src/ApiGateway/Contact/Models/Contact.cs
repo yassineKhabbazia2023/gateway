@@ -20,4 +20,10 @@ public class Contact
     
     [JsonPropertyName("email")]
     public string? Email { get; set; }
+
+    [JsonPropertyName("landPhone")]
+    public string? LandPhone { get; set; }
+
+    [JsonPropertyName("mobilePhone")]
+    public string? MobilePhone { get; set; }
 }

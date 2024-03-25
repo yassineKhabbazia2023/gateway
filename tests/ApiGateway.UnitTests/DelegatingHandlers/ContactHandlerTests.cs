@@ -67,7 +67,7 @@ public class ContactHandlerTests
             .Returns(Task.CompletedTask)
             .Verifiable();
 
-        _mockContactService.Setup(x => x.GetContactAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .ReturnsAsync(contactId.ToString())
             .Verifiable();
 
@@ -117,7 +117,7 @@ public class ContactHandlerTests
             .Returns(Task.CompletedTask)
             .Verifiable();
 
-        _mockContactService.Setup(x => x.GetContactAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .ReturnsAsync(contactId.ToString())
             .Verifiable();
 

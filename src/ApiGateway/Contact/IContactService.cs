@@ -2,5 +2,6 @@
 
 public interface IContactService
 {
-    Task<string?> GetContactAsync(string contactApiUri, string userEmail);
+    Task<string?> GetContactIdAsync(string userEmail);
+    Task<Models.Contact?> GetContactAsync(string userEmail);
 }
