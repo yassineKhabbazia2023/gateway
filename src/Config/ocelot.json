@@ -1,7 +1,8 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/offers",
+      "UpstreamPathTemplate": "/gtw/offer/api/offers/{everything}",
+      "DownstreamPathTemplate": "/api/offers/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -9,7 +10,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/offer/api/offers",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -21,15 +21,15 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/offers/{offerId}",
+      "UpstreamPathTemplate": "/gtw/offer/api/referentials/AccountReferentialInformation",
+      "DownstreamPathTemplate": "/api/referentials/AccountReferentialInformation",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#offapp01offer.azurewebsites.net",
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/offer/api/offers/{offerId}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -41,7 +41,8 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/subscription/{subscriptionId}",
+      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{everything}",
+      "DownstreamPathTemplate": "/api/subscription/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -49,7 +50,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{subscriptionId}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -61,6 +61,7 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
       "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -69,7 +70,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -81,6 +81,7 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
       "DownstreamPathTemplate": "/api/accounts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -89,9 +90,9 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
       "UpstreamHttpMethod": [
-        "GET"
+        "GET",
+        "PATCH"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -101,6 +102,7 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
       "DownstreamPathTemplate": "/api/accounts/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -109,7 +111,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -118,26 +119,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/accounts/{accountId}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}",
-      "UpstreamHttpMethod": [
-        "PATCH"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
+      "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
       "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -146,28 +128,8 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
       "UpstreamHttpMethod": [
-        "PATCH"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr{env_id}accapp01account.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
-      "UpstreamHttpMethod": [
+        "PATCH",
         "GET"
       ],
       "AuthenticationOptions": {
@@ -178,6 +140,7 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/gtw/contact/api/contacts/{everything}",
       "DownstreamPathTemplate": "/api/contacts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -186,7 +149,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/contact/api/contacts/{everything}",
       "UpstreamHttpMethod": [
         "GET"
       ],
