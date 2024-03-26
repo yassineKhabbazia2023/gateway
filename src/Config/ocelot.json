@@ -146,9 +146,29 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/favorites/currentuser/{everything}",
+      "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
       "UpstreamHttpMethod": [
         "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr{env_id}accapp01account.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -205,7 +225,8 @@
       ],
       "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{everything}",
       "UpstreamHttpMethod": [
-        "GET", "PATCH"
+        "GET",
+        "PATCH"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
@@ -248,7 +269,7 @@
       }
     },
     {
-      "UpstreamHttpMethod": [ "GET" ,"POST", "PATCH"],
+      "UpstreamHttpMethod": [ "GET", "POST", "PATCH" ],
       "UpstreamPathTemplate": "/gtw/wallet/api/delegations/{everything}",
       "DownstreamPathTemplate": "/api/delegations/{everything}",
       "DownstreamScheme": "https",
