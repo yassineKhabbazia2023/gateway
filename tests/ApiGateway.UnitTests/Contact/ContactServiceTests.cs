@@ -14,6 +14,7 @@ public class ContactServiceTests
     [Fact]
     public async Task GetContactAsync_WhenContactReturnNotFoundError_ShouldReturnNull()
     {
+        var contactEmail = "jdoe@test.fr";
         var httpResponseMessage = new HttpResponseMessage()
         {
             StatusCode = HttpStatusCode.NotFound
@@ -30,13 +31,14 @@ public class ContactServiceTests
             ItExpr.IsAny<CancellationToken>())
            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
            {
+               var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
 
-        var result = await contactService.GetContactAsync("jdoe@test.fr");
+        var result = await contactService.GetContactAsync(contactEmail);
 
         mockContactOperationHandler.Verify();
         result.Should().BeNull();
@@ -45,22 +47,7 @@ public class ContactServiceTests
     [Fact]
     public async Task GetContactAsync_WhenContactApiResponseNotSuccessfull_ShouldReturnNull()
     {
-        var contact = new ApiGateway.Contact.Models.Contact()
-        {
-            Id = 1,
-            FirstName = "John",
-            LastName = "Doe",
-            Email = "jdoe@test.fr"
-        };
-
-        var pagedContact = new PagingResult()
-        {
-            Items = new List<ApiGateway.Contact.Models.Contact>()
-            {
-                contact
-            }
-        };
-
+        var contactEmail = "jdoe@test.fr";
         var httpResponseMessage = new HttpResponseMessage()
         {
             StatusCode = HttpStatusCode.BadRequest,
@@ -78,13 +65,14 @@ public class ContactServiceTests
             ItExpr.IsAny<CancellationToken>())
            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
            {
+               var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
 
-        var result = await contactService.GetContactAsync("jdoe@test.fr");
+        var result = await contactService.GetContactAsync(contactEmail);
 
         mockContactOperationHandler.Verify();
         result.Should().BeNull();
@@ -93,21 +81,7 @@ public class ContactServiceTests
     [Fact]
     public async Task GetContactAsync_WhenContactApiReturnNull_ShouldReturnNull()
     {
-        var contact = new ApiGateway.Contact.Models.Contact()
-        {
-            Id = 1,
-            FirstName = "John",
-            LastName = "Doe",
-            Email = "jdoe@test.fr"
-        };
-
-        var pagedContact = new PagingResult()
-        {
-            Items = new List<ApiGateway.Contact.Models.Contact>()
-            {
-                contact
-            }
-        };
+        var contactEmail = "jdoe@test.fr";
 
         var httpResponseMessage = new HttpResponseMessage()
         {
@@ -126,13 +100,14 @@ public class ContactServiceTests
             ItExpr.IsAny<CancellationToken>())
            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
            {
+               var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
 
-        var result = await contactService.GetContactAsync("jdoe@test.fr");
+        var result = await contactService.GetContactAsync(contactEmail);
 
         mockContactOperationHandler.Verify();
         result.Should().BeNull();
@@ -141,14 +116,7 @@ public class ContactServiceTests
     [Fact]
     public async Task GetContactAsync_WhenContactNotFound_ShouldReturnNull()
     {
-        var contact = new ApiGateway.Contact.Models.Contact()
-        {
-            Id = 1,
-            FirstName = "John",
-            LastName = "Doe",
-            Email = "jdoe@test.fr"
-        };
-
+        var contactEmail = "jdoe@test.fr";
         var pagedContact = new PagingResult()
         {
             Items = new List<ApiGateway.Contact.Models.Contact>()
@@ -174,15 +142,16 @@ public class ContactServiceTests
             ItExpr.IsAny<CancellationToken>())
            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
            {
+               var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
 
         Func<Task> act = async () =>
         {
-            await contactService.GetContactAsync("jdoe@test.fr");
+            await contactService.GetContactAsync(contactEmail);
         };
 
         await act.Should().ThrowAsync<ContactNotFoundException>();
@@ -193,12 +162,13 @@ public class ContactServiceTests
     [Fact]
     public async Task GetContactAsync_ShouldReturnContact()
     {
+        var contactEmail = "jdoe@test.fr";
         var contact = new ApiGateway.Contact.Models.Contact()
         {
             Id = 1,
             FirstName = "John",
             LastName = "Doe",
-            Email = "jdoe@test.fr"
+            Email = contactEmail
         };
 
         var pagedContact = new PagingResult()
@@ -229,13 +199,14 @@ public class ContactServiceTests
             ItExpr.IsAny<CancellationToken>())
            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
            {
+               var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be("/contacts?Type=Customer&Email=jdoe@test.fr");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
                 
-        var result = await contactService.GetContactAsync("jdoe@test.fr");
+        var result = await contactService.GetContactAsync(contactEmail);
 
         mockContactOperationHandler.Verify();
         result.Should().BeEquivalentTo(contact);

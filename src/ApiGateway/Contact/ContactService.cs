@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
+using System.Web;
 using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ApiGateway.Contact;
 
@@ -59,8 +59,11 @@ public class ContactService : IContactService
         return null;
     }
 
-    private string ContactUrl(string userEmail) =>
-        $"contacts?Type={GetUserType(userEmail)}&Email={userEmail}";
+    private string ContactUrl(string userEmail)
+    {
+        string encodedEmail = HttpUtility.UrlEncode(userEmail);
+        return $"contacts?Type={GetUserType(userEmail)}&Email={encodedEmail}";
+    }
 
     private static string GetUserType(string userEmail) =>
         userEmail.EndsWith("@kpmg.fr", StringComparison.OrdinalIgnoreCase) ? "Collaborator" : "Customer";
