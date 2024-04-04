@@ -6,7 +6,7 @@ namespace ApiGateway.Wallet;
 
 ///  Note: this controller is just for a template demo purpose. It should be fixed later 
 [ApiController]
-[Route("api/wallet")]
+[Route("gtw/wallet")]
 [Authorize]
 public class WalletController(
     IWalletService walletService)

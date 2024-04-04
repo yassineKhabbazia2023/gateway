@@ -9,7 +9,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace ApiGateway.Contact
 {
-    [Route("api/contact")]
+    [Route("gtw/contact")]
     [ApiController]
     [Authorize]
     public class ContactController : ControllerBase
