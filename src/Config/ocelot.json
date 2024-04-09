@@ -72,7 +72,8 @@
       ],
       "UpstreamHttpMethod": [
         "GET",
-        "POST"
+        "POST",
+        "PUT"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -141,7 +142,7 @@
     },
     {
       "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/favorites/{everything}",
+      "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -162,7 +163,7 @@
     },
     {
       "UpstreamPathTemplate": "/gtw/wallet/api/statistics/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/statistics/{everything}",
+      "DownstreamPathTemplate": "/api/statistics/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
