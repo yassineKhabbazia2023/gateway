@@ -5,6 +5,13 @@ parameters:
 - name: deployType
   type: string
   default: 'standard'
+# REC Iteration
+- name: iterations
+  type: object
+  default:
+  - 1
+  - 2
+  - 3
 
 stages:
 - stage: build
@@ -61,22 +68,30 @@ stages:
               parameters:
                 environment: itg01
                 subscription: PULSE-ITG
-- ${{ if or(and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')), and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'developToRec'))) }}:
-  - stage: deploy_REC
-    displayName: 'Recette'
-    pool: Pulse-rec01
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating config'
-      environment: REC
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
+- ${{ if and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')) }}:
+  - ${{ each index in parameters.iterations }}:
+    - stage: deploy_REC0${{ index }}
+      displayName: Recettee-rec0${{ index }}
+      pool: Pulse-rec0${{ index }}
+      ${{ if eq(parameters.devIndex, 0) }}:
+        dependsOn: Build
+      ${{ else }}:
+        dependsOn: deploy_DEV
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating REC0${{ index }} config'
+        environment: REC
+        variables:
+        - name: hubEnvironment
+          value: rec0${{ index }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
 
-            - template: update-config.yaml
-              parameters:
-                environment: rec01
-                subscription: PULSE-REC
+              - template: update-config.yaml
+                parameters:
+                  environment: $(hubEnvironment)
+                  subscription: PULSE-REC
