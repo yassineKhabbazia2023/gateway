@@ -308,6 +308,26 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+	{
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "UpstreamPathTemplate": "/gtw/wallet/api/permissions/256/services",
+      "DownstreamPathTemplate": "/api/permissions/256/services",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 80
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "SwaggerEndPoints": [
