@@ -33,7 +33,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -67,7 +67,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -102,7 +102,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -144,7 +144,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -201,7 +201,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Type=Customer&Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);

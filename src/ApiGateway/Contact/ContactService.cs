@@ -62,9 +62,6 @@ public class ContactService : IContactService
     private string ContactUrl(string userEmail)
     {
         string encodedEmail = HttpUtility.UrlEncode(userEmail);
-        return $"contacts?Type={GetUserType(userEmail)}&Email={encodedEmail}";
+        return $"contacts?Email={encodedEmail}";
     }
-
-    private static string GetUserType(string userEmail) =>
-        userEmail.EndsWith("@kpmg.fr", StringComparison.OrdinalIgnoreCase) ? "Collaborator" : "Customer";
 }
