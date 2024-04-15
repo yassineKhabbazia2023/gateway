@@ -6,12 +6,18 @@ parameters:
   type: string
   default: 'standard'
 # REC Iteration
-- name: iterations
+- name: recIterations
   type: object
   default:
   - 1
   - 2
   - 3
+# PRD Iteration
+- name: prdIterations
+  type: object
+  default:
+  - 1
+  - 2
 
 stages:
 - stage: build
@@ -69,9 +75,9 @@ stages:
                 environment: itg01
                 subscription: PULSE-ITG
 - ${{ if and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')) }}:
-  - ${{ each index in parameters.iterations }}:
+  - ${{ each index in parameters.recIterations }}:
     - stage: deploy_REC0${{ index }}
-      displayName: Recettee-rec0${{ index }}
+      displayName: Recette-rec0${{ index }}
       pool: Pulse-rec0${{ index }}
       ${{ if eq(parameters.devIndex, 0) }}:
         dependsOn: Build
@@ -80,7 +86,7 @@ stages:
       jobs:
       - deployment: deploy
         displayName: 'Updating REC0${{ index }} config'
-        environment: REC
+        environment: REC${{ index }}
         variables:
         - name: hubEnvironment
           value: rec0${{ index }}
@@ -95,3 +101,51 @@ stages:
                 parameters:
                   environment: $(hubEnvironment)
                   subscription: PULSE-REC
+  - ${{ each index in parameters.iterations }}:
+    - stage: deploy_PRD0${{ index }}
+      displayName: Production-prd0${{ index }}
+      pool: Pulse-prd0${{ index }}
+      dependsOn:
+      - REC1
+      - REC2
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating PRD0${{ index }} config'
+        environment: PRD${{ index }}
+        variables:
+        - name: hubEnvironment
+          value: prd0${{ index }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
+
+              - template: update-config.yaml
+                parameters:
+                  environment: $(hubEnvironment)
+                  subscription: PULSE-PRD
+  - stage: deploy_PPR01
+    displayName: Preproduction-J-1
+    pool: Pulse-ppr01
+    dependsOn:
+    - PRD1
+    jobs:
+    - deployment: deploy
+      displayName: 'Updating J-1 config'
+      environment: PPR1
+      variables:
+      - name: hubEnvironment
+        value: ppr01
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Module
+
+            - template: update-config.yaml
+              parameters:
+                environment: $(hubEnvironment)
+                subscription: PULSE-PPR

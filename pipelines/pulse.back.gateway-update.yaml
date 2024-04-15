@@ -1,4 +1,4 @@
-name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(SourceBranchName)
 
 trigger: none
 
