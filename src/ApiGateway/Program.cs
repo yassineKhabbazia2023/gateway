@@ -18,6 +18,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwaggerForOcelotUI(opt =>
     {
+        opt.ServerOcelot = "/desktop";
         opt.PathToSwaggerGenerator = "/swagger/docs";
     }, c =>
     {
@@ -29,6 +30,7 @@ else
 {
     app.UseSwaggerForOcelotUI(opt =>
     {
+        opt.ServerOcelot = "/desktop";
         opt.DownstreamSwaggerEndPointBasePath = "/desktop/swagger/docs";
     }, c =>
     {
