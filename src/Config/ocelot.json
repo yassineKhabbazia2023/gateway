@@ -370,7 +370,6 @@
         {
             "Key": "Account",
             "TransformByOcelotConfig": true,
-            "TakeServersFromDownstreamService": true,
             "Config": [
                 {
                     "Name": "Pulse.Back.Account",
@@ -382,7 +381,6 @@
         {
             "Key": "Offer",
             "TransformByOcelotConfig": true,
-            "TakeServersFromDownstreamService": true,
             "Config": [
                 {
                     "Name": "Pulse.Back.Offer",
@@ -394,7 +392,6 @@
         {
             "Key": "Contact",
             "TransformByOcelotConfig": true,
-            "TakeServersFromDownstreamService": true,
             "Config": [
                 {
                     "Name": "Pulse.Back.Contact",
