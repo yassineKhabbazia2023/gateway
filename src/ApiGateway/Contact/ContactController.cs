@@ -50,7 +50,7 @@ namespace ApiGateway.Contact
                 return this.BadRequest();
             }
 
-            ContactMeViewModel viewModelContactMe = new(contact.Id, contact.FirstName, contact.LastName, contact.Email, contact.LandPhone, contact.MobilePhone);
+            ContactMeViewModel viewModelContactMe = new(contact.Id, contact.FirstName, contact.LastName, contact.Email, contact.LandPhone, contact.MobilePhone, contact.Type);
          
             return Ok(viewModelContactMe);
         }
