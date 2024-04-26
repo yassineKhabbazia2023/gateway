@@ -1,6 +1,6 @@
 using ApiGateway.Exceptions;
 using Microsoft.Extensions.Configuration;
-using ApiGateway.Extensions;
+using ApiGateway.Helpers;
 
 namespace ApiGateway.UnitTests.Extensions
 {

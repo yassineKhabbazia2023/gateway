@@ -2,6 +2,7 @@
 using ApiGateway.Contact;
 using ApiGateway.Contact.Models;
 using ApiGateway.Extensions;
+using ApiGateway.Helpers;
 
 namespace ApiGateway.DelegatingHandlers;
 

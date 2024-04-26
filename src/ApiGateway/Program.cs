@@ -1,13 +1,17 @@
-using ApiGateway.Configuration;
 using ApiGateway.Contact;
 using ApiGateway.Extensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.FeatureManagement;
+using Ocelot.Authorization.Middleware;
 using Ocelot.Middleware;
+using Ocelot.Values;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiGatewayServices(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
+builder.Services.AddFeatureManagement();
 
 builder.Configuration.AddJsonConfiguration();
 
@@ -48,5 +52,12 @@ app.UseEndpoints(endpoints =>
 });
 
 app.UseSwagger();
-await app.UseOcelot();
+
+var config = new OcelotPipelineConfiguration
+{
+    AuthorizationMiddleware
+                = async (downStreamContext, next) =>
+                await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next)
+};
+await app.UseOcelot(config);
 app.Run();

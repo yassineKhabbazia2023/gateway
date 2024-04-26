@@ -2,18 +2,18 @@ using ApiGateway.Configuration;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Exceptions;
 
-namespace ApiGateway.Extensions;
+namespace ApiGateway.Helpers;
 
 public static class FileHelper
 {
     public static string GetOcelotConfigFullPathName(IConfiguration configuration)
     {
-        return Path.Combine( GetStoragePath(configuration), ConfigConstants.OcelotConfigFile);
+        return Path.Combine(GetStoragePath(configuration), ConfigConstants.OcelotConfigFile);
     }
 
     private static string GetStoragePath(IConfiguration configuration)
     {
-         var configFullPathName = configuration[ConfigConstants.OcelotConfigPath];
+        var configFullPathName = configuration[ConfigConstants.OcelotConfigPath];
         if (string.IsNullOrWhiteSpace(configFullPathName))
         {
             throw new InvalidConfigException(ConfigConstants.OcelotConfigPath);
@@ -23,6 +23,6 @@ public static class FileHelper
 
     public static string GetLiteDbDir(IConfiguration configuration)
     {
-        return Path.Combine( GetStoragePath(configuration),MocksConstants.FileDbName);
+        return Path.Combine(GetStoragePath(configuration), MocksConstants.FileDbName);
     }
 }

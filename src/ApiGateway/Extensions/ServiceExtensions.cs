@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
 using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
-using ApiGateway.Wallet;
+using ApiGateway.Helpers;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
@@ -21,13 +22,14 @@ public static class ServiceExtensions
     {
         // Add services to the container.
         services.AddScoped<IContactService, ContactService>();
+        services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
         services.AddScoped<ICacheService, CacheService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
         services.AddHealthChecks();
-        //TODO this should use a feature flag in order to disable or enable it  
+
         ConfigureMockService(services,configuration);
         AddSwaggerConfig(services, configuration);
 
@@ -35,18 +37,17 @@ public static class ServiceExtensions
             {
                 client.BaseAddress = new Uri(configuration["ContactApiUri"]!);
             })
-            .SetHandlerLifetime(TimeSpan.FromMinutes(5)) //Set lifetime to five minutes
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy());
 
-        services.AddHttpClient<IWalletService, WalletService>(client =>
-            {
-                client.BaseAddress = new Uri(configuration["WalletApiBaseUrl"]!);
-            })
-            .SetHandlerLifetime(TimeSpan.FromMinutes(5)) //Set lifetime to five minutes
-            .AddPolicyHandler(GetRetryPolicy());
+        services.AddHttpClient<IAuthorizationSevice, AuthorizationSevice>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["AuthorizationApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
 
         services.AddOcelot()
-            .AddDelegatingHandler<AuthorizationHandler>(true)
             .AddDelegatingHandler<ContactHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
     }

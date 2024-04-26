@@ -1,23 +1,24 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using ApiGateway.Extensions;
+using ApiGateway.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement;
 
 namespace ApiGateway.Mocks;
 
 [Route("api/ocelot-config")]
 [ApiController]
 [ExcludeFromCodeCoverage]
-//TODO this is a temporary solution to provide some flexibility for frontend 
-//TODO: Note it should not be delivered as it for Rec or prod Feature flag should excludes this  
-
-public class OcelotConfigurationController(IConfiguration configuration) : ControllerBase
+public class OcelotConfigurationController(IConfiguration configuration, IFeatureManager featureManager) : ControllerBase
 {
-   
-
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
-    { 
+    {
+        if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
+        {
+            return Forbid();
+        }
+
         if (!System.IO.File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)))
         {
             return NotFound("Ocelot configuration file not found.");
@@ -30,6 +31,11 @@ public class OcelotConfigurationController(IConfiguration configuration) : Contr
     [HttpPut]
     public async Task<IActionResult> UpdateOcelotConfig(dynamic updatedConfig)
     {
+        if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
+        {
+            return Forbid();
+        }
+
         string jsonContent = updatedConfig.ToString();
         try
         {
@@ -42,6 +48,4 @@ public class OcelotConfigurationController(IConfiguration configuration) : Contr
             return BadRequest($"Invalid JSON format: {ex.Message}");
         }
     }
-
-
 }
