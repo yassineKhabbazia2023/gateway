@@ -101,7 +101,7 @@ stages:
                 parameters:
                   environment: $(hubEnvironment)
                   subscription: PULSE-REC
-  - ${{ each index in parameters.iterations }}:
+  - ${{ each index in parameters.prdIterations }}:
     - stage: deploy_PRD0${{ index }}
       displayName: Production-prd0${{ index }}
       pool: Pulse-prd0${{ index }}
