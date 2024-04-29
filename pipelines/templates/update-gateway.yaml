@@ -30,7 +30,7 @@ stages:
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
 - ${{ if ne(parameters.devIndex, 0) }}:
-  - stage: deploy_DEV
+  - stage: DEV
     ${{ if lt(parameters.devIndex, 10) }}:
       displayName: 'Development-dev0${{ parameters.devIndex }}'
       pool: Pulse-dev0${{ parameters.devIndex }}
@@ -56,7 +56,7 @@ stages:
                   environment: dev${{ parameters.devIndex }}
                 subscription: PULSE-DEV
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
-  - stage: deploy_ITG
+  - stage: ITG
     displayName: 'Integration'
     pool: Pulse-itg01
     jobs:
@@ -76,13 +76,13 @@ stages:
                 subscription: PULSE-ITG
 - ${{ if and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')) }}:
   - ${{ each index in parameters.recIterations }}:
-    - stage: deploy_REC0${{ index }}
+    - stage: REC${{ index }}
       displayName: Recette-rec0${{ index }}
       pool: Pulse-rec0${{ index }}
       ${{ if eq(parameters.devIndex, 0) }}:
         dependsOn: Build
       ${{ else }}:
-        dependsOn: deploy_DEV
+        dependsOn: DEV
       jobs:
       - deployment: deploy
         displayName: 'Updating REC0${{ index }} config'
@@ -102,7 +102,7 @@ stages:
                   environment: $(hubEnvironment)
                   subscription: PULSE-REC
   - ${{ each index in parameters.prdIterations }}:
-    - stage: deploy_PRD0${{ index }}
+    - stage: PRD${{ index }}
       displayName: Production-prd0${{ index }}
       pool: Pulse-prd0${{ index }}
       dependsOn:
@@ -126,7 +126,7 @@ stages:
                 parameters:
                   environment: $(hubEnvironment)
                   subscription: PULSE-PRD
-  - stage: deploy_PPR01
+  - stage: PPR1
     displayName: Preproduction-J-1
     pool: Pulse-ppr01
     dependsOn:
