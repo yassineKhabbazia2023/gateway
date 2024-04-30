@@ -80,6 +80,23 @@
       }
     },
     {
+      "DownstreamPathTemplate": "/authorization/api/authorization/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
       "DownstreamPathTemplate": "/account/api/accounts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
