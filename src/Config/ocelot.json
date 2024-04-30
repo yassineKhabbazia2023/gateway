@@ -430,41 +430,52 @@
       }
     }
   ],
-    "SwaggerEndPoints": [
+  "SwaggerEndPoints": [
+    {
+      "Key": "Account",
+      "TransformByOcelotConfig": true,
+      "Config": [
         {
-            "Key": "Account",
-            "TransformByOcelotConfig": true,
-            "Config": [
-                {
-                    "Name": "Pulse.Back.Account",
-                    "Version": "v1",
-                    "Url": "https://fr#{env_id}#accapp01account.azurewebsites.net/account/api/v1/api.json"
-                }
-            ]
-        },
-        {
-            "Key": "Offer",
-            "TransformByOcelotConfig": true,
-            "Config": [
-                {
-                    "Name": "Pulse.Back.Offer",
-                    "Version": "v1",
-                    "Url": "https://fr#{env_id}#offapp01offer.azurewebsites.net/offer/api/v1/api.json"
-                }
-            ]
-        },
-        {
-            "Key": "Contact",
-            "TransformByOcelotConfig": true,
-            "Config": [
-                {
-                    "Name": "Pulse.Back.Contact",
-                    "Version": "v1",
-                    "Url": "https://fr#{env_id}#cntapp01contact.azurewebsites.net/contact/api/v1/api.json"
-                }
-            ]
+          "Name": "Pulse.Back.Account",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#accapp01account.azurewebsites.net/account/api/v1/api.json"
         }
-    ],
+      ]
+    },
+    {
+      "Key": "Offer",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Offer",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#offapp01offer.azurewebsites.net/offer/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "Contact",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Contact",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#cntapp01contact.azurewebsites.net/contact/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "Authorization",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Authorization",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#autapp01authorization.azurewebsites.net/authorization/api/v1/api.json"
+        }
+      ]
+    }
+  ],
     "GlobalConfiguration": {
         "BaseUrl": "https://api-#{env_id}#.#{env}#.kpmg-pulse.fr/desktop/api"
     }
