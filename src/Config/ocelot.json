@@ -428,6 +428,21 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/authentication/api/{everything}",
+      "DownstreamPathTemplate": "/api/authentication/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
     }
   ],
   "SwaggerEndPoints": [
