@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Text.Json;
 using ApiGateway.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,7 @@ public class OcelotConfigurationController(IConfiguration configuration, IFeatur
     {
         if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
         {
-            return Forbid();
+            return this.StatusCode((int)HttpStatusCode.Forbidden);
         }
 
         if (!System.IO.File.Exists(FileHelper.GetOcelotConfigFullPathName(configuration)))
@@ -33,7 +34,7 @@ public class OcelotConfigurationController(IConfiguration configuration, IFeatur
     {
         if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
         {
-            return Forbid();
+            return this.StatusCode((int)HttpStatusCode.Forbidden);
         }
 
         string jsonContent = updatedConfig.ToString();

@@ -1,16 +1,19 @@
+using System.Net;
 using System.Text;
 using ApiGateway.Mocks;
 using ApiGateway.Mocks.Models;
+using IdentityModel.OidcClient;
 using LiteDB;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement;
 
 namespace ApiGateway.UnitTests.Mocks;
 
 public class MocksControllerTests
 {
     [Fact]
-    public void GetMockIndex_WhenCalled_ReturnsOkResultWithMockIndexes()
+    public async void GetMockIndex_WhenCalled_ReturnsOkResultWithMockIndexes()
     {
         // Arrange
         var fixture = new Fixture();
@@ -25,10 +28,13 @@ public class MocksControllerTests
                 BsonAutoId.ObjectId))
             .Returns(mockCollection.Object);
 
-        var controller = new MocksController(mockDatabase.Object);
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
 
         // Act
-        var result = controller.GetMockIndex();
+        var result = await controller.GetMockIndex();
 
         // Assert
         result.Should()
@@ -38,12 +44,38 @@ public class MocksControllerTests
             .BeEquivalentTo(mockIndexes);
     }
 
+
+    [Fact]
+    public async void GetMockIndex_WhenFeatureGate_False_ReturnsForbidden()
+    {
+        // Arrange
+        var fixture = new Fixture();
+        var mockIndexes = fixture.CreateMany<MockIndexDoc>()
+            .ToList();
+        var mockDatabase = new Mock<ILiteDatabase>();
+        var mockCollection = new Mock<ILiteCollection<MockIndexDoc>>();
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+
+        // Act
+        var result = await controller.GetMockIndex() as StatusCodeResult;
+
+        // Assert
+        result!.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+    }
+
     [Fact]
     public async Task ModifyMockResponse_FileIsNotJson_ReturnsBadRequest()
     {
         // Arrange
         var mockDatabase = new Mock<ILiteDatabase>();
-        var controller = new MocksController(mockDatabase.Object);
+
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(_ => _.FileName)
             .Returns("invalid.txt"); // Ensure file extension is not .json
@@ -75,7 +107,11 @@ public class MocksControllerTests
     {
         // Arrange
         var mockDatabase = new Mock<ILiteDatabase>();
-        var controller = new MocksController(mockDatabase.Object);
+
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
         var invalidJsonContent = "Invalid JSON";
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.FileName)
@@ -119,8 +155,12 @@ public class MocksControllerTests
                 BsonAutoId.ObjectId))
             .Returns(mockCollection.Object);
 
-        var controller = new MocksController(mockDatabase.Object);
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
         var mockFile = new Mock<IFormFile>();
+
         mockFile.Setup(f => f.FileName)
             .Returns("valid.json");
         mockFile.Setup(f => f.OpenReadStream())
@@ -171,7 +211,10 @@ public class MocksControllerTests
                 BsonAutoId.ObjectId))
             .Returns(mockCollection.Object);
 
-        var controller = new MocksController(mockDatabase.Object);
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.FileName)
             .Returns("valid.json");
@@ -201,7 +244,33 @@ public class MocksControllerTests
             .Be("Mock response updated successfully.");
     }
 
+    [Fact]
+    public async Task ModifyMockResponse_WhenFeatureGate_False_ReturnsForbidden()
+    {
+        // Arrange
+        var mockDatabase = new Mock<ILiteDatabase>();
 
+        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
+        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
 
+        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+        var mockFile = new Mock<IFormFile>();
 
+        var request = new MockIndexRequest
+        {
+            DownstreamUri = "http://example.com",
+            HttpVerb = "GET"
+        };
+        var fileUpdate = new MockEntryFileUpdate
+        {
+            File = mockFile.Object
+        };
+
+        // Act
+        var result = await controller.ModifyMockResponse(request,
+            fileUpdate) as StatusCodeResult;
+
+        // Assert
+        result!.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+    }
 }

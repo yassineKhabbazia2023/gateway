@@ -2,6 +2,8 @@ using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Mocks.Models;
 using LiteDB;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement;
+using System.Net;
 
 namespace ApiGateway.Mocks;
 
@@ -9,17 +11,24 @@ namespace ApiGateway.Mocks;
 [Route("mocks")]
 public class MocksController : ControllerBase
 {
-    private readonly ILiteDatabase _database;
+    private readonly ILiteDatabase database;
+    private readonly IFeatureManager featureManager;
 
-    public MocksController(ILiteDatabase database)
+    public MocksController(ILiteDatabase database, IFeatureManager featureManager)
     {
-        _database = database;
+        this.database = database;
+        this.featureManager = featureManager;
     }
 
     [HttpGet("get-mock-index")]
-    public IActionResult GetMockIndex()
+    public async Task<IActionResult> GetMockIndex()
     {
-        var mockIndexCollection = _database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
+        if (!await featureManager!.IsEnabledAsync("Mocks"))
+        {
+            return this.StatusCode((int)HttpStatusCode.Forbidden);
+        }
+
+        var mockIndexCollection = this.database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
         var mockIndexes = mockIndexCollection.FindAll();
 
         return Ok(mockIndexes);
@@ -35,6 +44,11 @@ public class MocksController : ControllerBase
     public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request,
         [FromForm] MockEntryFileUpdate? fileUpdate)
     {
+        if (!await featureManager!.IsEnabledAsync("Mocks"))
+        {
+            return this.StatusCode((int)HttpStatusCode.Forbidden);
+        }
+
         if (fileUpdate?.File == null || request == null)
         {
             return BadRequest("Invalid mock response update provided.");
@@ -69,7 +83,7 @@ public class MocksController : ControllerBase
         };
         mockIndexDoc.Id = mockIndexDoc.GenerateId();
 
-        var mockIndexCollection = _database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
+        var mockIndexCollection = this.database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
         var existingDoc = mockIndexCollection.FindById(mockIndexDoc.Id);
         if (existingDoc != null)
         {
@@ -82,6 +96,4 @@ public class MocksController : ControllerBase
 
         return Ok("Mock response updated successfully.");
     }
-
-
 }
