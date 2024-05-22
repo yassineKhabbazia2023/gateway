@@ -431,8 +431,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/{everything}",
-      "DownstreamPathTemplate": "/api/authorization/{everything}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/{everything}",
+      "DownstreamPathTemplate": "/api/authorizations/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
