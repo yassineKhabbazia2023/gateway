@@ -544,6 +544,25 @@
       "UpstreamHttpMethod": [
         "PATCH"
       ]
+    },
+    {
+      "SwaggerKey": "Notifications",
+      "DownstreamPathTemplate": "/api/notifications/SendEmail",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#ntfapp01notifications.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/notifications/api/notifications/SendEmail",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "SwaggerEndPoints": [
@@ -588,6 +607,17 @@
           "Name": "Pulse.Back.Authorization",
           "Version": "v1",
           "Url": "https://fr#{env_id}#autapp01authorization.azurewebsites.net/authorization/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "Notifications",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Notifications",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#ntfapp01notifications.azurewebsites.net/api/api.json"
         }
       ]
     }
