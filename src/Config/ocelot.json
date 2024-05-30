@@ -2,7 +2,7 @@
   "Routes": [
     {
       "SwaggerKey": "Reporting",
-      "UpstreamPathTemplate": "/gtw/offer/api/reports/{everything}",
+      "UpstreamPathTemplate": "/gtw/reporting/api/reports/{everything}",
       "DownstreamPathTemplate": "/api/reports/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
