@@ -44,6 +44,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001"
       }
     },
     {
@@ -65,6 +68,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COINFO001,CLINFO001"
       }
     },
     {
@@ -86,6 +92,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COINFO001,CLINFO001"
       }
     },
     {
@@ -109,6 +118,11 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001, COOFF002, COOFF003, CLOFF001",
+        "POST": "COOFF001",
+        "PUT": "COOFF002"
       }
     },
     {
@@ -130,6 +144,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001"
       }
     },
     {
@@ -152,6 +169,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001, COINFO001, CLINFO001",
+        "PATCH": "COOFF001"
       }
     },
     {
@@ -238,6 +259,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001"
       }
     },
     {
@@ -324,6 +348,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI003"
       }
     },
     {
@@ -474,6 +501,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI003, CLUSER004",
+        "POST": "COADMI003, CLUSER004"
       }
     },
     {
