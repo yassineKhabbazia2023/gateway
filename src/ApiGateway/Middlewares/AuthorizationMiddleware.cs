@@ -79,7 +79,7 @@ public static class AuthorizationMiddleware
             return new List<string>();
         }
 
-        return claims.Split(',').ToList();
+        return claims.Split(',').Select(x => x.Trim()).ToList();
     }
 
     private static string ValidateUserIdentity(HttpContext httpContext)
