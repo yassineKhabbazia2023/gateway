@@ -557,20 +557,6 @@
       }
     },
     {
-      "UpstreamPathTemplate": "/gtw/authentication/api/cgu/accept-terms",
-      "DownstreamPathTemplate": "/api/cgu/accept-terms",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 80
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "PATCH"
-      ]
-    },
-    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/account/api/customers/{everything}",
       "DownstreamPathTemplate": "/api/customers/{everything}",
@@ -624,6 +610,7 @@
       ]
     },
     {
+      "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/terms/latest",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest",
       "UpstreamHttpMethod": [ "GET" ],
