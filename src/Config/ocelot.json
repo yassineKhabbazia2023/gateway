@@ -662,7 +662,7 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/terms/latest",
+      "DownstreamPathTemplate": "/api/terms/latest",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest",
       "UpstreamHttpMethod": [ "GET" ],
       "DownstreamScheme": "https",
@@ -675,7 +675,7 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/terms/latest/content",
+      "DownstreamPathTemplate": "/api/terms/latest/content",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest/content",
       "UpstreamHttpMethod": [ "GET" ],
       "DownstreamScheme": "https",
