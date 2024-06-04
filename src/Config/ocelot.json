@@ -644,24 +644,6 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/{contactId}/terms",
-      "UpstreamPathTemplate": "/gtw/authentication/api/contacts/currentuser/terms",
-      "UpstreamHttpMethod": [ "GET", "PATCH" ],
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/terms/latest",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest",
       "UpstreamHttpMethod": [ "GET" ],
