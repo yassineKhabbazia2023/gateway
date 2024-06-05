@@ -172,7 +172,6 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, COINFO001, CLINFO001",
         "PATCH": "COOFF001"
       }
     },
