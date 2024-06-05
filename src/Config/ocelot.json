@@ -27,6 +27,54 @@
       }
     },
     {
+      "SwaggerKey": "Reporting",
+      "UpstreamPathTemplate": "/gtw/reporting/api/reporttype/{everything}",
+      "DownstreamPathTemplate": "/api/reporttype/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#rptapp01reporting.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLRAPP001,CORAP001"
+      }
+    },
+    {
+      "SwaggerKey": "Reporting",
+      "UpstreamPathTemplate": "/gtw/reporting/api/account/{everything}",
+      "DownstreamPathTemplate": "/api/account/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#rptapp01reporting.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLRAPP001,CORAP001"
+      }
+    },
+    {
       "SwaggerKey": "Offer",
       "UpstreamPathTemplate": "/gtw/offer/api/offers/{everything}",
       "DownstreamPathTemplate": "/api/offers/{everything}",
