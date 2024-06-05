@@ -45,7 +45,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
+      }
       //"RouteClaimsRequirement": {
       //  "GET": "CLRAPP001,CORAP001"
       //}
@@ -69,7 +69,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
+      }
       //"RouteClaimsRequirement": {
       //  "GET": "CLRAPP001,CORAP001"
       //}
