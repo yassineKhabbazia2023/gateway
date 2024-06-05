@@ -20,11 +20,11 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "CLRAPP001,CORAP001",
-        "POST": "CORAP001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "CLRAPP001,CORAP001",
+      //  "POST": "CORAP001"
+      //}
     },
     {
       "SwaggerKey": "Reporting",
@@ -46,9 +46,9 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "RouteClaimsRequirement": {
-        "GET": "CLRAPP001,CORAP001"
-      }
+      //"RouteClaimsRequirement": {
+      //  "GET": "CLRAPP001,CORAP001"
+      //}
     },
     {
       "SwaggerKey": "Reporting",
@@ -70,9 +70,9 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "RouteClaimsRequirement": {
-        "GET": "CLRAPP001,CORAP001"
-      }
+      //"RouteClaimsRequirement": {
+      //  "GET": "CLRAPP001,CORAP001"
+      //}
     },
     {
       "SwaggerKey": "Offer",
@@ -93,10 +93,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COOFF001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COOFF001"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -117,10 +117,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COINFO001,CLINFO001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COINFO001,CLINFO001"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -141,10 +141,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COINFO001,CLINFO001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COINFO001,CLINFO001"
+      //}
     },
     {
       "SwaggerKey": "Offer",
@@ -167,12 +167,12 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COOFF001, COOFF002, COOFF003, CLOFF001",
-        "POST": "COOFF001",
-        "PUT": "COOFF002"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COOFF001, COOFF002, COOFF003, CLOFF001",
+      //  "POST": "COOFF001",
+      //  "PUT": "COOFF002"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -193,10 +193,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COOFF001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COOFF001"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -218,10 +218,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "PATCH": "COOFF001"
       }
+      //"RouteClaimsRequirement": {
+      //  "PATCH": "COOFF001"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -307,10 +307,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COOFF001"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COOFF001"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -396,10 +396,10 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COADMI003"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COADMI003"
+      //}
     },
     {
       "SwaggerKey": "Account",
@@ -549,11 +549,11 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COADMI003, CLUSER004, COUSER001",
-        "POST": "COADMI003, CLUSER004"
       }
+      //"RouteClaimsRequirement": {
+      //  "GET": "COADMI003, CLUSER004",
+      //  "POST": "COADMI003, CLUSER004"
+      //}
     },
     {
       "SwaggerKey": "Contact",
