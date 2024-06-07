@@ -674,6 +674,25 @@
           "Port": 443
         }
       ]
+    },
+    {
+      "SwaggerKey": "Contact",
+      "DownstreamPathTemplate": "/api/contacts/{contactId}/terms",
+      "UpstreamPathTemplate": "/gtw/contact/api/contacts/{contactId}/terms",
+      "UpstreamHttpMethod": [ "GET", "PATCH" ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "SwaggerEndPoints": [
