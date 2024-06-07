@@ -80,7 +80,7 @@ public class ContactHandler : DelegatingHandler
         // (IContactService, a scoped service) into a component that has an application-wide lifespan (our ContactHandler, a singleton).
         var scope = _serviceProviderFactory.CreateScope();
         var cacheService = scope.ServiceProvider.GetRequiredService<ICacheService>();
-        var contactId = await cacheService.GetAsync(async);
+        var contactId = await cacheService.GetAsync(userEmail);
         if (string.IsNullOrWhiteSpace(contactId))
         {
             var contactService = scope.ServiceProvider.GetRequiredService<IContactService>();
