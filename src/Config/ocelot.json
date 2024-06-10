@@ -800,7 +800,7 @@
         {
           "Name": "Pulse.Back.Reporting",
           "Version": "v1",
-          "Url": "https://fr#{env_id}#rptapp01reporting.azurewebsites.net/api/api.json"
+          "Url": "https://fr#{env_id}#rptapp01reporting.azurewebsites.net/reporting/api/v1/api.json"
         }
       ]
     }
