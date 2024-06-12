@@ -8,6 +8,10 @@ namespace ApiGateway.Account;
 public class AccountService : IAccountService
 {
     private readonly HttpClient _httpClient;
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     public AccountService(HttpClient httpClient)
     {
@@ -23,7 +27,7 @@ public class AccountService : IAccountService
             var stream = await response.Content.ReadAsStreamAsync();
             try
             {
-                toReturn = JsonSerializer.Deserialize<Paging<Models.Account>>(stream) ?? toReturn;
+                toReturn = JsonSerializer.Deserialize<Paging<Models.Account>>(stream, _jsonSerializerOptions) ?? toReturn;
             }
             catch (Exception)
             {
