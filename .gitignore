@@ -365,3 +365,4 @@ FodyWeavers.xsd
 src/ApiGateway/mocks.db
 /.vscode/launch.json
 nuget.config
+.vscode/tasks.json

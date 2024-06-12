@@ -4,6 +4,7 @@ using ApiGateway.Contact;
 using ApiGateway.Helpers;
 using Ocelot.Authorization;
 using System.Text.RegularExpressions;
+using ApiGateway.Account;
 
 namespace ApiGateway.Middlewares;
 
@@ -11,13 +12,6 @@ public static class AuthorizationMiddleware
 {
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
-        var requiredClaims = ValidateRequireClaim(httpContext);
-        if (requiredClaims.Count == 0)
-        {
-            await next.Invoke();
-            return;
-        }
-
         var userEmail = ValidateUserIdentity(httpContext);
         if (string.IsNullOrWhiteSpace(userEmail))
         {
@@ -34,6 +28,24 @@ public static class AuthorizationMiddleware
         }
 
         int? accountId = ValidateAccountId(httpContext);
+        if (accountId.HasValue)
+        {
+            var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
+            var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
+            if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
+            {
+                ForbiddenAccount(httpContext, accountId.Value);
+                return;
+            }
+        }
+
+        var requiredClaims = ValidateRequireClaim(httpContext);
+        if (requiredClaims.Count == 0)
+        {
+            await next.Invoke();
+            return;
+        }
+
         var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
         var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
 
@@ -103,5 +115,12 @@ public static class AuthorizationMiddleware
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
         httpContext.Items.SetError(new UnauthorizedError(
                            $"{httpContext!.User!.Identity!.Name} unable to access {downstreamRoute.UpstreamPathTemplate.OriginalValue}"));
+    }
+
+    private static void ForbiddenAccount(HttpContext httpContext, int accountId)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+        httpContext.Items.SetError(new UnauthorizedError(
+                           $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
     }
 }
