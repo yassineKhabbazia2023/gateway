@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using ApiGateway.Account;
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
@@ -23,6 +24,7 @@ public static class ServiceExtensions
         // Add services to the container.
         services.AddScoped<IContactService, ContactService>();
         services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
+        services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICacheService, CacheService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
@@ -43,6 +45,13 @@ public static class ServiceExtensions
         services.AddHttpClient<IAuthorizationSevice, AuthorizationSevice>(client =>
         {
             client.BaseAddress = new Uri(configuration["AuthorizationApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
+        services.AddHttpClient<IAccountService, AccountService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["AccountApiUri"]!);
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());

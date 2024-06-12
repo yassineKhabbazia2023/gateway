@@ -24,10 +24,12 @@ public class ContactHandler : DelegatingHandler
     CancellationToken cancellationToken)
     {
         var contactId = await GetCurrentUser(request);
+        var contactEmail = GetUserEmail(request);
 
         if (!string.IsNullOrWhiteSpace(contactId))
         {
             request.Headers.Add("CurrentUser", contactId);
+            request.Headers.Add("ContactEmail", contactEmail);
 
             // Pour les routes qui contiennent le segment /currentuser et qui préfèrent ne pas utiliser le header.
             if (request.ShouldSetContactId())
@@ -39,6 +41,21 @@ public class ContactHandler : DelegatingHandler
         return await base.SendAsync(request,
             cancellationToken);
     }
+
+    private string GetUserEmail(HttpRequestMessage request)
+    {
+        var token = JwtHelper.ExtractBearerToken(request);
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _logger.LogWarning("Le jeton d'authentification (bearer token) est absent de l'en-tête de la requête : {downstream}", request.RequestUri);
+            return null;
+        }
+
+        var userEmail = JwtHelper.ExtractUserEmailFromToken(token);
+
+        return userEmail;
+    } 
 
     public async Task<string?> GetCurrentUser(HttpRequestMessage request)
     {
