@@ -495,8 +495,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/{everything}",
-      "DownstreamPathTemplate": "/api/authorizations/{everything}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/authorizations/configuration/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -514,6 +514,51 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/currentuser?accountId={xyz}",
+      "DownstreamPathTemplate": "/api/authorizations/configuration/currentuser?accountId={xyz}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "Normal"
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/folderSetting/{abc}/accounts/{xyz}/ged-authorization",
+      "DownstreamPathTemplate": "/api/folderSetting/{abc}/accounts/{xyz}/ged-authorization",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#gedapp01fakecustomer.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "Ged"
     },
     {
       "SwaggerKey": "Contact",
@@ -736,6 +781,16 @@
           "GIGYA MyPulse v2"
         ]
       }
+    }
+  ],
+  "Aggregates": [
+    {
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/all?contactId={abc}&accountId={xyz}",
+      "RouteKeys": [
+        "Normal",
+        "Ged"
+      ],
+      "Aggregator": "PermissionAggregator"
     }
   ],
   "SwaggerEndPoints": [
