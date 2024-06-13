@@ -544,7 +544,8 @@
       ],
       "UpstreamHttpMethod": [
         "POST",
-        "DELETE"
+        "DELETE",
+        "PATCH"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
