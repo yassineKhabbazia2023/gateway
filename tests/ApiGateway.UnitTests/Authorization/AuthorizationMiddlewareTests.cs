@@ -121,6 +121,11 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockAuthorizationService.Object)
             .BuildServiceProvider();
 
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+        .Callback<string>(email => email.Equals(contactEmail))
+        .Returns(Task.FromResult<string>(null!)!)
+        .Verifiable();
+
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 

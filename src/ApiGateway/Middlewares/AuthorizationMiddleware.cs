@@ -13,22 +13,43 @@ public static class AuthorizationMiddleware
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
         var userEmail = ValidateUserIdentity(httpContext);
-        if (string.IsNullOrWhiteSpace(userEmail))
-        {
-            ForbiddenRequest(httpContext);
-            return;
-        }
-
         var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
         var contactId = await contactService!.GetContactIdAsync(userEmail);
-        if (string.IsNullOrWhiteSpace(contactId))
+        var requiredClaims = ValidateRequireClaim(httpContext);
+        int? accountId = ValidateAccountId(httpContext);
+        
+        if (requiredClaims.Count == 0 && !accountId.HasValue)
         {
-            ForbiddenRequest(httpContext);
+            await next.Invoke();
             return;
         }
 
-        int? accountId = ValidateAccountId(httpContext);
-        if (accountId.HasValue)
+        if (requiredClaims.Count != 0)
+        {
+            if (string.IsNullOrWhiteSpace(userEmail))
+            {
+                ForbiddenRequest(httpContext);
+                return;
+            }
+
+
+            if (string.IsNullOrWhiteSpace(contactId))
+            {
+                ForbiddenRequest(httpContext);
+                return;
+            }
+
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+
+            if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
+            {
+                ForbiddenRequest(httpContext);
+                return;
+            }
+        }
+
+        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
             var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
             var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
@@ -37,22 +58,6 @@ public static class AuthorizationMiddleware
                 ForbiddenAccount(httpContext, accountId.Value);
                 return;
             }
-        }
-
-        var requiredClaims = ValidateRequireClaim(httpContext);
-        if (requiredClaims.Count == 0)
-        {
-            await next.Invoke();
-            return;
-        }
-
-        var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-        var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
-
-        if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
-        {
-            ForbiddenRequest(httpContext);
-            return;
         }
 
         await next.Invoke();
