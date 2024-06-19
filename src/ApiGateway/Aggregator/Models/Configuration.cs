@@ -2,7 +2,7 @@
 
 namespace ApiGateway.Aggregator.Models
 {
-    public class Permission
+    public class Configuration
     {
         [JsonPropertyName("category")]
         public required string Category { get; set; }

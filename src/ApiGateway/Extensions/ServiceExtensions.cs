@@ -59,6 +59,7 @@ public static class ServiceExtensions
 
         services.AddOcelot()
             .AddDelegatingHandler<ContactHandler>(true)
+            .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
     }

@@ -9,18 +9,18 @@ using System.Net.Http.Headers;
 
 namespace ApiGateway.Aggregrator
 {
-    public class PermissionAggregator : IDefinedAggregator
+    public class ConfigurationAggregator : IDefinedAggregator
     {
         public async Task<DownstreamResponse> Aggregate(List<HttpContext> responses)
         {
             var responsesDownstream = responses.Select(x => x.Items.DownstreamResponse()).ToArray();
 
-            var result = new List<string>();
+            var result = new List<Aggregator.Models.Configuration>();
             foreach (var response in responsesDownstream)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var permissions = JsonConvert.DeserializeObject<List<string>>(content);
-                result.AddRange(permissions!);
+                var configurations = JsonConvert.DeserializeObject<List<Aggregator.Models.Configuration>>(content);
+                Merge(configurations!, result);
             }
 
             return new DownstreamResponse(
@@ -28,6 +28,24 @@ namespace ApiGateway.Aggregrator
                 HttpStatusCode.OK,
                 responsesDownstream.SelectMany(x => x.Headers).ToList(),
                 "reason");
+        }
+
+        private void Merge(List<Aggregator.Models.Configuration> src, List<Aggregator.Models.Configuration> destination)
+        {
+            foreach (var s in src)
+            {
+                var d = destination.FirstOrDefault(x => x.Category == s.Category);
+                if (d == null)
+                {
+                    destination.Add(s);
+                }
+                else
+                {
+                    var l = d.Actions.ToList();
+                    l.AddRange(d.Actions);
+                    d.Actions = l;
+                }
+            }
         }
     }
 }

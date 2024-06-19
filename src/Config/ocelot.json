@@ -474,8 +474,29 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/authorization/currentuser/{everything}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/{everything}",
+      "DownstreamPathTemplate": "/api/authorizations/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/authorizations/currentuser/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -495,8 +516,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/authorizations/configuration/currentuser/{everything}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/accounts/{xyz}/contacts/{abc}",
+      "DownstreamPathTemplate": "/api/authorizations/configuration?accountId={xyz}&contactId={abc}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -505,30 +526,7 @@
         }
       ],
       "UpstreamHttpMethod": [
-        "GET",
-        "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/currentuser?accountId={xyz}",
-      "DownstreamPathTemplate": "/api/authorizations/configuration/currentuser?accountId={xyz}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET",
-        "POST"
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -536,11 +534,11 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "Normal"
+      "Key": "NormalConfiguration"
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/folderSetting/{abc}/accounts/{xyz}/ged-authorization",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-authorization",
       "DownstreamPathTemplate": "/api/folderSetting/{abc}/accounts/{xyz}/ged-authorization",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -558,7 +556,51 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "Ged"
+      "Key": "GedConfiguration"
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/accounts/{xyz}/contacts/{abc}",
+      "DownstreamPathTemplate": "/api/authorizations?accountId={xyz}&contactId={abc}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "NormalPermission"
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/folderSetting/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "DownstreamPathTemplate": "/api/folderSetting/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#gedapp01fakecustomer.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "GedPermission"
     },
     {
       "SwaggerKey": "Contact",
@@ -687,7 +729,9 @@
         }
       ],
       "UpstreamPathTemplate": "/gtw/notifications/api/notifications/SendEmail",
-      "UpstreamHttpMethod": [ "POST" ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
           "AAD",
@@ -699,7 +743,9 @@
       "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/terms/latest",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest",
-      "UpstreamHttpMethod": [ "GET" ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -712,7 +758,9 @@
       "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/terms/latest/content",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest/content",
-      "UpstreamHttpMethod": [ "GET" ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -725,7 +773,10 @@
       "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/contacts/{contactId}/terms",
       "UpstreamPathTemplate": "/gtw/contact/api/contacts/{contactId}/terms",
-      "UpstreamHttpMethod": [ "GET", "PATCH" ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "PATCH"
+      ],
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -785,10 +836,18 @@
   ],
   "Aggregates": [
     {
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/all?contactId={abc}&accountId={xyz}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}&accountId={xyz}",
       "RouteKeys": [
-        "Normal",
-        "Ged"
+        "NormalConfiguration",
+        "GedConfiguration"
+      ],
+      "Aggregator": "ConfigurationAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations?contactId={abc}&accountId={xyz}",
+      "RouteKeys": [
+        "NormalPermission",
+        "GedPermission"
       ],
       "Aggregator": "PermissionAggregator"
     }
