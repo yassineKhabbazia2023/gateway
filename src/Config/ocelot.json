@@ -587,8 +587,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-authorization",
-      "DownstreamPathTemplate": "/api/folderSetting/{abc}/accounts/{xyz}/ged-authorization",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "DownstreamPathTemplate": "/api/accounts/{xyz}/contacts/{abc}/ged-settings",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -631,8 +631,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/folderSetting/accounts/{xyz}/contacts/{abc}/ged-settings",
-      "DownstreamPathTemplate": "/api/folderSetting/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-actions",
+      "DownstreamPathTemplate": "/api/accounts/{xyz}/contacts/{abc}/ged-actions",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
