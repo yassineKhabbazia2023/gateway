@@ -5,6 +5,7 @@ using ApiGateway.Helpers;
 using Ocelot.Authorization;
 using System.Text.RegularExpressions;
 using ApiGateway.Account;
+using ApiGateway.Constants;
 
 namespace ApiGateway.Middlewares;
 
@@ -17,26 +18,41 @@ public static class AuthorizationMiddleware
         var contactId = await contactService!.GetContactIdAsync(userEmail);
         var requiredClaims = ValidateRequireClaim(httpContext);
         int? accountId = ValidateAccountId(httpContext);
-        
+
         if (requiredClaims.Count == 0 && !accountId.HasValue)
         {
             await next.Invoke();
             return;
         }
 
+        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
+        {
+            return;
+        }
+
+        if (!await CheckRoles(accountId, contactId, httpContext))
+        {
+            return;
+        }
+
+        await next.Invoke();
+    };
+
+    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
+    {
         if (requiredClaims.Count != 0)
         {
             if (string.IsNullOrWhiteSpace(userEmail))
             {
                 ForbiddenRequest(httpContext);
-                return;
+                return false;
             }
 
 
             if (string.IsNullOrWhiteSpace(contactId))
             {
                 ForbiddenRequest(httpContext);
-                return;
+                return false;
             }
 
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
@@ -45,23 +61,33 @@ public static class AuthorizationMiddleware
             if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
             {
                 ForbiddenRequest(httpContext);
-                return;
+                return false;
             }
         }
 
+        return true;
+    }
+
+    private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext)
+    {
         if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
-            var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
-            var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
-            if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+            if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
             {
-                ForbiddenAccount(httpContext, accountId.Value);
-                return;
+                var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
+                var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
+                if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
+                {
+                    ForbiddenAccount(httpContext, accountId.Value);
+                    return false;
+                }
             }
         }
 
-        await next.Invoke();
-    };
+        return true;
+    }
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
