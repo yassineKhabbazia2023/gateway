@@ -903,7 +903,7 @@
       "Aggregator": "ConfigurationAggregator"
     },
     {
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations?contactId={abc}&accountId={xyz}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization?contactId={abc}&accountId={xyz}",
       "RouteKeys": [
         "NormalPermission",
         "GedPermission"
