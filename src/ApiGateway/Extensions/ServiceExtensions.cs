@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ApiGateway.Account;
+using ApiGateway.Aggregrator;
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
@@ -58,6 +59,8 @@ public static class ServiceExtensions
 
         services.AddOcelot()
             .AddDelegatingHandler<ContactHandler>(true)
+            .AddTransientDefinedAggregator<ConfigurationAggregator>()
+            .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
     }
 

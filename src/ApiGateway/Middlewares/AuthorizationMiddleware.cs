@@ -4,6 +4,8 @@ using ApiGateway.Contact;
 using ApiGateway.Helpers;
 using Ocelot.Authorization;
 using System.Text.RegularExpressions;
+using ApiGateway.Account;
+using ApiGateway.Constants;
 
 namespace ApiGateway.Middlewares;
 
@@ -11,40 +13,81 @@ public static class AuthorizationMiddleware
 {
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
+        var userEmail = ValidateUserIdentity(httpContext);
+        var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
+        var contactId = await contactService!.GetContactIdAsync(userEmail);
         var requiredClaims = ValidateRequireClaim(httpContext);
-        if (requiredClaims.Count == 0)
+        int? accountId = ValidateAccountId(httpContext);
+
+        if (requiredClaims.Count == 0 && !accountId.HasValue)
         {
             await next.Invoke();
             return;
         }
 
-        var userEmail = ValidateUserIdentity(httpContext);
-        if (string.IsNullOrWhiteSpace(userEmail))
+        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
         {
-            ForbiddenRequest(httpContext);
             return;
         }
 
-        var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
-        var contactId = await contactService!.GetContactIdAsync(userEmail);
-        if (string.IsNullOrWhiteSpace(contactId))
+        if (!await CheckRoles(accountId, contactId, httpContext))
         {
-            ForbiddenRequest(httpContext);
-            return;
-        }
-
-        int? accountId = ValidateAccountId(httpContext);
-        var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-        var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
-
-        if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
-        {
-            ForbiddenRequest(httpContext);
             return;
         }
 
         await next.Invoke();
     };
+
+    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
+    {
+        if (requiredClaims.Count != 0)
+        {
+            if (string.IsNullOrWhiteSpace(userEmail))
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+
+
+            if (string.IsNullOrWhiteSpace(contactId))
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+
+            if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext)
+    {
+        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
+        {
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+            if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
+            {
+                var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
+                var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
+                if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
+                {
+                    ForbiddenAccount(httpContext, accountId.Value);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
@@ -103,5 +146,12 @@ public static class AuthorizationMiddleware
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
         httpContext.Items.SetError(new UnauthorizedError(
                            $"{httpContext!.User!.Identity!.Name} unable to access {downstreamRoute.UpstreamPathTemplate.OriginalValue}"));
+    }
+
+    private static void ForbiddenAccount(HttpContext httpContext, int accountId)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+        httpContext.Items.SetError(new UnauthorizedError(
+                           $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
     }
 }

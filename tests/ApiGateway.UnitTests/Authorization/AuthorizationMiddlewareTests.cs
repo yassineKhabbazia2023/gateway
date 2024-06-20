@@ -14,6 +14,8 @@ using System;
 using Ocelot.Configuration;
 using Ocelot.Values;
 using System.Net;
+using ApiGateway.Account;
+using ApiGateway.Models;
 
 namespace ApiGateway.UnitTests.Authorization;
 
@@ -21,11 +23,13 @@ public class AuthorizationMiddlewareTests
 {
     private readonly Mock<IContactService> _mockContactService;
     private readonly Mock<IAuthorizationSevice> _mockAuthorizationService;
+    private readonly Mock<IAccountService> _mockAccountService;
 
     public AuthorizationMiddlewareTests()
     {
         _mockContactService = new Mock<IContactService>(MockBehavior.Strict);
         _mockAuthorizationService = new Mock<IAuthorizationSevice>(MockBehavior.Strict);
+        _mockAccountService = new Mock<IAccountService>();
     }
 
     [Fact]
@@ -85,6 +89,9 @@ public class AuthorizationMiddlewareTests
            .AddSingleton(_mockAuthorizationService.Object)
            .BuildServiceProvider();
 
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+                    .ReturnsAsync("90")
+                    .Verifiable();
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
@@ -113,6 +120,11 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+        .Callback<string>(email => email.Equals(contactEmail))
+        .Returns(Task.FromResult<string>(null!)!)
+        .Verifiable();
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -257,6 +269,144 @@ public class AuthorizationMiddlewareTests
         return httpContext;
     }
 
+    [Fact]
+    public async Task AuthorizationFilter_WhenHasRelatedAccounts_ShouldAllowAccess()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        var toReturn = new Paging<Models.Account>
+        {
+            Items = { new Models.Account { AccountId = 1 } }
+        };
+
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenNoRelatedAccounts_ShouldReturnForbiddenRequest()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        var toReturn = new Paging<Models.Account>();
+
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
+        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+    }
+    [Fact]
+    public async Task AuthorizationFilter_WhenNoRelatedAccounts_ShouldAllowRequest_GivenNoCheckPermissions()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COOFF002" })
+            .Verifiable();
+
+        var toReturn = new Paging<Models.Account>();
+
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenNoAccountId_ShouldAllowAccess()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/dummy";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+    }
     private static string GenerateDummyJwtToken(string userEmail)
     {
         var header = Base64UrlEncode("{\"alg\":\"none\",\"typ\":\"JWT\"}");
