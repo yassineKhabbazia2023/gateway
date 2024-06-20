@@ -609,8 +609,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/accounts/{xyz}/contacts/{abc}",
-      "DownstreamPathTemplate": "/api/authorizations?accountId={xyz}&contactId={abc}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/accounts/{xyz}/contacts/{abc}",
+      "DownstreamPathTemplate": "/api/authorization?accountId={xyz}&contactId={abc}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
