@@ -73,7 +73,7 @@ public static class AuthorizationMiddleware
         if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), GlobalsConstants.CollaboratorAccountId);
             if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
             {
                 var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
