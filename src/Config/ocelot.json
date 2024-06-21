@@ -514,7 +514,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COUSER001, COUSER002",
+        "GET": "COUSER001, COUSER002, COGES001",
         "DELETE": "COUSER001, COUSER002"
       }
     },
