@@ -689,7 +689,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001"
+        "GET": "COOFF001, CLUSER001, COUSER001, CLUSER004"
       }
     },
     {
