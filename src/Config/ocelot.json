@@ -222,7 +222,6 @@
       ],
       "UpstreamHttpMethod": [
         "GET",
-        "PATCH"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -231,7 +230,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "CLUSER001"
+        "GET": "CLUSER001, COUSER001, COADMI001, COUSER002"
       }
     },
     {
