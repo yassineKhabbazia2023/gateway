@@ -211,6 +211,31 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/contacts/{everything",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLUSER001"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
       "DownstreamPathTemplate": "/api/accounts/{everything}",
       "DownstreamScheme": "https",
