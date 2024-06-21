@@ -206,7 +206,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "CLUSER001, COUSER001, COADMI001, COUSER002"
+        "GET": "CLUSER001, COUSER001, COADMI001, COUSER002, CLADMI001"
       }
     },
     {
@@ -231,7 +231,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, COINFO001, COOFF002, COUSER001, CLINFO001",
+        "GET": "COOFF001, COINFO001, COOFF002, COUSER001, CLINFO001, CLADMI001",
         "PATCH": "COOFF001"
       }
     },
@@ -322,7 +322,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, COUSER002, COUSER001"
+        "GET": "COOFF001, COUSER002, COUSER001, CLADMI001, CLUSER001"
       }
     },
     {
@@ -371,8 +371,8 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COUSER002, CLUSER001",
-        "PATCH": "CLUSER004, COADMI003"
+        "GET": "COUSER002, CLUSER001, CLADMI001",
+        "PATCH": "CLUSER004, COADMI003, CLADMI001"
       }
     },
     {
@@ -397,7 +397,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI001, COADMI002, COADMI003",
+        "GET": "COADMI001, COADMI002, COADMI003, CLADMI001, CLUSER001",
         "PATCH": "COADMI003"
       }
     },
@@ -711,7 +711,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, CLUSER001, COUSER001, CLUSER004"
+        "GET": "COOFF001, CLUSER001, COUSER001, CLUSER004, CLADMI001"
       }
     },
     {
