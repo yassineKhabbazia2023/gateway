@@ -1,7 +1,9 @@
 ﻿// Global using directives
 
 using ApiGateway.Aggregator.Models;
+using ApiGateway.Constants;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Ocelot.Middleware;
 using Ocelot.Multiplexer;
 using System.Net;
@@ -24,7 +26,7 @@ namespace ApiGateway.Aggregrator
             }
 
             return new DownstreamResponse(
-                new StringContent(JsonConvert.SerializeObject(result), new MediaTypeHeaderValue("application/json")),
+                new StringContent(JsonConvert.SerializeObject(result, GlobalsConstants.JsonSerializerSettings), new MediaTypeHeaderValue("application/json")),
                 HttpStatusCode.OK,
                 responsesDownstream.SelectMany(x => x.Headers).ToList(),
                 "reason");
@@ -45,12 +47,6 @@ namespace ApiGateway.Aggregrator
                     l.AddRange(d.Actions);
                     d.Actions = l;
                 }
-            }
-
-            // tolowerCase
-            foreach(var d in destination)
-            {
-                d.Category = d.Category.ToLowerInvariant();
             }
         }
     }
