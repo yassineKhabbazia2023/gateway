@@ -187,7 +187,7 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/contacts/{everything",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/contacts/{everything}",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
