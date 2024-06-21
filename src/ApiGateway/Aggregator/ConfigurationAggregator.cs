@@ -46,6 +46,12 @@ namespace ApiGateway.Aggregrator
                     d.Actions = l;
                 }
             }
+
+            // tolowerCase
+            foreach(var d in destination)
+            {
+                d.Category = d.Category.ToLowerInvariant();
+            }
         }
     }
 }
