@@ -6,6 +6,7 @@ using Ocelot.Middleware;
 using Ocelot.Multiplexer;
 using System.Net;
 using System.Net.Http.Headers;
+using ApiGateway.Constants;
 
 namespace ApiGateway.Aggregrator
 {
@@ -24,7 +25,7 @@ namespace ApiGateway.Aggregrator
             }
 
             return new DownstreamResponse(
-                new StringContent(JsonConvert.SerializeObject(result), new MediaTypeHeaderValue("application/json")),
+                new StringContent(JsonConvert.SerializeObject(result, GlobalsConstants.JsonSerializerSettings), new MediaTypeHeaderValue("application/json")),
                 HttpStatusCode.OK,
                 responsesDownstream.SelectMany(x => x.Headers).ToList(),
                 "reason");
