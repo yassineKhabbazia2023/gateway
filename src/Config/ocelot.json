@@ -166,8 +166,29 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
-      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/contacts/{everything}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -185,7 +206,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001"
+        "GET": "CLUSER001, COUSER001, COADMI001, COUSER002, CLADMI001"
       }
     },
     {
@@ -210,29 +231,8 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, COINFO001, COOFF002, COUSER001",
+        "GET": "COOFF001, COINFO001, COOFF002, COUSER001, CLINFO001, CLADMI001",
         "PATCH": "COOFF001"
-      }
-    },
-    {
-      "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/accounts/currentuser/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
       }
     },
     {
@@ -280,6 +280,28 @@
     },
     {
       "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/contact/api/contacts/currentuser",
+      "DownstreamPathTemplate": "/api/contacts/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/contact/api/contacts/currentuser/{everything}",
       "DownstreamPathTemplate": "/api/contacts/currentuser/{everything}",
       "DownstreamScheme": "https",
@@ -300,7 +322,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, COUSER002, COUSER001"
+        "GET": "COOFF001, COUSER002, COUSER001, CLADMI001, CLUSER001"
       }
     },
     {
@@ -349,7 +371,8 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COUSER002"
+        "GET": "COUSER002, CLUSER001, CLADMI001",
+        "PATCH": "CLUSER004, COADMI003, CLADMI001"
       }
     },
     {
@@ -374,7 +397,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI001, COADMI002, COADMI003",
+        "GET": "COADMI001, COADMI002, COADMI003, CLADMI001, CLUSER001",
         "PATCH": "COADMI003"
       }
     },
@@ -513,7 +536,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COUSER001, COUSER002",
+        "GET": "COUSER001, COUSER002, COGES001",
         "DELETE": "COUSER001, COUSER002"
       }
     },
@@ -666,6 +689,30 @@
         "GET",
         "POST"
       ]
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
+      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001, CLUSER001, COUSER001, CLUSER004, CLADMI001"
+      }
     },
     {
       "SwaggerKey": "Account",
