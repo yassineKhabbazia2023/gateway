@@ -44,7 +44,7 @@ namespace ApiGateway.Aggregrator
                 else
                 {
                     var l = d.Actions.ToList();
-                    l.AddRange(d.Actions);
+                    l.AddRange(s.Actions);
                     d.Actions = l;
                 }
             }
