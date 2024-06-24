@@ -22,7 +22,7 @@ namespace ApiGateway.Aggregrator
             {
                 var content = await response.Content.ReadAsStringAsync();
                 var configurations = JsonConvert.DeserializeObject<List<Aggregator.Models.Configuration>>(content);
-                Merge(configurations!, result);
+                result = Merge(configurations!, result);
             }
 
             return new DownstreamResponse(
@@ -32,22 +32,26 @@ namespace ApiGateway.Aggregrator
                 "reason");
         }
 
-        private void Merge(List<Aggregator.Models.Configuration> src, List<Aggregator.Models.Configuration> destination)
+        private List<Aggregator.Models.Configuration> Merge(List<Aggregator.Models.Configuration> src, List<Aggregator.Models.Configuration> destination)
         {
+            var merged = destination;
             foreach (var s in src)
             {
-                var d = destination.FirstOrDefault(x => x.Category == s.Category);
-                if (d == null)
+                var destCategory = destination.FirstOrDefault(x => x.Category == s.Category);
+                if (destCategory == null)
                 {
-                    destination.Add(s);
+                    destCategory = s;
                 }
                 else
                 {
-                    var l = d.Actions.ToList();
-                    l.AddRange(s.Actions);
-                    d.Actions = l;
+                    var actionsList = destCategory.Actions?.ToList() ?? new List<Aggregator.Models.Action>();
+                    actionsList.AddRange(s.Actions);
+                    destCategory.Actions = actionsList;
                 }
+                merged.Add(destCategory);
             }
+
+            return merged;
         }
     }
 }
