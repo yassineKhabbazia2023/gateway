@@ -15,7 +15,7 @@ namespace ApiGateway.Aggregrator
     {
         public async Task<DownstreamResponse> Aggregate(List<HttpContext> responses)
         {
-            var responsesDownstream = responses.Select(x => x.Items.DownstreamResponse()).ToArray();
+            var responsesDownstream = responses.Select(x => x.Items.DownstreamResponse()).Where(x => x != null).ToArray();
 
             var result = new List<Aggregator.Models.Configuration>();
             foreach (var response in responsesDownstream)
