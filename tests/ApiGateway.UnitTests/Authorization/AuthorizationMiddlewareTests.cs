@@ -308,6 +308,44 @@ public class AuthorizationMiddlewareTests
     }
 
     [Fact]
+    public async Task AuthorizationFilter_WhenGivenAccountNumber_ShouldAllowAccess()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/0000000001/ged-services";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        var toReturn = new Paging<Models.Account>
+        {
+            Items = { new Models.Account { AccountId = 12 } }
+        };
+
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task AuthorizationFilter_WhenNoRelatedAccounts_ShouldReturnForbiddenRequest()
     {
         // Arrange

@@ -588,27 +588,6 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}",
-      "DownstreamPathTemplate": "/api/authorizations/configuration?contactId={abc}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Authorization",
       "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/{everything}",
       "DownstreamPathTemplate": "/api/authorizations/configuration/{everything}",
       "DownstreamScheme": "https",
@@ -649,6 +628,28 @@
         ]
       },
       "Key": "NormalConfiguration"
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/contacts/{abc}",
+      "DownstreamPathTemplate": "/api/authorizations/configuration?contactId={abc}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "CollabConfiguration"
     },
     {
       "SwaggerKey": "Authorization",
@@ -1009,6 +1010,13 @@
       "RouteKeys": [
         "NormalConfiguration",
         "GedConfiguration"
+      ],
+      "Aggregator": "ConfigurationAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}",
+      "RouteKeys": [
+        "CollabConfiguration"
       ],
       "Aggregator": "ConfigurationAggregator"
     },
