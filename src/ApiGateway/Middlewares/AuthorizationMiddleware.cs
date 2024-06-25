@@ -91,14 +91,20 @@ public static class AuthorizationMiddleware
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
-        var accountIdParam = httpContext.Request.Query["accountId"];
+        // account number (ged url), we return null
+        if (httpContext.Request.Path.ToString().Contains("ged-services"))
+        {
+            return null;
+        }
+
+        var accountIdParam = (string)httpContext.Request.Query["accountId"];
         if (string.IsNullOrWhiteSpace(accountIdParam))
         {
             const string pattern = @"/accounts/(\d+)";
             Match match = Regex.Match(httpContext.Request.Path, pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
             if (match.Success)
             {
-                accountIdParam = match.Groups[1].Value;
+                accountIdParam = (string)match.Groups[1].Value;
             }
         }
 
