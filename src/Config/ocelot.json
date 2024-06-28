@@ -675,7 +675,7 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/accounts/{xyz}/contacts/{abc}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization?accountId={xyz}&contactId={abc}",
       "DownstreamPathTemplate": "/api/authorization?accountId={xyz}&contactId={abc}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -692,30 +692,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "Key": "NormalPermission"
-    },
-    {
-      "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-actions",
-      "DownstreamPathTemplate": "/api/accounts/{xyz}/contacts/{abc}/ged-actions",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#gedapp01fakecustomer.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "Key": "GedPermission"
+      }
     },
     {
       "SwaggerKey": "Contact",
@@ -1019,14 +996,6 @@
         "CollabConfiguration"
       ],
       "Aggregator": "ConfigurationAggregator"
-    },
-    {
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorization?contactId={abc}&accountId={xyz}",
-      "RouteKeys": [
-        "NormalPermission",
-        "GedPermission"
-      ],
-      "Aggregator": "PermissionAggregator"
     }
   ],
   "SwaggerEndPoints": [
