@@ -6,6 +6,7 @@ using Ocelot.Authorization;
 using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.Middlewares;
 
@@ -13,28 +14,35 @@ public static class AuthorizationMiddleware
 {
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
-        var userEmail = ValidateUserIdentity(httpContext);
-        var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
-        var contactId = await contactService!.GetContactIdAsync(userEmail);
-        var requiredClaims = ValidateRequireClaim(httpContext);
-        int? accountId = ValidateAccountId(httpContext);
-
-        if (requiredClaims.Count == 0 && !accountId.HasValue)
+        try
         {
-            await next.Invoke();
-            return;
-        }
+            var userEmail = ValidateUserIdentity(httpContext);
+            var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
+            var contactId = await contactService!.GetContactIdAsync(userEmail);
+            var requiredClaims = ValidateRequireClaim(httpContext);
+            int? accountId = ValidateAccountId(httpContext);
 
-        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
+            if (requiredClaims.Count == 0 && !accountId.HasValue)
+            {
+                await next.Invoke();
+                return;
+            }
+
+            if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
+            {
+                return;
+            }
+
+            if (!await CheckRoles(accountId, contactId, httpContext))
+            {
+                return;
+            }
+        }
+        catch (Exception ex)
         {
-            return;
+            throw new GatewayException("There was an error while checking route settings.", ex);
         }
-
-        if (!await CheckRoles(accountId, contactId, httpContext))
-        {
-            return;
-        }
-
+        
         await next.Invoke();
     };
 
@@ -116,10 +124,17 @@ public static class AuthorizationMiddleware
         return null;
     }
 
-    private static List<string> ValidateRequireClaim(HttpContext httpContext)
+    internal static List<string> ValidateRequireClaim(HttpContext httpContext)
     {
-        httpContext
-            .Items.DownstreamRoute()
+        var down = httpContext
+            .Items.DownstreamRoute();
+
+        if (down == null)
+        {
+            return new List<string>();
+        }
+
+        down
             .RouteClaimsRequirement
             .TryGetValue(httpContext.Request.Method, out var claims);
 
@@ -131,7 +146,7 @@ public static class AuthorizationMiddleware
         return claims.Split(',').Select(x => x.Trim()).ToList();
     }
 
-    private static string ValidateUserIdentity(HttpContext httpContext)
+    internal static string ValidateUserIdentity(HttpContext httpContext)
     {
         var token = JwtHelper.ExtractBearerToken(httpContext.Request);
 
