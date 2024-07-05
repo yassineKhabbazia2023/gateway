@@ -372,7 +372,7 @@
       },
       "RouteClaimsRequirement": {
         "GET": "COUSER002, CLUSER001, CLADMI001",
-        "PATCH": "CLUSER004, COADMI003, CLADMI001"
+        "PATCH": "CLUSER001, CLUSER004, COADMI003, CLADMI001"
       }
     },
     {
