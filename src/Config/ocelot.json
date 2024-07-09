@@ -232,7 +232,7 @@
       },
       "RouteClaimsRequirement": {
         "GET": "COOFF001, COINFO001, COOFF002, COUSER001, CLINFO001, CLADMI001",
-        "PATCH": "COOFF001"
+        "PATCH": "COINFO001"
       }
     },
     {
