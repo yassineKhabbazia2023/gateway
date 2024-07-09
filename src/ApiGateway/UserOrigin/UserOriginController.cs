@@ -19,9 +19,9 @@ public class UserOriginController : ControllerBase
     {
         var kpmgIp = _configuration.GetValue<string>("KPMG_IP");
 
-        var callerIp = Request.HttpContext.Connection.RemoteIpAddress;
+        var callerIp = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
 
-        if (kpmgIp.Equals(callerIp.ToString()))
+        if (kpmgIp.Equals(callerIp))
         {
             return Ok("COLLAB");
         }
