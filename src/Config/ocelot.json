@@ -921,8 +921,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/{contactId}/terms",
-      "UpstreamPathTemplate": "/gtw/contact/api/contacts/{contactId}/terms",
+      "DownstreamPathTemplate": "/api/contacts/currentuser/terms",
+      "UpstreamPathTemplate": "/gtw/contact/api/contacts/currentuser/terms",
       "UpstreamHttpMethod": [
         "GET",
         "PATCH"
