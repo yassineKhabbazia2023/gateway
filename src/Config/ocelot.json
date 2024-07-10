@@ -849,6 +849,21 @@
     },
     {
       "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/account/api/customers/invite/{contactId}",
+      "DownstreamPathTemplate": "/api/customers/{contactId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
+    },
+    {
+      "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/account/api/customers/{everything}",
       "DownstreamPathTemplate": "/api/customers/{everything}",
       "DownstreamScheme": "https",
