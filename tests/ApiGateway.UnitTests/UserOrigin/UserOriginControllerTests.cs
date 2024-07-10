@@ -20,12 +20,13 @@ public class UserOriginControllerTest
         var configuration = confBuilder.Build();
 
         var controller = new UserOriginController(configuration);
+        var ct = new DefaultHttpContext();
+        ct.Request.Headers["X-REAL-IP"] = "199.199.199.199";
         controller.ControllerContext = new ControllerContext()
         {
-            HttpContext = new DefaultHttpContext(),
+            HttpContext = ct,
         };
-        
-        controller.ControllerContext.HttpContext.Connection.RemoteIpAddress = new System.Net.IPAddress(new byte[] { 199, 199, 199, 199 });
+
         // Act
         var result = await controller.Index();
 
@@ -46,12 +47,14 @@ public class UserOriginControllerTest
         var configuration = confBuilder.Build();
 
         var controller = new UserOriginController(configuration);
+        var ct = new DefaultHttpContext();
+        ct.Request.Headers["X-REAL-IP"] = "199.199.199.192";
         controller.ControllerContext = new ControllerContext()
         {
-            HttpContext = new DefaultHttpContext(),
+            HttpContext = ct,
         };
 
-        controller.ControllerContext.HttpContext.Connection.RemoteIpAddress = new System.Net.IPAddress(new byte[] { 199, 199, 199, 192 });
+
         // Act
         var result = await controller.Index();
 

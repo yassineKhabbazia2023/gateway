@@ -19,7 +19,7 @@ public class UserOriginController : ControllerBase
     {
         var kpmgIp = _configuration.GetValue<string>("KPMG_IP");
 
-        var callerIp = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+        var callerIp = Request.Headers["X-REAL-IP"];
 
         if (kpmgIp.Equals(callerIp))
         {
