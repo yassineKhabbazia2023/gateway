@@ -1,0 +1,40 @@
+trigger: none
+
+pool:
+  vmImage: 'windows-latest'
+
+parameters:
+- name: devIndex
+  displayName: 'Index de l environnement cible (seulement pour un déploiement sur env de DEV)'
+  type: number
+  default: 0
+- name: deployType
+  displayName: "Technical parameter : don t modify it !"
+  type: string
+  default: 'standard'
+  values:
+    - standard
+    - onlyDev
+
+resources:
+  repositories:
+  - repository: Pulse
+    name: 'Constellation/ConstellationDevOps'
+    type: git
+    ref: 'refs/heads/Release/v2.0'
+
+extends:
+  template: pipelines\templates\platform.back.api.yaml@Pulse
+  parameters:
+    devIndex: ${{ parameters.devIndex }}
+    deployType: ${{ parameters.deployType }}
+    sonarExclusions: '**/Program.cs, **/Extensions/SecurityServiceExtensions.cs'
+    layer: Domain
+    domain: exp
+    resource:
+      id: '02'
+      name: desktop
+      path: src\ApiGateway\ApiGateway.csproj
+      tests: tests\**\*.csproj
+      type: webApp
+    dotnetcore: 8.x

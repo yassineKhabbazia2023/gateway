@@ -1,0 +1,18 @@
+@ApiGateway_HostAddress = http://localhost:5063
+
+GET {{ApiGateway_HostAddress}}/gtw/wallet
+Accept: application/json
+Authorization: Bearer "Token Goes here"
+
+
+###
+GET {{ApiGateway_HostAddress}}/gtw/ged
+Accept: application/json
+###
+GET {{ApiGateway_HostAddress}}/gtw/ged-toto?page=1
+Accept: application/json
+
+###
+GET {{ApiGateway_HostAddress}}/gtw/ged-compta
+Accept: application/json
+Authorization: Bearer "Token goes here" 

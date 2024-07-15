@@ -1,0 +1,144 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Offer",
+      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{everything}",
+      "DownstreamPathTemplate": "/offer/api/subscription/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLADMI001,COADMI001",
+        "POST": "CLPEN001,COINFO001",
+        "PUT": "CLRAPP002,COEVPO01"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/offer/api/offers",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/offer/api/offers",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/offer/api/offers/{offerId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/offer/api/offers/{offerId}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/account/api/accounts/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/authorization/api/authorization/currentuser/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/account/api/accounts/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "api-dev78.dev.kpmg-pulse.fr",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
+      }
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "account",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Account API",
+          "Version": "v1",
+          "Url": "https://api-dev78.dev.kpmg-pulse.fr/account/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "wallet",
+      "TransformByOcelotConfig": false,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Experience.Wallet",
+          "Version": "v1",
+          "Url": "https://api-dev28.dev.kpmg-pulse.fr/wallet/api/v1/api.json"
+        }
+      ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "https://localhost:50160/api"
+  }
+}

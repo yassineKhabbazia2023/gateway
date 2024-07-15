@@ -1,20 +1,23 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# API Gateway 
+This project implements a hybrid API Gateway using Ocelot and ASP.NET 8 controllers to route requests to various microservices and provide additional processing capabilities.
+ It combines the robust routing and middleware features of Ocelot with the flexibility and power of ASP.NET 8 controllers.
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## Prerequisites
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+- .NET 8 SDK
+- Visual Studio 2022 or later (recommended for development)
+- An understanding of microservices architecture and RESTful APIs
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Configuration
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+Before running the project locally, you must initialize the `OCELOT_CONFIG_PATH` environment variable. This variable should point to the location of your Ocelot configuration file (`ocelot.json`).
+
+### Setting the `OCELOT_CONFIG_PATH` Environment Variable
+
+- **Windows:**
+
+  ```bash
+  setx OCELOT_CONFIG_PATH "C:\path\to\your\ocelot.json"
+  
+  or just initialize your variable in appsettings.developpement.json 
+
