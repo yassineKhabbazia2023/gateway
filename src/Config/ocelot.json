@@ -421,7 +421,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI001, COADMI002, COADMI003, CLADMI001, CLUSER001",
+        "GET": "COADMI001, COADMI002, COADMI003, CLADMI001, CLUSER001, COUSER001, COUSER002",
         "PATCH": "COADMI003"
       }
     },
