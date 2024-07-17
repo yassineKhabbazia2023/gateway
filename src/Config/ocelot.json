@@ -606,7 +606,6 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI003, COUSER001, CLUSER004, CLUSER001, CLADMI001",
         "POST": "COADMI003, COUSER001, CLUSER004, CLADMI001"
       }
     },
