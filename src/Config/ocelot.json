@@ -211,6 +211,30 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/all",
+      "DownstreamPathTemplate": "/api/accounts/all",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI004"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/{everything}",
       "DownstreamPathTemplate": "/api/accounts/{everything}",
       "DownstreamScheme": "https",
@@ -607,6 +631,32 @@
       },
       "RouteClaimsRequirement": {
         "POST": "COADMI003, COUSER001, CLUSER004, CLADMI001"
+      }
+    },
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/account",
+      "DownstreamPathTemplate": "/api/authorizations/configuration/account",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI004",
+        "POST": "COADMI004"
       }
     },
     {
