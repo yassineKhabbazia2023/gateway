@@ -445,6 +445,37 @@ public class AuthorizationMiddlewareTests
         // Assert
         Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
     }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenNoEndpointWithException_ShouldAllowAccess()
+    {
+        // Arrange
+        var path = "/api/authorizations/configuration/account";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+    }
     private static string GenerateDummyJwtToken(string userEmail)
     {
         var header = Base64UrlEncode("{\"alg\":\"none\",\"typ\":\"JWT\"}");

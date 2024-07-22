@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
+using System.Runtime;
 
 namespace ApiGateway.Middlewares;
 
@@ -99,8 +100,7 @@ public static class AuthorizationMiddleware
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
-        // account number (ged url), we return null
-        if (httpContext.Request.Path.ToString().Contains("ged-services"))
+        if(Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
         {
             return null;
         }
