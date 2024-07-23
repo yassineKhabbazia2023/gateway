@@ -16,6 +16,7 @@ using Ocelot.Values;
 using System.Net;
 using ApiGateway.Account;
 using ApiGateway.Models;
+using ApiGateway.Identity;
 
 namespace ApiGateway.UnitTests.Authorization;
 
@@ -24,12 +25,98 @@ public class AuthorizationMiddlewareTests
     private readonly Mock<IContactService> _mockContactService;
     private readonly Mock<IAuthorizationSevice> _mockAuthorizationService;
     private readonly Mock<IAccountService> _mockAccountService;
+    private readonly Mock<IIdentityService> _mockIdentityService;
 
     public AuthorizationMiddlewareTests()
     {
         _mockContactService = new Mock<IContactService>(MockBehavior.Strict);
         _mockAuthorizationService = new Mock<IAuthorizationSevice>(MockBehavior.Strict);
         _mockAccountService = new Mock<IAccountService>();
+        _mockIdentityService = new Mock<IIdentityService>();
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenCollaboratorValidationFails_ShouldReturnUnauthorized()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var mockIdentityService = new Mock<IIdentityService>();
+        mockIdentityService.Setup(x => x.IsCollaborator(It.IsAny<HttpContext>())).Returns(true);
+        mockIdentityService.Setup(x => x.ValidateCollaborator(It.IsAny<HttpContext>())).Returns(false);
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+             .Callback<string>(email => email.Equals(contactEmail))
+             .ReturnsAsync("90")
+             .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .Callback<int, int?>((contactId, accountId) =>
+            {
+                contactId.Equals(contactId);
+            })
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(mockIdentityService.Object)
+            .BuildServiceProvider();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenCustomerValidationFails_ShouldReturnUnauthorized()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var mockIdentityService = new Mock<IIdentityService>();
+        mockIdentityService.Setup(x => x.IsCustomer(It.IsAny<HttpContext>())).Returns(true);
+        mockIdentityService.Setup(x => x.ValidateCustomerAsync(It.IsAny<string>())).ReturnsAsync(false);
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+             .Callback<string>(email => email.Equals(contactEmail))
+             .ReturnsAsync("90")
+             .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .Callback<int, int?>((contactId, accountId) =>
+            {
+                contactId.Equals(contactId);
+            })
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(mockIdentityService.Object)
+            .BuildServiceProvider();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
     }
 
     [Fact]
@@ -50,6 +137,8 @@ public class AuthorizationMiddlewareTests
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -64,6 +153,9 @@ public class AuthorizationMiddlewareTests
             })
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -87,11 +179,16 @@ public class AuthorizationMiddlewareTests
         httpContext.RequestServices = new ServiceCollection()
            .AddSingleton(_mockContactService.Object)
            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockIdentityService.Object)
            .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
                     .ReturnsAsync("90")
                     .Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
+
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
@@ -119,12 +216,16 @@ public class AuthorizationMiddlewareTests
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
         .Callback<string>(email => email.Equals(contactEmail))
         .Returns(Task.FromResult<string>(null!)!)
         .Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -154,6 +255,7 @@ public class AuthorizationMiddlewareTests
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -162,6 +264,9 @@ public class AuthorizationMiddlewareTests
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .ReturnsAsync(string.Empty);
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -191,6 +296,7 @@ public class AuthorizationMiddlewareTests
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -205,6 +311,9 @@ public class AuthorizationMiddlewareTests
             })
             .ReturnsAsync(new List<string>())
             .Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -283,6 +392,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -299,6 +409,9 @@ public class AuthorizationMiddlewareTests
         };
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -321,6 +434,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -337,6 +451,9 @@ public class AuthorizationMiddlewareTests
         };
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -359,6 +476,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -372,6 +490,9 @@ public class AuthorizationMiddlewareTests
         var toReturn = new Paging<Models.Account>();
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -394,6 +515,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -407,6 +529,9 @@ public class AuthorizationMiddlewareTests
         var toReturn = new Paging<Models.Account>();
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
@@ -429,6 +554,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -438,6 +564,9 @@ public class AuthorizationMiddlewareTests
         _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
+
+        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);

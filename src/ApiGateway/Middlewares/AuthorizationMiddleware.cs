@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
+using ApiGateway.Identity;
 
 namespace ApiGateway.Middlewares;
 
@@ -21,6 +22,14 @@ public static class AuthorizationMiddleware
             var contactId = await contactService!.GetContactIdAsync(userEmail);
             var requiredClaims = ValidateRequireClaim(httpContext);
             int? accountId = ValidateAccountId(httpContext);
+            var identityService = httpContext.RequestServices.GetRequiredService<IIdentityService>();
+
+            var isValidIdentity = await IdentityServiceValidations(httpContext, userEmail, identityService);
+
+            if (!isValidIdentity)
+            {
+                return;
+            }
 
             if (requiredClaims.Count == 0 && !accountId.HasValue)
             {
@@ -42,7 +51,7 @@ public static class AuthorizationMiddleware
         {
             throw new GatewayException("There was an error while checking route settings.", ex);
         }
-        
+
         await next.Invoke();
     };
 
@@ -174,5 +183,41 @@ public static class AuthorizationMiddleware
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
         httpContext.Items.SetError(new UnauthorizedError(
                            $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
+    }
+
+    private static void UnAuthorizedRequest(HttpContext httpContext)
+    {
+        var downstreamRoute = httpContext.Items.DownstreamRoute();
+        httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        httpContext.Items.SetError(new UnauthorizedError(
+                           $"{httpContext!.User!.Identity!.Name} unable to access {downstreamRoute.UpstreamPathTemplate.OriginalValue}"));
+    }
+
+    private static async Task<bool> IdentityServiceValidations(HttpContext httpContext, string userEmail, IIdentityService identityServiceProvider)
+    {
+        bool isCollaborator = identityServiceProvider.IsCollaborator(httpContext);
+        bool isCustomer = identityServiceProvider.IsCustomer(httpContext);
+
+        if (isCollaborator)
+        {
+            var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
+            if (!isValidCollaborator)
+            {
+                UnAuthorizedRequest(httpContext);
+                return false;
+            }
+        }
+
+        if (isCustomer)
+        {
+            var isValidCustomer = await identityServiceProvider.ValidateCustomerAsync(userEmail);
+            if (!isValidCustomer)
+            {
+                UnAuthorizedRequest(httpContext);
+                return false;
+            }
+        }
+
+        return true;
     }
 }

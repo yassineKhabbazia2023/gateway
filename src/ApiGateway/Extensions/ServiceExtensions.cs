@@ -9,6 +9,8 @@ using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Helpers;
+using ApiGateway.Identity;
+using ApiGateway.Identity.Options;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
@@ -27,6 +29,7 @@ public static class ServiceExtensions
         services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICacheService, CacheService>();
+        services.AddScoped<IIdentityService,IdentityService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -57,11 +60,20 @@ public static class ServiceExtensions
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
+        services.AddHttpClient<IIdentityService, IdentityService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["GigyaApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
         services.AddOcelot()
             .AddDelegatingHandler<ContactHandler>(true)
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
+
+        services.AddGigyaConfiguration(configuration);
     }
 
     private static void AddSwaggerConfig(IServiceCollection services, IConfiguration configuration)
@@ -151,5 +163,24 @@ public static class ServiceExtensions
         {
             options.ConnectionString = applicationInsightsConexionString;
         });
+    }
+
+    private static IServiceCollection AddGigyaConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<IdentityServiceOptions>(opt =>
+        {
+            if (configuration is not null)
+            {
+                opt.GigyaApiUri = configuration["GigyaApiUri"]!;
+                opt.GigyaApiKey = configuration["GigyaApiKey"]!;
+                opt.GigyaSecret = configuration["GigyaSecret"]!;
+                opt.GigyaUserKey = configuration["GigyaUserKey"]!;
+                opt.CollaboratorRole = configuration["CollaboratorRole"]!;
+                opt.CustomerRole = configuration["CustomerRole"]!;
+                opt.CollaboratorsSecurityGroup = configuration["CollaboratorsSecurityGroup"]!;
+
+            }
+        });
+        return services;
     }
 }
