@@ -73,7 +73,7 @@ public class AuthorizationMiddlewareTests
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
         Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
     }
 
@@ -115,7 +115,7 @@ public class AuthorizationMiddlewareTests
         await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
         Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
     }
 

@@ -185,14 +185,6 @@ public static class AuthorizationMiddleware
                            $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
     }
 
-    private static void UnAuthorizedRequest(HttpContext httpContext)
-    {
-        var downstreamRoute = httpContext.Items.DownstreamRoute();
-        httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        httpContext.Items.SetError(new UnauthorizedError(
-                           $"{httpContext!.User!.Identity!.Name} unable to access {downstreamRoute.UpstreamPathTemplate.OriginalValue}"));
-    }
-
     private static async Task<bool> IdentityServiceValidations(HttpContext httpContext, string userEmail, IIdentityService identityServiceProvider)
     {
         bool isCollaborator = identityServiceProvider.IsCollaborator(httpContext);
@@ -203,7 +195,7 @@ public static class AuthorizationMiddleware
             var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
             if (!isValidCollaborator)
             {
-                UnAuthorizedRequest(httpContext);
+                ForbiddenRequest(httpContext);
                 return false;
             }
         }
@@ -213,7 +205,7 @@ public static class AuthorizationMiddleware
             var isValidCustomer = await identityServiceProvider.ValidateCustomerAsync(userEmail);
             if (!isValidCustomer)
             {
-                UnAuthorizedRequest(httpContext);
+                ForbiddenRequest(httpContext);
                 return false;
             }
         }
