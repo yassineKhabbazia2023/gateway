@@ -677,8 +677,8 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004",
-        "POST": "COADMI004"
+        "GET": "COADMI005",
+        "POST": "COADMI005"
       }
     },
     {
