@@ -173,12 +173,9 @@ public static class ServiceExtensions
         {
             if (configuration is not null)
             {
-                opt.GigyaApiUri = configuration["GigyaApiUri"]!;
                 opt.GigyaApiKey = configuration["GigyaApiKey"]!;
                 opt.GigyaSecret = configuration["GigyaSecret"]!;
                 opt.GigyaUserKey = configuration["GigyaUserKey"]!;
-                opt.CollaboratorRole = configuration["CollaboratorRole"]!;
-                opt.CustomerRole = configuration["CustomerRole"]!;
                 opt.CollaboratorsSecurityGroup = configuration["CollaboratorsSecurityGroup"]!;
 
             }

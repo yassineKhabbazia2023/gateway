@@ -4,8 +4,6 @@ namespace ApiGateway.Identity.Options
 {
     public class IdentityServiceOptions
     {
-        public required string GigyaApiUri { get; set; }
-
         public required string GigyaApiKey { get; set; }
 
         public required string GigyaSecret { get; set; }

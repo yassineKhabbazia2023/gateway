@@ -25,7 +25,6 @@ namespace ApiGateway.UnitTests.Identity
             mockOptions = new Mock<IOptions<IdentityServiceOptions>>();
             var optionsValue = new IdentityServiceOptions
             {
-                GigyaApiUri = "https://gigya.api.endpoint",
                 CollaboratorRole = "Collaborator",
                 CustomerRole = "Customer",
                 CollaboratorsSecurityGroup = "collaborators-group",
