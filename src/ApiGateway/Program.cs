@@ -1,14 +1,8 @@
 using ApiGateway.Configuration;
-using ApiGateway.Contact;
 using ApiGateway.Extensions;
 using ApiGateway.Middlewares;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.FeatureManagement;
-using Ocelot.Authorization.Middleware;
 using Ocelot.Middleware;
-using Ocelot.Values;
-using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiGatewayServices(builder.Configuration);

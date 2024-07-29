@@ -3,7 +3,6 @@ using ApiGateway.Identity.Models;
 using ApiGateway.Identity.Options;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace ApiGateway.Identity
 {
@@ -16,17 +15,6 @@ namespace ApiGateway.Identity
         {
             this.httpClient = httpClient;
             this.options = options;
-
-        }
-
-        public bool IsCollaborator(HttpContext httpContext)
-        {
-            return httpContext.User.IsInRole(options.Value.CollaboratorRole);
-        }
-
-        public bool IsCustomer(HttpContext httpContext)
-        {
-            return httpContext.User.IsInRole(options.Value.CustomerRole);
         }
 
         public bool ValidateCollaborator(HttpContext httpContext)

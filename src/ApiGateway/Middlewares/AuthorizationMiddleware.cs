@@ -8,6 +8,7 @@ using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
 using ApiGateway.Identity;
+using ApiGateway.Identity.Extensions;
 
 namespace ApiGateway.Middlewares;
 
@@ -187,8 +188,8 @@ public static class AuthorizationMiddleware
 
     private static async Task<bool> IdentityServiceValidations(HttpContext httpContext, string userEmail, IIdentityService identityServiceProvider)
     {
-        bool isCollaborator = identityServiceProvider.IsCollaborator(httpContext);
-        bool isCustomer = identityServiceProvider.IsCustomer(httpContext);
+        bool isCollaborator = httpContext.User.IsCollaborator();
+        bool isCustomer = httpContext.User.IsCustomer();
 
         if (isCollaborator)
         {

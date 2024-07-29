@@ -45,7 +45,6 @@ public class AuthorizationMiddlewareTests
         var requiredClaims = new Dictionary<string, string>();
 
         var mockIdentityService = new Mock<IIdentityService>();
-        mockIdentityService.Setup(x => x.IsCollaborator(It.IsAny<HttpContext>())).Returns(true);
         mockIdentityService.Setup(x => x.ValidateCollaborator(It.IsAny<HttpContext>())).Returns(false);
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -62,6 +61,7 @@ public class AuthorizationMiddlewareTests
             .Verifiable();
 
         var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -87,7 +87,6 @@ public class AuthorizationMiddlewareTests
         var requiredClaims = new Dictionary<string, string>();
 
         var mockIdentityService = new Mock<IIdentityService>();
-        mockIdentityService.Setup(x => x.IsCustomer(It.IsAny<HttpContext>())).Returns(true);
         mockIdentityService.Setup(x => x.ValidateCustomerAsync(It.IsAny<string>())).ReturnsAsync(false);
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -104,6 +103,7 @@ public class AuthorizationMiddlewareTests
             .Verifiable();
 
         var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -154,7 +154,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -186,7 +186,7 @@ public class AuthorizationMiddlewareTests
                     .ReturnsAsync("90")
                     .Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -224,7 +224,7 @@ public class AuthorizationMiddlewareTests
         .Returns(Task.FromResult<string>(null!)!)
         .Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -265,7 +265,7 @@ public class AuthorizationMiddlewareTests
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .ReturnsAsync(string.Empty);
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -312,7 +312,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>())
             .Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -410,7 +410,7 @@ public class AuthorizationMiddlewareTests
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -452,7 +452,7 @@ public class AuthorizationMiddlewareTests
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -491,7 +491,7 @@ public class AuthorizationMiddlewareTests
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -530,7 +530,7 @@ public class AuthorizationMiddlewareTests
 
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
@@ -565,7 +565,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        _mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
+        //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act

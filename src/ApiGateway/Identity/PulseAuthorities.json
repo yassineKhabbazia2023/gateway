@@ -1,0 +1,65 @@
+[
+  {
+    "id": "7b3f22b5-cfcf-47ad-9d03-d73bd4e36f55",
+    "name": "AAD",
+    "url": "https://login.microsoftonline.com/prekpmgnetfr.onmicrosoft.com",
+    "validateIssuer": true,
+    "jsonWebKeyFetchUrl": null,
+    "nameClaimType": "email",
+    "signingKeys": [],
+    "validAudiences": [
+      {
+        "id": "0103b8f3-5f1e-4b64-abea-a2bcbfe553b7",
+        "name": "https://prekpmgnetfr.onmicrosoft.com/CSTD2API"
+      },
+      {
+        "id": "0453b2ef-97ec-40da-aee7-be87093250dd",
+        "name": "e90c4fff-87c7-4c05-b3fd-a2a06650b380"
+      }
+    ],
+    "validIssuers": [
+      {
+        "id": "65e267cd-8577-460e-9178-cde9a00814d3",
+        "name": "https://sts.windows.net/e107591c-19a0-4a31-86d7-84af9b187e86/",
+        "roleName": "Collaborator",
+        "canBeSystemAccount": true
+      }
+    ]
+  },
+  {
+    "id": "c4ae82cc-25bc-4718-bd0d-e3b878644626",
+    "name": "GIGYA",
+    "url": "",
+    "validateIssuer": true,
+    "jsonWebKeyFetchUrl": "https://accounts.eu1.gigya.com/accounts.getJWTPublicKey?apiKey=3_oSNMeo5JpTK2SRzOMSeASwmO95GqEpRSg7t0zbSqCmBs5SDH9kwYwEm_j8QpAr85",
+    "nameClaimType": "username",
+    "signingKeys": [],
+    "validAudiences": [],
+    "validIssuers": [
+      {
+        "id": "eb8cab82-62e2-402f-8932-796b1903997e",
+        "name": "https://fidm.gigya.com/jwt/3_oSNMeo5JpTK2SRzOMSeASwmO95GqEpRSg7t0zbSqCmBs5SDH9kwYwEm_j8QpAr85/",
+        "roleName": "Customer",
+        "canBeSystemAccount": false
+      }
+    ]
+  },
+  {
+    "id": "e80126f3-2e90-4077-a8a3-62fa14f2e4e1",
+    "name": "GIGYA MyPulse v2",
+    "url": "",
+    "validateIssuer": true,
+    "jsonWebKeyFetchUrl": "https://accounts.eu1.gigya.com/accounts.getJWTPublicKey?apiKey=3_bknZP53l74QgMPhLp2rmkbuY5GbyiQ-OG_N0g7lTbIjcefczmLgzkFDIfVM33ihL",
+    "nameClaimType": "username",
+    "signingKeys": [],
+    "validAudiences": [],
+    "validIssuers": [
+      {
+        "id": "c0ddc83a-8b07-4697-815e-52456cd8516c",
+        "name": "https://fidm.gigya.com/jwt/3_bknZP53l74QgMPhLp2rmkbuY5GbyiQ-OG_N0g7lTbIjcefczmLgzkFDIfVM33ihL/",
+        "roleName": "Customer",
+        "canBeSystemAccount": false
+      }
+    ]
+  }
+]

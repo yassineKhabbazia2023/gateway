@@ -1,5 +1,7 @@
-using Kpmg.AspNetCore.Authentication.ConstellationIdentityService;
-using Kpmg.Constellation.Security.Claims;
+using ApiGateway.Identity.context;
+using ApiGateway.Identity.Extensions;
+using ApiGateway.Identity.Factories;
+using ApiGateway.Identity.Options;
 using Microsoft.AspNetCore.Authorization;
 
 namespace ApiGateway.Extensions;
@@ -8,21 +10,19 @@ public static class SecurityServiceExtensions
 {
     public static void AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
-
+        services.AddSingleton<IPulseHttpClientFactory, PulseHttpClientFactory>();
+        var httpClient = services.BuildServiceProvider().GetRequiredService<IPulseHttpClientFactory>();
+        
         services
              .AddAuthentication()
-             .AddConstellationIdentityService(
-                 new ConstellationIdentityServiceAuthenticationOptions
-                 {
-                     ServerAddress = new Uri(configuration["IdentityServiceApiUrl"] ?? string.Empty),
-                     AzureActiveDirectoryClientCredentials =
-                     {
-                            ClientId = configuration["AADClientId"],
-                            ClientSecret = configuration["AADSecret"],
-                            Scope = configuration["AADAudience"],
-                            Tenant = configuration["AADTenant"],
-                     },
-                 }, out string[] schemeNames);
+             .AddPulseIdentityServiceAsync(
+                 new AzureTableAuthorityRepositoryOptions { 
+                     IsvcAzureStorageName = configuration["IsvcAzureStorageName"],
+                     IsvcAzureStorageUri = configuration["IsvcAzureStorageUri"],
+                     IsvcAzureStorageKey = configuration["IsvcAzureStorageKey"], 
+                 },
+                 httpClient,
+                 out string[] schemeNames);
 
         services.AddAuthorization(options =>
             {
@@ -32,7 +32,7 @@ public static class SecurityServiceExtensions
                     .Build();
             });
 
-        services.AddConstellationHttpClient();
+        services.AddHttpClient();
 
         services.AddSingleton<IUserContext, AspNetCoreUserContext>();
     }

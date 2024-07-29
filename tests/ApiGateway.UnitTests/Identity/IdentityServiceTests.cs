@@ -8,9 +8,7 @@ using System.Security.Claims;
 using ApiGateway.Identity.Exceptions;
 using ApiGateway.Identity.Models;
 using Newtonsoft.Json;
-using System.Net.Http;
-using ApiGateway.Contact.Exceptions;
-using Ocelot.Values;
+using ApiGateway.Identity.Extensions;
 
 namespace ApiGateway.UnitTests.Identity
 {
@@ -53,7 +51,7 @@ namespace ApiGateway.UnitTests.Identity
         public void IsCollaborator_ShouldReturnTrue_WhenUserIsCollaborator()
         {
             // Act
-            var result = identityService.IsCollaborator(httpContext);
+            var result = httpContext.User.IsCollaborator();
 
             // Assert
             Assert.True(result);
@@ -66,7 +64,7 @@ namespace ApiGateway.UnitTests.Identity
             httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Customer") }, "TestAuthType"));
 
             // Act
-            var result = identityService.IsCustomer(httpContext);
+            var result = httpContext.User.IsCustomer();
 
             // Assert
             Assert.True(result);

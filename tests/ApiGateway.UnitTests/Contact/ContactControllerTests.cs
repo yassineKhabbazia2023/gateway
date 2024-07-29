@@ -1,6 +1,6 @@
 ﻿using ApiGateway.Contact;
 using ApiGateway.Contact.Exceptions;
-using Kpmg.Constellation.Security.Claims;
+using ApiGateway.Identity.context;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Claims;

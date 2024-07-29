@@ -10,6 +10,8 @@ using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
+using ApiGateway.Identity.Adapters;
+using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Options;
 using LiteDB;
 using Microsoft.OpenApi.Models;
