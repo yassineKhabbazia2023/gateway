@@ -19,6 +19,10 @@ namespace ApiGateway.Identity
 
         public bool ValidateCollaborator(HttpContext httpContext)
         {
+            if (string.IsNullOrEmpty(options.Value.CollaboratorsSecurityGroup))
+            {
+                return true;
+            }
             var user = httpContext.User;
 
             var hasRequiredGroup = user.Claims

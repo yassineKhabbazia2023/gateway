@@ -10,7 +10,7 @@ namespace ApiGateway.Identity.Options
 
         public required string GigyaUserKey { get; set; }
 
-        public required string CollaboratorsSecurityGroup { get; set; }
+        public required string? CollaboratorsSecurityGroup { get; set; }
 
         public required string CollaboratorRole { get; set; }
 

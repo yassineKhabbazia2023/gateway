@@ -80,6 +80,41 @@ namespace ApiGateway.UnitTests.Identity
         }
 
         [Fact]
+        public void ValidateCollaboratorAsync_ShouldReturnTrue_WhenSecurityGroupVariable_IsNullOrEmpty()
+        {
+            // Arrange
+
+            var mockHttpClient = new Mock<HttpClient>();
+            var mockOptions = new Mock<IOptions<IdentityServiceOptions>>();
+            var optionsValue = new IdentityServiceOptions
+            {
+                CollaboratorsSecurityGroup = null,
+                CollaboratorRole = "Collaborator",
+                CustomerRole = "Customer",
+                GigyaApiKey = "api-key",
+                GigyaSecret = "secret",
+                GigyaUserKey = "user-key"
+            };
+            mockOptions.Setup(o => o.Value).Returns(optionsValue);
+           var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object);
+
+            // Setup HttpContext with a user and claims
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "Collaborator"),
+                new Claim("groups", "collaborators-group")
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var httpContext = new DefaultHttpContext { User = principal };
+            // Act
+            var result = identityService.ValidateCollaborator(httpContext);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
         public async Task ValidateCustomerAsync_ShouldReturnTrue_WhenUserExistsInGigya()
         {
             // Setup mock HTTP response
