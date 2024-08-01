@@ -78,3 +78,5 @@ var config = new OcelotPipelineConfiguration
 
 await app.UseOcelot(config);
 app.Run();
+
+public partial class Program { }
