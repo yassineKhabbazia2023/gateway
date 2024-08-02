@@ -116,6 +116,11 @@ public static class AuthorizationMiddleware
             }
         }
 
+        if (string.IsNullOrWhiteSpace(accountIdParam))
+        {
+            accountIdParam = httpContext.Request.Headers[GlobalsConstants.AccountIdHeader];
+        }
+
         if (int.TryParse(accountIdParam, out var accountId))
         {
             return accountId;

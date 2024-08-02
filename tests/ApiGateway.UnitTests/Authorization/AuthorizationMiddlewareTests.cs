@@ -73,6 +73,65 @@ public class AuthorizationMiddlewareTests
         _mockContactService.VerifyAll();
         _mockAuthorizationService.VerifyAll();
     }
+    
+    [Fact]
+    public async Task AuthorizationFilter_ShouldRetrievePermissions_WithAccountIDHeader()
+    {
+        // Arrange
+        var path = "/gtw/offer/api/subscription";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var headers = new Dictionary<string, string>
+        {
+            {"Account-Id", "1"}
+        };
+        var requiredClaims = new Dictionary<string, string>
+        {
+            { "GET", "CLADMI001,COADMI001" },
+            { "POST", "CLPEN001,COINFO001" },
+            { "PUT", "CLRAPP002,COEVPO01" },
+        };
+
+        var toReturnRole = new Paging<Models.Account>
+        {
+            Items = { new Models.Account { AccountId = 1 } }
+        };
+
+        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .Callback<string>(email => email.Equals(contactEmail))
+            .ReturnsAsync("90")
+            .Verifiable();
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturnRole ).Verifiable();
+
+        bool expectedAccountIdOnePassed = false;
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .Callback<int, int?>((contactId, accountId) =>
+            {
+                contactId.Equals(contactId);
+                if(accountId == 1)
+                {
+                    expectedAccountIdOnePassed = true;
+                }
+            })
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        expectedAccountIdOnePassed.Should().Be(true);
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+        _mockContactService.VerifyAll();
+        _mockAuthorizationService.VerifyAll();
+    }
 
     [Fact]
     public async Task AuthorizationFilter_WhenRequiredClaimIsEmpty_ShouldAllowsAccess()
@@ -219,13 +278,19 @@ public class AuthorizationMiddlewareTests
         string path,
         string method,
         string contactEmail,
-        Dictionary<string, string> requiredClaims)
+        Dictionary<string, string> requiredClaims,
+        Dictionary<string, string> headers = default)
     {
+        if (headers == null) headers = new Dictionary<string, string>();
         // Mock HttpContext
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Path = path;
         httpContext.Request.Method = method;
         httpContext.Request.Headers.Authorization = new StringValues($"Bearer {GenerateDummyJwtToken(contactEmail)}");
+        foreach(var kv in headers)
+        {
+            httpContext.Request.Headers.Add(kv.Key, kv.Value);
+        }
 
         var downstreamRoute = new DownstreamRoute(
             key: "key",
