@@ -1,6 +1,6 @@
 {
   "Routes": [
-    {
+      {
       "SwaggerKey": "EntityCreator",
       "UpstreamPathTemplate": "/gtw/entitycreator/api/{everything}",
       "DownstreamPathTemplate": "/api/{everything}",
@@ -22,6 +22,7 @@
       },
       "RouteClaimsRequirement": {
         "POST": "COADMI007"
+        }
       },
       {
         "SwaggerKey": "Reporting",
