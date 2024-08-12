@@ -27,7 +27,9 @@ namespace ApiGateway.Identity.Adapters
                 storageUri += "/";
             }
 
-            var serviceClient = new TableServiceClient(new Uri("https://tempisvcstorage.table.core.windows.net/"), credential);
+            storageUri = storageUri.Trim();
+
+            var serviceClient = new TableServiceClient(new Uri(storageUri), credential);
 
 
             var tableClient = serviceClient.GetTableClient(tableName);
