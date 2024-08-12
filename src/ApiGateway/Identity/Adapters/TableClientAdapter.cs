@@ -1,9 +1,12 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using Azure.Identity;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace ApiGateway.Identity.Adapters
 {
+    [ExcludeFromCodeCoverage]
     public class TableClientAdapter : ITableClientAdapter
     {
         private readonly TableClient tableClient;
