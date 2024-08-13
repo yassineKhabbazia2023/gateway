@@ -22,7 +22,7 @@ namespace ApiGateway.Identity.Adapters
 
         private TableClient CreateTableClient(string storageUri, string tableName)
         {
-            var credential = new ManagedIdentityCredential();
+            var credential = new ManagedIdentityCredential("1fca77c6-2324-42b9-b34f-84aab45c9277");
 
             if (!storageUri.EndsWith("/"))
             {
