@@ -9,5 +9,11 @@ namespace ApiGateway.Identity.Factories
         {
             return new TableClientAdapter(storageUri, tableName, credentials);
         }
+
+
+        public ITableClientAdapter Create(string storageUri, string tableName, string mangedIdentityClientId)
+        {
+            return new TableClientAdapter(storageUri, tableName, mangedIdentityClientId);
+        }
     }
 }

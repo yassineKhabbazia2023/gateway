@@ -20,6 +20,7 @@ public static class SecurityServiceExtensions
                      IsvcAzureStorageName = configuration["IsvcAzureStorageName"],
                      IsvcAzureStorageUri = configuration["IsvcAzureStorageUri"],
                      IsvcAzureStorageKey = configuration["IsvcAzureStorageKey"], 
+                     ManagedIdentityClientId = configuration["ManagedIdentityClientId"]
                  },
                  httpClient,
                  out string[] schemeNames);

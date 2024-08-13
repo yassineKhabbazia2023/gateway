@@ -30,7 +30,7 @@ namespace ApiGateway.Identity.Repositories
 
         private ITableClientAdapter CreateTableClient(string tableName)
         {
-           return _tableClientFactory.Create(_options.Value.IsvcAzureStorageUri, tableName, new TableSharedKeyCredential(_options.Value.IsvcAzureStorageName, _options.Value.IsvcAzureStorageKey));
+            return _tableClientFactory.Create(_options.Value.IsvcAzureStorageUri, tableName, _options.Value.ManagedIdentityClientId);
         }
 
         public async Task<IReadOnlyList<AuthorityJson>> FindAuthorities(bool? enabled = true)
@@ -76,7 +76,7 @@ namespace ApiGateway.Identity.Repositories
 
         private async Task<List<ValidAudience>> GetValidAudiences(string authorityRowKey)
         {
-            var audienceEntitiesPage= _audienceClient.Query(filter: $"PartitionKey eq 'ValidAudience' and AuthorityRowKey eq '{authorityRowKey}'");
+            var audienceEntitiesPage = _audienceClient.Query(filter: $"PartitionKey eq 'ValidAudience' and AuthorityRowKey eq '{authorityRowKey}'");
 
             var audienceEntities = new List<TableEntity>();
 

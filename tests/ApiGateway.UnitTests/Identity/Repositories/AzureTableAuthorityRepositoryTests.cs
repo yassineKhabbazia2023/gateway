@@ -32,12 +32,14 @@ namespace ApiGateway.UnitTests.Identity.Repositories
                 {
                     IsvcAzureStorageUri = "http://storage.uri",
                     IsvcAzureStorageKey = "hRgzOwq2iimMAEMGh5tDEQ==",
-                    IsvcAzureStorageName = "myStorage"
+                    IsvcAzureStorageName = "myStorage",
+                    ManagedIdentityClientId = "1",
+
                 });
 
             _tableClientFactoryMock
-                .Setup(f => f.Create(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TableSharedKeyCredential>()))
-                .Returns<string, string, TableSharedKeyCredential>((uri, table, creds) =>
+                .Setup(f => f.Create(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<string, string, string>((uri, table, creds) =>
                 {
                     return table switch
                     {
@@ -124,22 +126,22 @@ namespace ApiGateway.UnitTests.Identity.Repositories
             _tableClientFactoryMock.Verify(f => f.Create(
                 It.Is<string>(uri => uri == "http://storage.uri"),
                 It.Is<string>(tableName => tableName == "Authorities"),
-                It.Is<TableSharedKeyCredential>(cred => cred.AccountName == "myStorage")), Times.Once);
+                It.Is<string>(cred => cred == "1")), Times.Once);
 
             _tableClientFactoryMock.Verify(f => f.Create(
                 It.Is<string>(uri => uri == "http://storage.uri"),
                 It.Is<string>(tableName => tableName == "Audience"),
-                It.Is<TableSharedKeyCredential>(cred => cred.AccountName == "myStorage")), Times.Once);
+                It.Is<string>(cred => cred == "1")), Times.Once);
 
             _tableClientFactoryMock.Verify(f => f.Create(
                 It.Is<string>(uri => uri == "http://storage.uri"),
                 It.Is<string>(tableName => tableName == "Issuers"),
-                It.Is<TableSharedKeyCredential>(cred => cred.AccountName == "myStorage")), Times.Once);
+                It.Is<string>(cred => cred == "1")), Times.Once);
 
             _tableClientFactoryMock.Verify(f => f.Create(
                 It.Is<string>(uri => uri == "http://storage.uri"),
                 It.Is<string>(tableName => tableName == "SignInKeys"),
-                It.Is<TableSharedKeyCredential>(cred => cred.AccountName == "myStorage")), Times.Once);
+                It.Is<string>(cred => cred == "1")), Times.Once);
 
             _authoritiesClientMock.Verify(a => a.Query(It.Is<string>(q => q.Contains("Authority"))));
             _audienceClientMock.Verify(a => a.Query(It.Is<string>(q => q.Contains("ValidAudience"))));

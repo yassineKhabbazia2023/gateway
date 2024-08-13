@@ -5,5 +5,6 @@
         public string IsvcAzureStorageName { get; set; }
         public string IsvcAzureStorageUri { get; set; }
         public string IsvcAzureStorageKey { get; set; }
+        public string ManagedIdentityClientId  { get; set; }
     }
 }

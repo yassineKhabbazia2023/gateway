@@ -12,7 +12,12 @@ namespace ApiGateway.Identity.Adapters
 
         public TableClientAdapter(string storageUri, string tableName, TableSharedKeyCredential credentials)
         {
-            this.tableClient = CreateTableClient(storageUri, tableName);
+            this.tableClient = CreateTableClientBySharedKeyCredential(storageUri, tableName, credentials);
+        }
+
+        public TableClientAdapter(string storageUri, string tableName, string mangedIdentityClientId)
+        {
+            this.tableClient = CreateTableClientByManagedIdentity(storageUri, tableName, mangedIdentityClientId);
         }
 
         public AsyncPageable<TableEntity> Query(string filter)
@@ -20,21 +25,38 @@ namespace ApiGateway.Identity.Adapters
             return this.tableClient.QueryAsync<TableEntity>(filter);
         }
 
-        private TableClient CreateTableClient(string storageUri, string tableName)
+        #region Table service client creators
+        private TableServiceClient CreateTableServiceClientByManagedIdentityId(string storageUri, string managedIdentityClientId)
         {
-            var credential = new ManagedIdentityCredential("1fca77c6-2324-42b9-b34f-84aab45c9277");
+            var credential = new ManagedIdentityCredential(managedIdentityClientId);
+            var client = new TableServiceClient(new Uri(storageUri), credential);
+            return client;
+        }
+        #endregion
 
+        #region Table client creators
+        private TableClient CreateTableClientByManagedIdentity(string storageUri, string tableName, string managedIdentityClientId)
+        {
             if (!storageUri.EndsWith("/"))
             {
                 storageUri += "/";
             }
 
-            var serviceClient = new TableServiceClient(new Uri(storageUri), credential);
+            TableServiceClient serviceClient = CreateTableServiceClientByManagedIdentityId(storageUri, managedIdentityClientId);
 
 
             var tableClient = serviceClient.GetTableClient(tableName);
 
             return tableClient;
         }
+
+        private TableClient CreateTableClientBySharedKeyCredential(string storageUri, string tableName, TableSharedKeyCredential credentials)
+        {
+            return new TableClient(
+                new Uri(storageUri),
+                tableName,
+                credentials);
+        }
+        #endregion
     }
 }

@@ -46,6 +46,7 @@ namespace ApiGateway.Identity.Extensions
                 opt.IsvcAzureStorageName = options.IsvcAzureStorageName;
                 opt.IsvcAzureStorageUri = options.IsvcAzureStorageUri;
                 opt.IsvcAzureStorageKey = options.IsvcAzureStorageKey;
+                opt.ManagedIdentityClientId = options.ManagedIdentityClientId;
             });
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
