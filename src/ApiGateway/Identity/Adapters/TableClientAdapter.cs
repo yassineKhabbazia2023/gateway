@@ -1,8 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
-using Azure.Identity;
 using System.Diagnostics.CodeAnalysis;
-
 
 namespace ApiGateway.Identity.Adapters
 {
@@ -13,7 +11,7 @@ namespace ApiGateway.Identity.Adapters
 
         public TableClientAdapter(string storageUri, string tableName, TableSharedKeyCredential credentials)
         {
-            this.tableClient = CreateTableClient(storageUri, tableName);
+            this.tableClient = CreateTableClient(storageUri, tableName, credentials);
         }
 
         public AsyncPageable<TableEntity> Query(string filter)
@@ -21,23 +19,12 @@ namespace ApiGateway.Identity.Adapters
             return this.tableClient.QueryAsync<TableEntity>(filter);
         }
 
-        private TableClient CreateTableClient(string storageUri, string tableName)
+        private TableClient CreateTableClient(string storageUri, string tableName, TableSharedKeyCredential credentials)
         {
-            var credential = new ManagedIdentityCredential();
-
-            if (!storageUri.EndsWith("/"))
-            {
-                storageUri += "/";
-            }
-
-            storageUri = storageUri.Trim();
-
-            var serviceClient = new TableServiceClient(new Uri(storageUri), credential);
-
-
-            var tableClient = serviceClient.GetTableClient(tableName);
-
-            return tableClient;
+            return new TableClient(
+                new Uri(storageUri),
+                tableName,
+                credentials);
         }
     }
 }
