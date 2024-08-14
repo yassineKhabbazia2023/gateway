@@ -10,9 +10,11 @@ using ApiGateway.Identity.Repositories;
 using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Adapters;
 using ApiGateway.Identity.Handlers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ApiGateway.Identity.Extensions
 {
+    [ExcludeFromCodeCoverage]
     public static class PulseIdentityServiceAuthenticationExtensions
     {
         public static AuthenticationBuilder AddPulseIdentityServiceAsync(
