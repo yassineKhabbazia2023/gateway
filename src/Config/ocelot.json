@@ -22,8 +22,8 @@
       },
       "RouteClaimsRequirement": {
         "POST": "COADMI007"
-        }
-      },
+      }
+    },
     {
       "SwaggerKey": "Reporting",
       "UpstreamPathTemplate": "/gtw/reporting/api/reports/{everything}",
@@ -1123,7 +1123,7 @@
         "GET"
       ],
       "DownstreamScheme": "https",
-      "DownstreamPathTemplate": "/api/company/{everything}",
+      "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
       "DownstreamHostAndPorts": [
         {
           "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
@@ -1139,13 +1139,13 @@
     },
     {
       "SwaggerKey": "Social",
-      "UpstreamPathTemplate": "/gtw/social/api/companies/currentuser",
+      "UpstreamPathTemplate": "/gtw/social/api/company/currentuser",
       "UpstreamHttpMethod": [
         "GET",
         "POST"
       ],
       "DownstreamScheme": "https",
-      "DownstreamPathTemplate": "/api/companies",
+      "DownstreamPathTemplate": "/api/companies/currentuser",
       "DownstreamHostAndPorts": [
         {
           "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
