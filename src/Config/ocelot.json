@@ -865,6 +865,7 @@
         }
       ],
       "UpstreamHttpMethod": [
+        "GET",
         "POST",
         "DELETE",
         "PATCH"
@@ -876,6 +877,7 @@
         ]
       },
       "RouteClaimsRequirement": {
+        "GET": "CLUSER002",
         "POST": "COUSER002, COUSER001, CLUSER002, CLADMI001",
         "DELETE": "COADMI002, CLUSER003, CLADMI001, COUSER002"
       }
