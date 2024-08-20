@@ -1204,6 +1204,46 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/mandate/api/mandate/currentuser",
+      "DownstreamPathTemplate": "/api/mandate/currentuser",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#mdtapp01mandate.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/mandate/api/mandate/{mandateId}/check/status",
+      "DownstreamPathTemplate": "/api/mandate/{mandateId}/check/status",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#mdtapp01mandate.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "Aggregates": [
