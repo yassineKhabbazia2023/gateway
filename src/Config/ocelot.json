@@ -445,7 +445,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/{everything}",
+      "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{contactId}",
+      "DownstreamPathTemplate": "/api/contacts/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -453,7 +454,6 @@
           "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{everything}",
       "UpstreamHttpMethod": [
         "GET",
         "PATCH"
