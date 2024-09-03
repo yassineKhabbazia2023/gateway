@@ -67,10 +67,11 @@ else
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionMiddleware();
+
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapControllers();
-    endpoints.MapHealthChecks("health");
+    _ = endpoints.MapControllers();
+    _ = endpoints.MapHealthChecks("health");
 });
 
 app.UseSwagger();
@@ -83,4 +84,8 @@ var config = new OcelotPipelineConfiguration
 };
 
 await app.UseOcelot(config);
+
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
+
 app.Run();
