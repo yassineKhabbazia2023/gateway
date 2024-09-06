@@ -589,8 +589,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/customer-wallet/api/customers/{contactId}",
-      "DownstreamPathTemplate": "/api/accounts/contacts/{contactId}",
+      "UpstreamPathTemplate": "/gtw/customer-wallet/api/customers/currentuser",
+      "DownstreamPathTemplate": "/api/accounts/contacts/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
