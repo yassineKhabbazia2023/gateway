@@ -879,8 +879,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/{everything}",
-      "DownstreamPathTemplate": "/api/roles/{everything}",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/currentuser",
+      "DownstreamPathTemplate": "/api/roles/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
