@@ -45,7 +45,7 @@ public class AccountServiceTests
                 ItExpr.IsAny<CancellationToken>())
              .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
              {
-                 request.RequestUri.Should().Be("http://local.account/api/roles/1");
+                 request.RequestUri.Should().Be("http://local.account/api/roles?contactId=1");
              })
             .ReturnsAsync(httpResponse);
 

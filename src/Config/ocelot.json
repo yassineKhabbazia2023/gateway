@@ -657,8 +657,8 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/currentuser/{everything}",
-      "DownstreamPathTemplate": "/api/authorization/currentuser/{everything}",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorization/currentuser",
+      "DownstreamPathTemplate": "/api/authorization/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -674,9 +674,6 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "POST": "COADMI003, COUSER001, CLUSER004, CLADMI001"
       }
     },
     {

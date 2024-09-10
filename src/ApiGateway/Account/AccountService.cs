@@ -20,7 +20,7 @@ public class AccountService : IAccountService
     public async Task<Paging<Models.Account>> GetContactRolesAsync(int contactId)
     {
         var toReturn = new Paging<Models.Account>();
-        var url = $"api/roles/{contactId}";
+        var url = $"api/roles?contactId={contactId}";
         var response = await _httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
