@@ -900,30 +900,6 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/currentuser",
-      "DownstreamPathTemplate": "/api/roles/currentuser",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "CLUSER002, CLADMI001"
-      }
-    },
-    {
-      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/roles?contactId={contactId}&accountId={accountId}",
       "DownstreamPathTemplate": "/api/roles?contactId={contactId}&accountId={accountId}",
       "DownstreamScheme": "https",
