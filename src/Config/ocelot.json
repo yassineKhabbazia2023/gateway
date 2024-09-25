@@ -1202,13 +1202,35 @@
     },
     {
       "SwaggerKey": "Social",
-      "UpstreamPathTemplate": "/gtw/social/api/company/currentuser",
+      "UpstreamPathTemplate": "/gtw/social/api/companies/currentuser",
       "UpstreamHttpMethod": [
         "GET",
         "POST"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/companies/currentuser",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/health",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/health",
       "DownstreamHostAndPorts": [
         {
           "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
