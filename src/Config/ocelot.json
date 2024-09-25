@@ -1226,8 +1226,7 @@
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/api/health",
       "UpstreamHttpMethod": [
-        "GET",
-        "POST"
+        "GET"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/health",
@@ -1236,13 +1235,7 @@
           "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
           "Port": 443
         }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Social",
