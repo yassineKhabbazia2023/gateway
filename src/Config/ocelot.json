@@ -1183,7 +1183,8 @@
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/api/company/currentuser/{everything}",
       "UpstreamHttpMethod": [
-        "GET"
+        "GET",
+        "POST"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
