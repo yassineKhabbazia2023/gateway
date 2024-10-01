@@ -988,7 +988,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "POST": "COADMI004"
+        "POST": "COADMI004, COOFF001"
       }
     },
     {
