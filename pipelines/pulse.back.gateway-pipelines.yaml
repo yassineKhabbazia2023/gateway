@@ -32,7 +32,7 @@ extends:
     layer: Domain
     domain: exp
     resource:
-      id: '02'
+      id: '01'
       name: desktop
       path: src\ApiGateway\ApiGateway.csproj
       tests: tests\**\*.csproj
