@@ -46,7 +46,6 @@ stages:
             steps:
             - download: current
               artifact: Module
-
             - template: update-config.yaml
               parameters:
                 ${{ if lt(parameters.devIndex, 10) }}:
@@ -54,6 +53,7 @@ stages:
                 ${{ else }}:
                   environment: dev${{ parameters.devIndex }}
                 subscription: ceg-corp-pulse-dev
+                serviceConnection: Pulse-Tpme-Dev
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
