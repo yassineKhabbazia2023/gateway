@@ -4,7 +4,6 @@ parameters:
   type: string
 - name: subscription
   type: string
-  default: PULSE-DEV
 
 steps:
 - task: AzureCLI@2
