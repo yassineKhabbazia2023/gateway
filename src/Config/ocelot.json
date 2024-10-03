@@ -923,25 +923,25 @@
         }
     },
     {
-      "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles?contactId={contactId}&accountId={accountId}&isSignatory={isSignatory}",
-      "DownstreamPathTemplate": "/api/roles?contactId={contactId}&accountId={accountId}&isSignatory={isSignatory}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-          "Port": 443
+        "SwaggerKey": "Account",
+        "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
+        "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
+        "DownstreamScheme": "https",
+        "DownstreamHostAndPorts": [
+            {
+                "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+                "Port": 443
+            }
+        ],
+        "UpstreamHttpMethod": [
+            "PATCH"
+        ],
+        "AuthenticationOptions": {
+            "AuthenticationProviderKeys": [
+                "AAD",
+                "GIGYA MyPulse v2"
+            ]
         }
-      ],
-      "UpstreamHttpMethod": [
-        "PATCH"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
     },
     {
       "SwaggerKey": "Contact",
