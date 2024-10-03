@@ -16,10 +16,10 @@ parameters:
 
 resources:
   repositories:
-  - repository: Pulse
-    name: 'Constellation/ConstellationDevOps'
-    type: git
-    ref: 'refs/heads/features/change-naming'
+    - repository: CICD
+      name: 'Plateforme Technologique/CICD'
+      type: git
+      ref: 'refs/heads/Release/v6.1'
 
 stages:
 - template: templates/update-gateway.yaml
