@@ -1,7 +1,7 @@
 parameters:
 - name: devIndex
   type: number
-  default: 0
+  default: 3
 - name: deployType
   type: string
   default: 'standard'
@@ -32,10 +32,10 @@ stages:
   - stage: DEV
     ${{ if lt(parameters.devIndex, 10) }}:
       displayName: 'Development-dev0${{ parameters.devIndex }}'
-      pool: Pulse-dev0${{ parameters.devIndex }}
+      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
     ${{ else }}:
       displayName: 'Development-dev${{ parameters.devIndex }}'
-      pool: Pulse-dev${{ parameters.devIndex }}
+      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
