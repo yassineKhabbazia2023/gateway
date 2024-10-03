@@ -53,7 +53,7 @@ stages:
                   environment: dev0${{ parameters.devIndex }}
                 ${{ else }}:
                   environment: dev${{ parameters.devIndex }}
-                subscription: PULSE-DEV
+                subscription: ceg-corp-pulse-dev
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
