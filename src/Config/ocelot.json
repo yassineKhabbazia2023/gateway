@@ -969,8 +969,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite",
-      "DownstreamPathTemplate": "/api/customers/bulk-invite",
+      "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}",
+      "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
