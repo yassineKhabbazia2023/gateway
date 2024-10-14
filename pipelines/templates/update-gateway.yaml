@@ -11,7 +11,6 @@ parameters:
   default:
   - 1
   - 2
-  - 3
 # PRD Iteration
 - name: prdIterations
   type: object
@@ -101,36 +100,11 @@ stages:
                 parameters:
                   environment: $(hubEnvironment)
                   subscription: PULSE-REC
-  - ${{ each index in parameters.prdIterations }}:
-    - stage: PRD${{ index }}
-      displayName: Production-prd0${{ index }}
-      pool: Pulse-prd0${{ index }}
-      dependsOn:
-      - REC1
-      - REC2
-      jobs:
-      - deployment: deploy
-        displayName: 'Updating PRD0${{ index }} config'
-        environment: PRD${{ index }}
-        variables:
-        - name: hubEnvironment
-          value: prd0${{ index }}
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - download: current
-                artifact: Module
-
-              - template: update-config.yaml
-                parameters:
-                  environment: $(hubEnvironment)
-                  subscription: PULSE-PRD
   - stage: PPR1
     displayName: Preproduction-J-1
     pool: Pulse-ppr01
     dependsOn:
-    - PRD1
+    - REC1
     jobs:
     - deployment: deploy
       displayName: 'Updating J-1 config'
@@ -149,3 +123,27 @@ stages:
               parameters:
                 environment: $(hubEnvironment)
                 subscription: PULSE-PPR
+  - ${{ each index in parameters.prdIterations }}:
+    - stage: PRD${{ index }}
+      displayName: Production-prd0${{ index }}
+      pool: Pulse-prd0${{ index }}
+      dependsOn:
+      - PPR1
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating PRD0${{ index }} config'
+        environment: PRD${{ index }}
+        variables:
+        - name: hubEnvironment
+          value: prd0${{ index }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
+
+              - template: update-config.yaml
+                parameters:
+                  environment: $(hubEnvironment)
+                  subscription: PULSE-PRD
