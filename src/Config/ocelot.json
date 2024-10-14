@@ -1185,7 +1185,8 @@
       "UpstreamHttpMethod": [
         "GET",
         "POST",
-        "PUT"
+        "PUT",
+        "DELETE"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
