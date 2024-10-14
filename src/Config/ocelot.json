@@ -1224,6 +1224,30 @@
       }
     },
     {
+      "SwaggerKey": "ContactRegistry",
+      "UpstreamPathTemplate": "/gtw/registry/api/operations/{operationId}/currentuser",
+      "UpstreamHttpMethod": [
+          "PATCH"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/operations/{operationId}/{deductedCurrentUserEmail}",
+      "DownstreamHostAndPorts": [
+          {
+              "Host": "fr#{env_id}#regapp01registry.azurewebsites.net",
+              "Port": 443
+          }
+      ],
+      "AuthenticationOptions": {
+          "AuthenticationProviderKeys": [
+              "AAD",
+              "GIGYA MyPulse v2"
+          ]
+      },
+      "RouteClaimsRequirement": {
+          "PATCH": "COUSER001"
+      }
+    },
+    {
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/api/health",
       "UpstreamHttpMethod": [
@@ -1545,7 +1569,7 @@
         }
       ]
     },
-	{
+    {
       "Key": "Feedcenter",
       "TransformByOcelotConfig": true,
       "Config": [
@@ -1553,6 +1577,17 @@
           "Name": "Pulse.Back.FeedCenter",
           "Version": "v1",
           "Url": "https://fr#{env_id}#fdcapp01feedcenter.azurewebsites.net/api/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "ContactRegistry",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.ContactRegistry",
+          "Version": "v1",
+          "Url": "https://fr#{env_id}#regapp01registry.azurewebsites.net/api/api.json"
         }
       ]
     }

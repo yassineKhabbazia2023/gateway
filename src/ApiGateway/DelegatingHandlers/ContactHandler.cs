@@ -26,17 +26,7 @@ public class ContactHandler : DelegatingHandler
         var contactId = await GetCurrentUser(request);
         var contactEmail = GetUserEmail(request);
 
-        if (!string.IsNullOrWhiteSpace(contactId))
-        {
-            request.Headers.Add("CurrentUser", contactId);
-            request.Headers.Add("ContactEmail", contactEmail);
-
-            // Pour les routes qui contiennent le segment /currentuser et qui préfèrent ne pas utiliser le header.
-            if (request.ShouldSetContactId())
-            {
-                request.ModifyRequestUri("contactId", contactId!);
-            }
-        }
+        request.PrepareRequestHeader(contactEmail, contactId);
 
         return await base.SendAsync(request,
             cancellationToken);
