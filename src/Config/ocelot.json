@@ -899,49 +899,49 @@
       }
     },
     {
-        "SwaggerKey": "Account",
-        "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}",
-        "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}",
-        "DownstreamScheme": "https",
-        "DownstreamHostAndPorts": [
-            {
-                "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-                "Port": 443
-            }
-        ],
-        "UpstreamHttpMethod": [
-            "DELETE"
-        ],
-        "AuthenticationOptions": {
-            "AuthenticationProviderKeys": [
-                "AAD",
-                "GIGYA MyPulse v2"
-            ]
-        },
-        "RouteClaimsRequirement": {
-            "DELETE": "COADMI002, CLUSER003, CLADMI001, COUSER002"
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}",
+      "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
         }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "DELETE": "COADMI002, CLUSER003, CLADMI001, COUSER002"
+      }
     },
     {
-        "SwaggerKey": "Account",
-        "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
-        "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
-        "DownstreamScheme": "https",
-        "DownstreamHostAndPorts": [
-            {
-                "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
-                "Port": 443
-            }
-        ],
-        "UpstreamHttpMethod": [
-            "PATCH"
-        ],
-        "AuthenticationOptions": {
-            "AuthenticationProviderKeys": [
-                "AAD",
-                "GIGYA MyPulse v2"
-            ]
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
+      "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Port": 443
         }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Contact",
@@ -1184,7 +1184,8 @@
       "UpstreamPathTemplate": "/gtw/social/api/company/currentuser/{everything}",
       "UpstreamHttpMethod": [
         "GET",
-        "POST"
+        "POST",
+        "PUT"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
@@ -1545,7 +1546,7 @@
         }
       ]
     },
-	{
+    {
       "Key": "Feedcenter",
       "TransformByOcelotConfig": true,
       "Config": [
