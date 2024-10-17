@@ -24,7 +24,7 @@ public class AccountServiceTests
     }
 
     [Fact]
-    public async Task GetContactRolesAsyncAsync_WhenContactHasRoles_ReturnsContactAccountsPaging()
+    public async Task GetContactRolesAsync_WhenContactHasRoles_ReturnsContactAccountsPaging()
     {
         // Arrange
         var accounts = _fixture.CreateMany<Models.Account>();
@@ -57,7 +57,7 @@ public class AccountServiceTests
     }
 
     [Fact]
-    public async Task GetContactRolesAsyncAsync_WhenResponseUnsuccessful_ReturnsEmptyAccountsPaging()
+    public async Task GetContactRolesAsync_WhenResponseUnsuccessful_ReturnsEmptyAccountsPaging()
     {
         // Arrange
         var httpResponse = new HttpResponseMessage
@@ -77,6 +77,58 @@ public class AccountServiceTests
 
         // Assert
         Assert.Empty(result.Items);
+    }
+
+
+    [Fact]
+    public async Task GetAccountAsync_WhenContactHasRoles_ReturnsAccount()
+    {
+        // Arrange
+        var accounts = _fixture.CreateMany<Models.Account>();
+        var expected = accounts.First();
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(expected)),
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+             .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+             {
+                 request.RequestUri.Should().Be("http://local.account/api/accounts/1");
+             })
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetAccountAsync(1);
+
+        // Assert
+        Assert.Equivalent(expected, result);
+    }
+
+    [Fact]
+    public async Task GetAccountAsync_WhenResponseUnsuccessful_ReturnsNull()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NotFound,
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _accountService.GetAccountAsync(1);
+        await action.Should().ThrowAsync<HttpRequestException>();
     }
 }
 
