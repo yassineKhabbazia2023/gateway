@@ -1249,8 +1249,7 @@
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/desktop-client/versions/latest",
       "UpstreamHttpMethod": [
-        "GET",
-        "POST"
+        "GET"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/static/latest.exe",
