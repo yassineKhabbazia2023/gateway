@@ -2,7 +2,22 @@ using ApiGateway.Configuration;
 using ApiGateway.Extensions;
 using ApiGateway.Middlewares;
 using Microsoft.FeatureManagement;
+using Ocelot.Authentication.Middleware;
+using Ocelot.Authorization.Middleware;
+using Ocelot.Claims.Middleware;
+using Ocelot.DownstreamPathManipulation.Middleware;
+using Ocelot.DownstreamRouteFinder.Middleware;
+using Ocelot.DownstreamUrlCreator.Middleware;
+using Ocelot.Errors.Middleware;
+using Ocelot.Headers.Middleware;
+using Ocelot.LoadBalancer.Middleware;
 using Ocelot.Middleware;
+using Ocelot.Multiplexer;
+using Ocelot.QueryStrings.Middleware;
+using Ocelot.Request.Middleware;
+using Ocelot.Responder.Middleware;
+using Ocelot.WebSockets;
+using System.Reflection.PortableExecutable;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApiGatewayServices(builder.Configuration);
@@ -76,6 +91,30 @@ var config = new OcelotPipelineConfiguration
                 = async (downStreamContext, next) =>
                 await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next)
 };
+
+app.UseWebSockets();
+
+//Override Ocelot Websockets pipeline to support authentication and authorization
+app.MapWhen(httpContext => httpContext.WebSockets.IsWebSocketRequest,
+    wenSocketsApp =>
+    {
+        wenSocketsApp.UseDownstreamContextMiddleware();
+        wenSocketsApp.UseExceptionHandlerMiddleware();
+        wenSocketsApp.UseResponderMiddleware();
+        wenSocketsApp.UseDownstreamRouteFinderMiddleware();
+        wenSocketsApp.UseMultiplexingMiddleware();
+        wenSocketsApp.UseHttpHeadersTransformationMiddleware();
+        wenSocketsApp.UseDownstreamRequestInitialiser();
+        wenSocketsApp.UseAuthenticationMiddleware();
+        wenSocketsApp.UseClaimsToClaimsMiddleware();
+        wenSocketsApp.UseAuthorizationMiddleware();
+        wenSocketsApp.UseClaimsToHeadersMiddleware();
+        wenSocketsApp.UseClaimsToQueryStringMiddleware();
+        wenSocketsApp.UseClaimsToDownstreamPathMiddleware();
+        wenSocketsApp.UseLoadBalancingMiddleware();
+        wenSocketsApp.UseDownstreamUrlCreatorMiddleware();
+        wenSocketsApp.UseWebSocketsProxyMiddleware();
+    });
 
 await app.UseOcelot(config);
 app.UseRouting();
