@@ -1204,7 +1204,9 @@
       "UpstreamPathTemplate": "/gtw/social/api/company/currentuser/{everything}",
       "UpstreamHttpMethod": [
         "GET",
-        "POST"
+        "POST",
+        "PUT",
+        "DELETE"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
@@ -1244,27 +1246,48 @@
       }
     },
     {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/desktop-client/versions/latest",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/static/latest.exe",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "ContactRegistry",
       "UpstreamPathTemplate": "/gtw/registry/api/operations/{operationId}/currentuser",
       "UpstreamHttpMethod": [
-          "PATCH"
+        "PATCH"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/operations/{operationId}/{deductedCurrentUserEmail}",
       "DownstreamHostAndPorts": [
-          {
-              "Host": "fr#{env_id}#regapp01registry.azurewebsites.net",
-              "Port": 443
-          }
+        {
+          "Host": "fr#{env_id}#regapp01registry.azurewebsites.net",
+          "Port": 443
+        }
       ],
       "AuthenticationOptions": {
-          "AuthenticationProviderKeys": [
-              "AAD",
-              "GIGYA MyPulse v2"
-          ]
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       },
       "RouteClaimsRequirement": {
-          "PATCH": "COUSER001"
+        "PATCH": "COUSER001"
       }
     },
     {
@@ -1472,28 +1495,28 @@
       }
     },
     {
-        "SwaggerKey": "ContactRegistry",
-        "UpstreamPathTemplate": "/gtw/registry/api/operations",
-        "UpstreamHttpMethod": [
-            "GET"
-        ],
-        "DownstreamScheme": "https",
-        "DownstreamPathTemplate": "/api/operations/{deductedAccountNumber}",
-        "DownstreamHostAndPorts": [
-            {
-                "Host": "fr#{env_id}#regapp01registry.azurewebsites.net",
-                "Port": 443
-            }
-        ],
-        "AuthenticationOptions": {
-            "AuthenticationProviderKeys": [
-                "AAD",
-                "GIGYA MyPulse v2"
-            ]
-        },
-        "RouteClaimsRequirement": {
-            "GET": "COUSER001"
+      "SwaggerKey": "ContactRegistry",
+      "UpstreamPathTemplate": "/gtw/registry/api/operations",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/operations/{deductedAccountNumber}",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#regapp01registry.azurewebsites.net",
+          "Port": 443
         }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001"
+      }
     }
   ],
   "Aggregates": [
