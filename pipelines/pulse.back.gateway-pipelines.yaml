@@ -30,7 +30,7 @@ extends:
     deployType: ${{ parameters.deployType }}
     sonarExclusions: '**/Program.cs, **/Extensions/SecurityServiceExtensions.cs'
     layer: Domain
-    domain: exp
+    domain: gtw
     resource:
       id: '01'
       name: desktop
