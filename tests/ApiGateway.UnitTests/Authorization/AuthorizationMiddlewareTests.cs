@@ -1,22 +1,15 @@
-﻿using Xunit;
-using Moq;
-using Microsoft.AspNetCore.Http;
+﻿using ApiGateway.Account;
 using ApiGateway.Authorization;
 using ApiGateway.Contact;
-using ApiGateway.Helpers;
-using System.Collections.Generic;
+using ApiGateway.Identity;
 using ApiGateway.Middlewares;
+using ApiGateway.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
-using Azure.Core;
 using Microsoft.Extensions.Primitives;
-using System;
 using Ocelot.Configuration;
 using Ocelot.Values;
-using System.Net;
-using ApiGateway.Account;
-using ApiGateway.Models;
-using ApiGateway.Identity;
+using System.Security.Claims;
 
 namespace ApiGateway.UnitTests.Authorization;
 
@@ -165,7 +158,7 @@ public class AuthorizationMiddlewareTests
         _mockContactService.VerifyAll();
         _mockAuthorizationService.VerifyAll();
     }
-    
+
     [Fact]
     public async Task AuthorizationFilter_ShouldRetrievePermissions_WithAccountIDHeader()
     {
@@ -194,20 +187,21 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .Callback<string>(email => email.Equals(contactEmail))
             .ReturnsAsync("90")
             .Verifiable();
-        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturnRole ).Verifiable();
+        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturnRole).Verifiable();
 
         bool expectedAccountIdOnePassed = false;
         _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .Callback<int, int?>((contactId, accountId) =>
             {
                 contactId.Equals(contactId);
-                if(accountId == 1)
+                if (accountId == 1)
                 {
                     expectedAccountIdOnePassed = true;
                 }
@@ -396,7 +390,7 @@ public class AuthorizationMiddlewareTests
         httpContext.Request.Path = path;
         httpContext.Request.Method = method;
         httpContext.Request.Headers.Authorization = new StringValues($"Bearer {GenerateDummyJwtToken(contactEmail)}");
-        foreach(var kv in headers)
+        foreach (var kv in headers)
         {
             httpContext.Request.Headers.Add(kv.Key, kv.Value);
         }
@@ -654,6 +648,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
