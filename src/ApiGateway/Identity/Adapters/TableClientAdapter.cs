@@ -28,7 +28,7 @@ namespace ApiGateway.Identity.Adapters
         #region Table service client creators
         private TableServiceClient CreateTableServiceClientByManagedIdentityId(string storageUri, string managedIdentityClientId)
         {
-            var credential = new ManagedIdentityCredential("ef858c03-8e1f-4a30-83f1-a08f09ee5de0");
+            var credential = new ManagedIdentityCredential(managedIdentityClientId);
             var client = new TableServiceClient(new Uri(storageUri), credential);
             return client;
         }
