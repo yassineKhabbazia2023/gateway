@@ -1,4 +1,5 @@
-﻿using ApiGateway.Cache;
+﻿using ApiGateway.Account;
+using ApiGateway.Cache;
 using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using Microsoft.Extensions.Caching.Distributed;
@@ -14,8 +15,9 @@ public class TestableContactHandler : ContactHandler
     public TestableContactHandler(
         IServiceScopeFactory _serviceProviderFactory,
         ILogger<ContactHandler> logger,
+        IAccountService _accountService,
         HttpMessageHandler httpMessageHandler)
-        : base(_serviceProviderFactory, logger)
+        : base(_serviceProviderFactory, logger, _accountService)
     {
         _httpMessageHandler = httpMessageHandler;
     }

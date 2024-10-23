@@ -1,8 +1,10 @@
-﻿using ApiGateway.Cache;
+﻿using ApiGateway.Account;
+using ApiGateway.Cache;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Models;
 using ApiGateway.Extensions;
 using ApiGateway.Helpers;
+using Azure.Core;
 
 namespace ApiGateway.DelegatingHandlers;
 
@@ -10,14 +12,17 @@ public class ContactHandler : DelegatingHandler
 {
     private readonly IServiceScopeFactory _serviceProviderFactory;
     private readonly ILogger<ContactHandler> _logger;
+    private readonly IAccountService _accountService;
 
     public ContactHandler(
         IServiceScopeFactory serviceProviderFactory,
-        ILogger<ContactHandler> logger
+        ILogger<ContactHandler> logger,
+        IAccountService accountService
         )
     {
         _serviceProviderFactory = serviceProviderFactory;
         _logger = logger;
+        _accountService = accountService;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -33,10 +38,11 @@ public class ContactHandler : DelegatingHandler
             request.Headers.Add("ContactType", contact.Type?.ToString());
 
             // Pour les routes qui contiennent le segment /currentuser et qui préfèrent ne pas utiliser le header.
-            if (request.ShouldSetContactId())
-            {
-                request.ModifyRequestUri("contactId", contact.Id.ToString());
-            }
+            //if (request.ShouldSetContactId())
+            //{
+            //    request.ModifyRequestUri("contactId", contact.Id.ToString());
+            //}
+            await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), _accountService);
         }
 
         return await base.SendAsync(request,

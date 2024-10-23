@@ -1,8 +1,11 @@
 ﻿using System.Net;
+using ApiGateway.Account;
 using ApiGateway.Cache;
 using ApiGateway.Contact;
+using ApiGateway.Contact.Models;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.UnitTests.Mocks;
+using Azure.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,6 +19,7 @@ public class ContactHandlerTests
     private readonly Mock<ILogger<ContactHandler>> _mockLogger;
     private readonly Mock<ICacheService> _mockCacheService;
     private readonly Mock<IServiceScopeFactory> _mockServiceProviderFactory;
+    private readonly Mock<IAccountService> _mockAccountService;
 
     public ContactHandlerTests()
     {
@@ -29,10 +33,13 @@ public class ContactHandlerTests
         _mockLogger = new Mock<ILogger<ContactHandler>>(MockBehavior.Strict);
         _mockCacheService = new Mock<ICacheService>(MockBehavior.Strict);
         _mockServiceProviderFactory = new Mock<IServiceScopeFactory>(MockBehavior.Loose);
+        _mockAccountService = new Mock<IAccountService>(MockBehavior.Strict);
         _middleware = new TestableContactHandler(
             _mockServiceProviderFactory.Object,
             _mockLogger.Object,
-            mockHandler);
+            _mockAccountService.Object,
+            mockHandler
+        );
     }
 
     [Fact]

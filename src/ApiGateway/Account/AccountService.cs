@@ -20,7 +20,7 @@ public class AccountService : IAccountService
     public async Task<Paging<Models.Account>> GetContactRolesAsync(int contactId)
     {
         var toReturn = new Paging<Models.Account>();
-        var url = $"api/roles/{contactId}";
+        var url = $"api/roles?contactId={contactId}";
         var response = await _httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
@@ -36,5 +36,16 @@ public class AccountService : IAccountService
         }
 
         return toReturn;
+    }
+    public async Task<Models.Account?> GetAccountAsync(int accountId)
+    {
+        var url = $"api/accounts/{accountId}";
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync();
+            return await JsonSerializer.DeserializeAsync<Models.Account>(stream, _jsonSerializerOptions);
+        }
+        throw new HttpRequestException($"GET {url} returned {response.StatusCode}");
     }
 }

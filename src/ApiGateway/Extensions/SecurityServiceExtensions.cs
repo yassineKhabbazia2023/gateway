@@ -19,8 +19,7 @@ public static class SecurityServiceExtensions
                  new AzureTableAuthorityRepositoryOptions { 
                      IsvcAzureStorageName = configuration["IsvcAzureStorageName"],
                      IsvcAzureStorageUri = configuration["IsvcAzureStorageUri"],
-                     IsvcAzureStorageKey = configuration["IsvcAzureStorageKey"], 
-                     ManagedIdentityClientId = configuration["ManagedIdentityClientId"]
+                     IsvcAzureStorageKey = configuration["IsvcAzureStorageKey"]
                  },
                  httpClient,
                  out string[] schemeNames);
