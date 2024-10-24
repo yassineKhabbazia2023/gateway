@@ -1366,6 +1366,66 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/gtw/mandate/api/mandate/{everything}",
+      "DownstreamPathTemplate": "/api/mandate/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsemdt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/mandate/api/bank/{everything}",
+      "DownstreamPathTemplate": "/api/bank/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsemdt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/mandate/api/company/{everything}",
+      "DownstreamPathTemplate": "/api/company/{everything}",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsemdt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/feedcenter/api/account/favorites/currentuser",
       "DownstreamPathTemplate": "/api/favorites/currentuser",
