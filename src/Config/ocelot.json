@@ -1387,7 +1387,7 @@
     },
     {
       "UpstreamPathTemplate": "/gtw/mandate/api/bank/{everything}",
-      "DownstreamPathTemplate": "/api/bank/{everything}",
+      "DownstreamPathTemplate": "/mandate/api/bank/{everything}",
       "UpstreamHttpMethod": [
         "GET"
       ],
@@ -1407,7 +1407,7 @@
     },
     {
       "UpstreamPathTemplate": "/gtw/mandate/api/company/{everything}",
-      "DownstreamPathTemplate": "/api/company/{everything}",
+      "DownstreamPathTemplate": "/mandate/api/company/{everything}",
       "UpstreamHttpMethod": [
         "GET"
       ],
