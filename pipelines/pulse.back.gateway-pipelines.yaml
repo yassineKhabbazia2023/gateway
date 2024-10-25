@@ -1,17 +1,20 @@
-trigger: none
+trigger:
+  - main
+  - features/*
+  - bugfix/*
+  - hotfix/*
 
 pool:
   vmImage: 'windows-latest'
 
 parameters:
 - name: devIndex
-  displayName: 'Index de l environnement cible (seulement pour un déploiement sur env de DEV)'
+  displayName: "Index de l'environnement cible (seulement pour un déploiement sur env de DEV)"
   type: number
   default: 0
 - name: deployType
-  displayName: "Technical parameter : don t modify it !"
   type: string
-  default: 'standard'
+  default: 'onlyDev'
   values:
     - standard
     - onlyDev
@@ -21,7 +24,7 @@ resources:
   - repository: Pulse
     name: 'Constellation/ConstellationDevOps'
     type: git
-    ref: 'refs/heads/Release/v2.0'
+    ref: 'refs/tags/V2.1-rc.beta'
 
 extends:
   template: pipelines\templates\platform.back.api.yaml@Pulse
