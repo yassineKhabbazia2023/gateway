@@ -1369,7 +1369,8 @@
       "UpstreamPathTemplate": "/gtw/mandate/api/mandate/{everything}",
       "DownstreamPathTemplate": "/api/mandate/{everything}",
       "UpstreamHttpMethod": [
-        "GET"
+        "GET",
+        "POST"
       ],
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
