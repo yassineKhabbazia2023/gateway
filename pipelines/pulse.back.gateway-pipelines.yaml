@@ -1,6 +1,6 @@
 trigger:
   - main
-  - features/*
+  - feature/*
   - bugfix/*
   - hotfix/*
 
