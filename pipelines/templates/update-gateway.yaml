@@ -37,23 +37,24 @@ stages:
       displayName: 'Development-dev${{ parameters.devIndex }}'
       pool: Pulse-dev${{ parameters.devIndex }}
     jobs:
-    - deployment: deploy
-      displayName: 'Updating config'
-      environment: DEV
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+      - deployment: deploy
+        displayName: 'Updating config'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
 
-            - template: update-config.yaml
-              parameters:
-                ${{ if lt(parameters.devIndex, 10) }}:
-                  environment: dev0${{ parameters.devIndex }}
-                ${{ else }}:
-                  environment: dev${{ parameters.devIndex }}
-                subscription: PULSE-DEV
+              - template: update-config.yaml
+                parameters:
+                  ${{ if lt(parameters.devIndex, 10) }}:
+                    environment: dev0${{ parameters.devIndex }}
+                  ${{ else }}:
+                    environment: dev${{ parameters.devIndex }}
+                  subscription: PULSE-DEV
 - ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
