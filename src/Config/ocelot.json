@@ -1285,6 +1285,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COLANC001, CLSILA001"
       }
     },
     {
