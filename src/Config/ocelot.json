@@ -1270,7 +1270,7 @@
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/desktop-client/generate-sso-link",
       "UpstreamHttpMethod": [
-        "GET"
+        "POST"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/GenerateSSOLink",
@@ -1285,6 +1285,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COSILA001, CLSILA001"
       }
     },
     {
