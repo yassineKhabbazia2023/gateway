@@ -1270,7 +1270,7 @@
       "SwaggerKey": "Social",
       "UpstreamPathTemplate": "/gtw/social/desktop-client/generate-sso-link",
       "UpstreamHttpMethod": [
-        "GET"
+        "POST"
       ],
       "DownstreamScheme": "https",
       "DownstreamPathTemplate": "/api/GenerateSSOLink",
