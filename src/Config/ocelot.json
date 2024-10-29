@@ -1287,7 +1287,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "POST": "COLANC001, CLSILA001"
+        "POST": "COSILA001, CLSILA001"
       }
     },
     {
