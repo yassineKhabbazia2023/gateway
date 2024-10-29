@@ -1285,9 +1285,6 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "RouteClaimsRequirement": {
-        "POST": "COSILA001, CLSILA001"
       }
     },
     {
