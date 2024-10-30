@@ -1243,6 +1243,27 @@
       }
     },
     {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/desktop-client/currentuser/generate-sso-link",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/currentuser/GenerateSSOLink",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "ContactRegistry",
       "UpstreamPathTemplate": "/gtw/registry/api/operations/{operationId}/currentuser",
       "UpstreamHttpMethod": [
