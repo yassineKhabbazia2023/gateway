@@ -25,11 +25,7 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
-    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))) }}:
-      - '"Build & Deploy" cannot triggered from this branch, please choice a tag , contact PULSE Ops': error
-
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
-    
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
 - ${{ if ne(parameters.devIndex, 0) }}:
