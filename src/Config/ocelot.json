@@ -1268,12 +1268,12 @@
     },
     {
       "SwaggerKey": "Social",
-      "UpstreamPathTemplate": "/gtw/social/desktop-client/generate-sso-link",
+      "UpstreamPathTemplate": "/gtw/social/desktop-client/currentuser/generate-sso-link",
       "UpstreamHttpMethod": [
         "POST"
       ],
       "DownstreamScheme": "https",
-      "DownstreamPathTemplate": "/api/GenerateSSOLink",
+      "DownstreamPathTemplate": "/api/currentuser/GenerateSSOLink",
       "DownstreamHostAndPorts": [
         {
           "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
