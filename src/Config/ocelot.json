@@ -1252,7 +1252,7 @@
       "DownstreamPathTemplate": "/api/currentuser/GenerateSSOLink",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#socapp01social.azurewebsites.net",
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
