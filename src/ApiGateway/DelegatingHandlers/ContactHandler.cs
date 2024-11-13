@@ -33,15 +33,7 @@ public class ContactHandler : DelegatingHandler
 
         if (contact != null)
         {
-            request.Headers.Add("CurrentUser", contact.Id.ToString());
-            request.Headers.Add("ContactType", contact.Type?.ToString());
-
-            // Pour les routes qui contiennent le segment /currentuser et qui préfèrent ne pas utiliser le header.
-            //if (request.ShouldSetContactId())
-            //{
-            //    request.ModifyRequestUri("contactId", contact.Id.ToString());
-            //}
-            await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), _accountService);
+            await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), contact.Type, _accountService);
         }
 
         return await base.SendAsync(request,

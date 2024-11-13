@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using ApiGateway.Account;
 using ApiGateway.Configuration;
+using ApiGateway.Contact.Models;
 
 namespace ApiGateway.Extensions;
 
@@ -34,6 +35,7 @@ public static class HttpRequestMessageExtensions
         this HttpRequestMessage request, 
         string contactEmail, 
         string? contactId,
+        string? contactType,
         IAccountService accountService
       )
     {
@@ -42,6 +44,7 @@ public static class HttpRequestMessageExtensions
         {
             request.Headers.Add("CurrentUser", contactId);
             request.Headers.Add("ContactEmail", contactEmail);
+            request.Headers.Add("ContactType", contactType?.ToString());
 
             if (request.UriContainsFragment($"/{HttpRequestMessageConstants.CurrentUserUriFragment}"))
             {
