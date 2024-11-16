@@ -214,6 +214,236 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             Assert.Equal("Invalid audience", result.Failure.Message);
         }
 
+        [Fact]
+        public async Task AppendChallengeResponse_AddsBasicChallengeHeader_WhenNoErrorDetails()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                Challenge = "Bearer"
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var context = new DefaultHttpContext();
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            );
+
+            var eventContext = new JwtBearerChallengeContext(context, new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)), options, new AuthenticationProperties());
+
+            // Act
+            handler.ExposedAppendChallengeResponse(eventContext);
+
+            // Assert
+            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
+            Assert.Equal("Bearer", context.Response.Headers["WWW-Authenticate"]);
+        }
+
+        [Fact]
+        public async Task AppendChallengeResponse_AddsChallengeHeader_WithErrorDetails()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                Challenge = "Bearer"
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var context = new DefaultHttpContext();
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            );
+
+            var eventContext = new JwtBearerChallengeContext(context, new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)), options, new AuthenticationProperties())
+            {
+                Error = "invalid_token",
+                ErrorDescription = "The access token is invalid.",
+                ErrorUri = "https://example.com/error"
+            };
+
+            // Act
+            handler.ExposedAppendChallengeResponse(eventContext);
+
+            // Assert
+            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
+            var headerValue = context.Response.Headers["WWW-Authenticate"].ToString();
+            Assert.Contains("error=\"invalid_token\"", headerValue);
+            Assert.Contains("error_description=\"The access token is invalid.\"", headerValue);
+            Assert.Contains("error_uri=\"https://example.com/error\"", headerValue);
+        }
+
+        [Fact]
+        public async Task AppendChallengeResponse_AddsPartialChallengeHeader_WithSomeErrorDetails()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                Challenge = "Bearer"
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var context = new DefaultHttpContext();
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            );
+
+            var eventContext = new JwtBearerChallengeContext(context, new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)), options, new AuthenticationProperties())
+            {
+                Error = "invalid_token"
+            };
+
+            // Act
+            handler.ExposedAppendChallengeResponse(eventContext);
+
+            // Assert
+            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
+            var headerValue = context.Response.Headers["WWW-Authenticate"].ToString();
+            Assert.Contains("error=\"invalid_token\"", headerValue);
+            Assert.DoesNotContain("error_description", headerValue);
+            Assert.DoesNotContain("error_uri", headerValue);
+        }
+
+        [Fact]
+        public async Task HandleAuthenticationFailureAsync_HandlesFailureAndThrowsException()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        // Simulate custom logic in the event handler
+                        context.NoResult(); // Pretend the failure is handled
+                        return Task.CompletedTask;
+                    }
+                }
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                new DefaultHttpContext()
+            );
+
+            var exception = new SecurityTokenInvalidLifetimeException("Invalid token lifetime");
+
+            // Act
+            var result = await handler.ExposedHandleAuthenticationFailureAsync(exception);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task HandleChallengeAsync_CoversAllPaths()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                IncludeErrorDetails = true,
+                Events = new JwtBearerEvents()
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var context = new DefaultHttpContext();
+            context.Response.Headers.Clear();
+
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            );
+
+            var properties = new AuthenticationProperties();
+
+            // Simulate an authentication failure
+            context.Features.Set<IAuthenticateResultFeature>(Mock.Of<IAuthenticateResultFeature>(f =>
+                f.AuthenticateResult == AuthenticateResult.Fail(new SecurityTokenInvalidSignatureException("Invalid signature"))
+            ));
+
+            // Act
+            await handler.ExposedHandleChallengeAsync(properties);
+
+            // Assert
+            Assert.Equal(401, context.Response.StatusCode);
+            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
+        }
+
+
         // Test subclass
         private class TestablePulseJwtBearerHandler : PulseJwtBearerHandler
         {
@@ -234,6 +464,35 @@ namespace ApiGateway.UnitTests.Identity.Handlers
 
                 return await (Task<AuthenticateResult>)methodInfo.Invoke(this, new object[] { validationFailures });
             }
+
+            public void ExposedAppendChallengeResponse(JwtBearerChallengeContext eventContext)
+            {
+                var methodInfo = typeof(PulseJwtBearerHandler)
+                    .GetMethod("AppendChallengeResponse", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                if (methodInfo == null)
+                {
+                    throw new MissingMethodException("AppendChallengeResponse method not found.");
+                }
+
+                methodInfo.Invoke(this, new object[] { eventContext });
+            }
+
+            public async Task<AuthenticateResult> ExposedHandleAuthenticationFailureAsync(Exception ex)
+            {
+                var methodInfo = typeof(PulseJwtBearerHandler)
+                    .GetMethod("HandleAuthenticationFailureAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                if (methodInfo == null)
+                    throw new MissingMethodException("HandleAuthenticationFailureAsync method not found");
+
+                return await (Task<AuthenticateResult>)methodInfo.Invoke(this, new object[] { ex });
+            }
+
+            public Task ExposedHandleChallengeAsync(AuthenticationProperties properties)
+                => base.HandleChallengeAsync(properties);
+
         }
+
     }
 }
