@@ -1,5 +1,8 @@
-﻿namespace ApiGateway.Identity.Models
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ApiGateway.Identity.Models
 {
+    [ExcludeFromCodeCoverage]
     public class ValidIssuer
     {
         public ValidIssuer(Guid id, string name, string roleName, bool canBeSystemAccount)
