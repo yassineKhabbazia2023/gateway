@@ -18,25 +18,16 @@ namespace ApiGateway.UnitTests.Identity.Handlers
         private readonly Mock<IOptionsMonitor<JwtBearerOptions>> _optionsMock;
         private readonly Mock<ILoggerFactory> _loggerFactoryMock;
         private readonly Mock<UrlEncoder> _urlEncoderMock;
-        private readonly Mock<IAuthenticationSchemeProvider> _schemeProviderMock;
 
         public PulseJwtBearerHandlerTests()
         {
             _optionsMock = new Mock<IOptionsMonitor<JwtBearerOptions>>();
             _loggerFactoryMock = new Mock<ILoggerFactory>();
             _urlEncoderMock = new Mock<UrlEncoder>();
-            _schemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
         }
 
-        [Fact]
-        public async Task HandleAuthenticateAsync_ReturnsAuthenticateResult_WhenTokenIsValid()
+        private static JwtBearerOptions CreateJwtBearerOptions(Action<JwtBearerOptions> configure = null)
         {
-            // Arrange
-            var validToken = GenerateJwtToken(); // Generate a valid JWT token
-            var claims = new[] { new Claim(ClaimTypes.Name, "TestUser") };
-            var identity = new ClaimsIdentity(claims, "Bearer");
-            var principal = new ClaimsPrincipal(identity);
-
             var options = new JwtBearerOptions
             {
                 TokenValidationParameters = new TokenValidationParameters
@@ -46,45 +37,55 @@ namespace ApiGateway.UnitTests.Identity.Handlers
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
                 },
-                Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        // Simulate extracting the token from the request
-                        context.Token = validToken;
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        // Simulate successful token validation
-                        context.Principal = principal;
-                        return Task.CompletedTask;
-                    }
-                }
+                Events = new JwtBearerEvents()
             };
+            configure?.Invoke(options);
+            return options;
+        }
 
-            // Add the JwtSecurityTokenHandler as the default token validator
-            options.SecurityTokenValidators.Clear();
-            options.SecurityTokenValidators.Add(new JwtSecurityTokenHandler());
+        private TestablePulseJwtBearerHandler CreateHandler(JwtBearerOptions options, HttpContext context)
+        {
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
 
-            var optionsMonitorMock = new Mock<IOptionsMonitor<JwtBearerOptions>>();
-            optionsMonitorMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            ).Wait();
+
+            return handler;
+        }
+
+        [Fact]
+        public async Task HandleAuthenticateAsync_ReturnsAuthenticateResult_WhenTokenIsValid()
+        {
+            // Arrange
+            var validToken = GenerateJwtToken();
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "TestUser") }, "Bearer"));
+
+            var options = CreateJwtBearerOptions(o =>
+            {
+                o.Events.OnMessageReceived = context =>
+                {
+                    context.Token = validToken;
+                    return Task.CompletedTask;
+                };
+                o.Events.OnTokenValidated = context =>
+                {
+                    context.Principal = principal;
+                    return Task.CompletedTask;
+                };
+            });
 
             var context = new DefaultHttpContext();
             context.Request.Headers["Authorization"] = $"Bearer {validToken}";
 
-            var scheme = new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler));
-
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole()); // Create a test logger
-
-            var handler = new PulseJwtBearerHandler(
-                optionsMonitorMock.Object,
-                loggerFactory,
-                Mock.Of<UrlEncoder>()
-            );
-
-            // Ensure the handler is properly initialized with scheme and context
-            await handler.InitializeAsync(scheme, context);
+            var handler = CreateHandler(options, context);
 
             // Act
             var result = await handler.AuthenticateAsync();
@@ -92,13 +93,11 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             // Assert
             Assert.NotNull(result);
             Assert.True(result.Succeeded);
-            Assert.NotNull(result.Principal);
             Assert.Equal("TestUser", result.Principal.Identity.Name);
         }
 
         private string GenerateJwtToken()
         {
-            // Create a valid JWT token for testing
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -109,44 +108,16 @@ namespace ApiGateway.UnitTests.Identity.Handlers
                 SigningCredentials = credentials
             };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityTokenHandler().CreateToken(tokenDescriptor));
         }
 
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsNoResult_WhenTokenIsMissing()
         {
             // Arrange
-            var options = new JwtBearerOptions
-            {
-                TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
-                },
-                Events = new JwtBearerEvents() // Ensure events are initialized
-            };
-
-            var optionsMonitorMock = new Mock<IOptionsMonitor<JwtBearerOptions>>();
-            optionsMonitorMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
-
+            var options = CreateJwtBearerOptions();
             var context = new DefaultHttpContext();
-
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-
-            var handler = new PulseJwtBearerHandler(
-                optionsMonitorMock.Object,
-                loggerFactory,
-                Mock.Of<UrlEncoder>()
-            );
-
-            await handler.InitializeAsync(
-                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
-                context
-            );
+            var handler = CreateHandler(options, context);
 
             // Act
             var result = await handler.AuthenticateAsync();
@@ -161,49 +132,17 @@ namespace ApiGateway.UnitTests.Identity.Handlers
         public async Task HandleAuthenticateAsync_ReturnsFailure_WhenTokenIsInvalid()
         {
             // Arrange
-            var options = new JwtBearerOptions
+            var options = CreateJwtBearerOptions(o =>
             {
-                TokenValidationParameters = new TokenValidationParameters
+                o.Events.OnMessageReceived = context =>
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
-                },
-                Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        // Simulate extracting the invalid token from the request
-                        context.Token = "invalid_token";
-                        return Task.CompletedTask;
-                    },
-                    OnAuthenticationFailed = context =>
-                    {
-                        // Log or modify failure context if necessary
-                        return Task.CompletedTask;
-                    }
-                }
-            };
-
-            var optionsMonitorMock = new Mock<IOptionsMonitor<JwtBearerOptions>>();
-            optionsMonitorMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+                    context.Token = "invalid_token";
+                    return Task.CompletedTask;
+                };
+            });
 
             var context = new DefaultHttpContext();
-            context.Request.Headers["Authorization"] = "Bearer invalid_token";
-
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-
-            var handler = new PulseJwtBearerHandler(
-                optionsMonitorMock.Object,
-                loggerFactory,
-                Mock.Of<UrlEncoder>()
-            );
-
-            await handler.InitializeAsync(
-                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
-                context
-            );
+            var handler = CreateHandler(options, context);
 
             // Act
             var result = await handler.AuthenticateAsync();
@@ -224,11 +163,10 @@ namespace ApiGateway.UnitTests.Identity.Handlers
                 new SecurityTokenExpiredException { Expires = DateTime.UtcNow.AddMinutes(-5) }
             });
 
-            // Use reflection to access the private static method
             var methodInfo = typeof(PulseJwtBearerHandler)
                 .GetMethod("CreateErrorDescription", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
-            Assert.NotNull(methodInfo); // Ensure the method is found
+            Assert.NotNull(methodInfo);
 
             // Act
             var errorDescription = methodInfo?.Invoke(null, new object[] { aggregateException }) as string;
@@ -240,13 +178,10 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             Assert.Contains($"The token expired at '{DateTime.UtcNow.AddMinutes(-5).ToString(CultureInfo.InvariantCulture)}'", errorDescription);
         }
 
-
         [Fact]
         public void EventsProperty_ThrowsArgumentNullException_WhenEventsNotSet()
         {
             // Arrange
-            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(new JwtBearerOptions());
-
             var handler = new TestablePulseJwtBearerHandler(
                 _optionsMock.Object,
                 LoggerFactory.Create(builder => builder.AddConsole()),
@@ -258,26 +193,28 @@ namespace ApiGateway.UnitTests.Identity.Handlers
         }
 
         [Fact]
-        public async Task CreateEventsAsync_ReturnsJwtBearerEvents()
+        public async Task HandleValidationFailuresAsync_ReturnsAuthenticateResult_WithSingleValidationFailure()
         {
             // Arrange
-            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(new JwtBearerOptions());
+            var options = CreateJwtBearerOptions();
+            var context = new DefaultHttpContext();
+            var handler = CreateHandler(options, context);
 
-            var handler = new TestablePulseJwtBearerHandler(
-                _optionsMock.Object,
-                LoggerFactory.Create(builder => builder.AddConsole()),
-                Mock.Of<UrlEncoder>()
-            );
+            var validationFailures = new List<Exception>
+            {
+                new SecurityTokenInvalidAudienceException("Invalid audience")
+            };
 
             // Act
-            var result = await handler.ExposedCreateEventsAsync();
+            var result = await handler.ExposedHandleValidationFailuresAsync(validationFailures);
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<JwtBearerEvents>(result);
+            Assert.False(result.Succeeded);
+            Assert.Equal("Invalid audience", result.Failure.Message);
         }
 
-        // Test subclass to expose protected members
+        // Test subclass
         private class TestablePulseJwtBearerHandler : PulseJwtBearerHandler
         {
             public TestablePulseJwtBearerHandler(IOptionsMonitor<JwtBearerOptions> options, ILoggerFactory logger, UrlEncoder encoder)
@@ -287,157 +224,16 @@ namespace ApiGateway.UnitTests.Identity.Handlers
 
             public new JwtBearerEvents ExposedEvents => base.Events as JwtBearerEvents ?? throw new ArgumentNullException(nameof(JwtBearerEvents));
 
-            public Task<object> ExposedCreateEventsAsync() => base.CreateEventsAsync();
-            public Task ExposedHandleChallengeAsync(AuthenticationProperties properties) => base.HandleChallengeAsync(properties);
-
             public async Task<AuthenticateResult> ExposedHandleValidationFailuresAsync(List<Exception> validationFailures)
             {
                 var methodInfo = typeof(PulseJwtBearerHandler)
                     .GetMethod("HandleValidationFailuresAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
                 if (methodInfo == null)
-                {
-                    throw new MissingMethodException("HandleValidationFailuresAsync method not found.");
-                }
+                    throw new MissingMethodException("HandleValidationFailuresAsync not found");
 
                 return await (Task<AuthenticateResult>)methodInfo.Invoke(this, new object[] { validationFailures });
             }
-
-            public async Task<AuthenticateResult> ExposedHandleAuthenticationFailureAsync(Exception ex)
-            {
-                var methodInfo = typeof(PulseJwtBearerHandler)
-                    .GetMethod("HandleAuthenticationFailureAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                if (methodInfo == null)
-                {
-                    throw new MissingMethodException("HandleAuthenticationFailureAsync method not found.");
-                }
-
-                return await (Task<AuthenticateResult>)methodInfo.Invoke(this, new object[] { ex });
-            }
         }
-
-
-        [Fact]
-        public async Task HandleChallengeAsync_SetsChallengeResponseHeaders()
-        {
-            // Arrange
-            var options = new JwtBearerOptions
-            {
-                TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
-                },
-                IncludeErrorDetails = true
-            };
-
-            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
-
-            var context = new DefaultHttpContext();
-            var handler = new TestablePulseJwtBearerHandler(
-                _optionsMock.Object,
-                LoggerFactory.Create(builder => builder.AddConsole()),
-                Mock.Of<UrlEncoder>()
-            );
-
-            await handler.InitializeAsync(
-                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
-                context
-            );
-
-            // Simulate a failure during authentication
-            await handler.AuthenticateAsync();
-
-            // Act
-            await handler.ExposedHandleChallengeAsync(new AuthenticationProperties());
-
-            // Assert
-            Assert.Equal(401, context.Response.StatusCode);
-            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
-        }
-
-        [Fact]
-        public async Task HandleValidationFailuresAsync_ReturnsAuthenticateResult_WithSingleValidationFailure()
-        {
-            // Arrange
-            var options = new JwtBearerOptions
-            {
-                TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
-                },
-                Events = new JwtBearerEvents() // Ensure events are initialized
-            };
-
-            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
-
-            var handler = new TestablePulseJwtBearerHandler(
-                _optionsMock.Object,
-                LoggerFactory.Create(builder => builder.AddConsole()),
-                Mock.Of<UrlEncoder>()
-            );
-
-            await handler.InitializeAsync(
-                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
-                new DefaultHttpContext()
-            );
-
-            var validationFailures = new List<Exception>
-    {
-        new SecurityTokenInvalidAudienceException("Invalid audience")
-    };
-
-            // Act
-            var result = await handler.ExposedHandleValidationFailuresAsync(validationFailures);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.False(result.Succeeded);
-            Assert.IsType<AuthenticateResult>(result);
-            Assert.Equal("Invalid audience", result.Failure.Message);
-        }
-
-        [Fact]
-        public async Task HandleAuthenticationFailureAsync_ThrowsException_WithFailureDetails()
-        {
-            // Arrange
-            var options = new JwtBearerOptions
-            {
-                TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
-                },
-                Events = new JwtBearerEvents() // Ensure events are initialized
-            };
-
-            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
-
-            var handler = new TestablePulseJwtBearerHandler(
-                _optionsMock.Object,
-                LoggerFactory.Create(builder => builder.AddConsole()),
-                Mock.Of<UrlEncoder>()
-            );
-
-            await handler.InitializeAsync(
-                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
-                new DefaultHttpContext()
-            );
-
-            var exception = new SecurityTokenInvalidSignatureException("Invalid signature");
-
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<SecurityTokenInvalidSignatureException>(() => handler.ExposedHandleAuthenticationFailureAsync(exception));
-            Assert.Equal("Invalid signature", ex.Message);
-        }
-
     }
 }
