@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -212,5 +213,123 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             Assert.False(result.Succeeded);
         }
 
+        [Fact]
+        public void CreateErrorDescription_ReturnsCorrectErrorMessages()
+        {
+            // Arrange
+            var aggregateException = new AggregateException(new Exception[]
+            {
+                new SecurityTokenInvalidAudienceException("Invalid audience.") { InvalidAudience = "TestAudience" },
+                new SecurityTokenInvalidIssuerException("Invalid issuer.") { InvalidIssuer = "TestIssuer" },
+                new SecurityTokenExpiredException { Expires = DateTime.UtcNow.AddMinutes(-5) }
+            });
+
+            // Use reflection to access the private static method
+            var methodInfo = typeof(PulseJwtBearerHandler)
+                .GetMethod("CreateErrorDescription", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            Assert.NotNull(methodInfo); // Ensure the method is found
+
+            // Act
+            var errorDescription = methodInfo?.Invoke(null, new object[] { aggregateException }) as string;
+
+            // Assert
+            Assert.NotNull(errorDescription);
+            Assert.Contains("The audience 'TestAudience' is invalid", errorDescription);
+            Assert.Contains("The issuer 'TestIssuer' is invalid", errorDescription);
+            Assert.Contains($"The token expired at '{DateTime.UtcNow.AddMinutes(-5).ToString(CultureInfo.InvariantCulture)}'", errorDescription);
+        }
+
+
+        [Fact]
+        public void EventsProperty_ThrowsArgumentNullException_WhenEventsNotSet()
+        {
+            // Arrange
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(new JwtBearerOptions());
+
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => handler.ExposedEvents);
+        }
+
+        [Fact]
+        public async Task CreateEventsAsync_ReturnsJwtBearerEvents()
+        {
+            // Arrange
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(new JwtBearerOptions());
+
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            // Act
+            var result = await handler.ExposedCreateEventsAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<JwtBearerEvents>(result);
+        }
+
+        // Test subclass to expose protected members
+        private class TestablePulseJwtBearerHandler : PulseJwtBearerHandler
+        {
+            public TestablePulseJwtBearerHandler(IOptionsMonitor<JwtBearerOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+                : base(options, logger, encoder)
+            {
+            }
+
+            public new JwtBearerEvents ExposedEvents => base.Events as JwtBearerEvents ?? throw new ArgumentNullException(nameof(JwtBearerEvents));
+
+            public Task<object> ExposedCreateEventsAsync() => base.CreateEventsAsync();
+            public Task ExposedHandleChallengeAsync(AuthenticationProperties properties) => base.HandleChallengeAsync(properties);
+        }
+
+        [Fact]
+        public async Task HandleChallengeAsync_SetsChallengeResponseHeaders()
+        {
+            // Arrange
+            var options = new JwtBearerOptions
+            {
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a_secure_key_that_is_at_least_16_bytes"))
+                },
+                IncludeErrorDetails = true
+            };
+
+            _optionsMock.Setup(o => o.Get(It.IsAny<string>())).Returns(options);
+
+            var context = new DefaultHttpContext();
+            var handler = new TestablePulseJwtBearerHandler(
+                _optionsMock.Object,
+                LoggerFactory.Create(builder => builder.AddConsole()),
+                Mock.Of<UrlEncoder>()
+            );
+
+            await handler.InitializeAsync(
+                new AuthenticationScheme("Bearer", null, typeof(PulseJwtBearerHandler)),
+                context
+            );
+
+            // Simulate a failure during authentication
+            await handler.AuthenticateAsync();
+
+            // Act
+            await handler.ExposedHandleChallengeAsync(new AuthenticationProperties());
+
+            // Assert
+            Assert.Equal(401, context.Response.StatusCode);
+            Assert.True(context.Response.Headers.ContainsKey("WWW-Authenticate"));
+        }
     }
 }
