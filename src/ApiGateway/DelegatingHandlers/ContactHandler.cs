@@ -33,6 +33,7 @@ public class ContactHandler : DelegatingHandler
 
         if (contact != null)
         {
+            this._logger.LogInformation($"{nameof(ContactHandler)} Passing the following headers to downstream: CurrentUser: {contact.Id.ToString()}, ContactEmail: {contactEmail}, ContactType: {contact.Type} ");
             await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), contact.Type, _accountService);
         }
 
@@ -53,7 +54,7 @@ public class ContactHandler : DelegatingHandler
         var userEmail = JwtHelper.ExtractUserEmailFromToken(token);
 
         return userEmail;
-    } 
+    }
 
     public async Task<Contact.Models.Contact?> GetCurrentUser(HttpRequestMessage request)
     {
