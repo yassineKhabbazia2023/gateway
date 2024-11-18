@@ -22,7 +22,7 @@ namespace ApiGateway.UnitTests.Extensions
             var contactEmail = "";
             var expectedRequestUri = request.RequestUri;
 
-            await request.PrepareRequestHeader(contactEmail, null, _mockAccountService.Object);
+            await request.PrepareRequestHeader(contactEmail, null, null, _mockAccountService.Object);
 
             request.Headers.Should().BeEmpty();
             request.RequestUri.Should().Be(expectedRequestUri);
@@ -34,13 +34,15 @@ namespace ApiGateway.UnitTests.Extensions
             var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts");
             var contactEmail = "contact@email.com";
             var contactId = "contact-id";
+            var contactType = "Collaborateur";
             var expectedRequestUri = request.RequestUri;
             var uriPath = request.RequestUri!.AbsolutePath;
 
-            await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            await request.PrepareRequestHeader(contactEmail, contactId, contactType, _mockAccountService.Object);
 
             request.Headers.FirstOrDefault(x => x.Key == "ContactEmail").Value.Should().BeEquivalentTo(contactEmail);
             request.Headers.FirstOrDefault(x => x.Key == "CurrentUser").Value.Should().BeEquivalentTo(contactId);
+            request.Headers.FirstOrDefault(x => x.Key == "ContactType").Value.Should().BeEquivalentTo(contactType);
 
             request.RequestUri.Should().BeEquivalentTo(expectedRequestUri);
         }
@@ -52,12 +54,14 @@ namespace ApiGateway.UnitTests.Extensions
             var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUri}/{HttpRequestMessageConstants.CurrentUserUriFragment}?search=firstname");
             var contactEmail = "contact@email.com";
             var contactId = "contact-id";
+            var contactType = "Collaborateur";
             var expectedRequestUri = $"{baseUri}?search=firstname&contactId={contactId}";
 
-            await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            await request.PrepareRequestHeader(contactEmail, contactId, contactType, _mockAccountService.Object);
 
             request.Headers.FirstOrDefault(x => x.Key == "ContactEmail").Value.Should().BeEquivalentTo(contactEmail);
             request.Headers.FirstOrDefault(x => x.Key == "CurrentUser").Value.Should().BeEquivalentTo(contactId);
+            request.Headers.FirstOrDefault(x => x.Key == "ContactType").Value.Should().BeEquivalentTo(contactType);
 
             request.RequestUri?.ToString().Should().Be(expectedRequestUri);
         }
@@ -71,7 +75,7 @@ namespace ApiGateway.UnitTests.Extensions
             var contactId = "contact-id";
             var expectedRequestUri = $"{baseUri}?email=contact%40email.com";
 
-            await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            await request.PrepareRequestHeader(contactEmail, contactId, null, _mockAccountService.Object);
 
             request.RequestUri?.ToString().Should().Be(expectedRequestUri);
         }
@@ -83,7 +87,7 @@ namespace ApiGateway.UnitTests.Extensions
             var contactEmail = "contact@email.com";
             var contactId = "contact-id";
 
-            var action = async () => await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            var action = async () => await request.PrepareRequestHeader(contactEmail, contactId, null, _mockAccountService.Object);
 
             await action.Should().ThrowAsync<ArgumentNullException>();
         }
@@ -104,7 +108,7 @@ namespace ApiGateway.UnitTests.Extensions
 
             _mockAccountService.Setup(x => x.GetAccountAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
 
-            await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            await request.PrepareRequestHeader(contactEmail, contactId, null, _mockAccountService.Object);
 
             request.RequestUri?.ToString().Should().Be(expectedRequestUri);
         }
@@ -118,7 +122,7 @@ namespace ApiGateway.UnitTests.Extensions
             var contactId = "contact-id";
             var expectedRequestUri = $"{baseUri}?email=contact%40email.com";
 
-            var action = async () => await request.PrepareRequestHeader(contactEmail, contactId, _mockAccountService.Object);
+            var action = async () => await request.PrepareRequestHeader(contactEmail, contactId, null, _mockAccountService.Object);
 
             await action.Should().ThrowAsync<ArgumentException>();
         }

@@ -28,10 +28,13 @@ public class ContactHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
     CancellationToken cancellationToken)
     {
-        var contactId = await GetCurrentUser(request);
+        var contact = await GetCurrentUser(request);
         var contactEmail = GetUserEmail(request);
 
-        await request.PrepareRequestHeader(contactEmail, contactId, _accountService);
+        if (contact != null)
+        {
+            await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), contact.Type, _accountService);
+        }
 
         return await base.SendAsync(request,
             cancellationToken);
@@ -52,7 +55,7 @@ public class ContactHandler : DelegatingHandler
         return userEmail;
     } 
 
-    public async Task<string?> GetCurrentUser(HttpRequestMessage request)
+    public async Task<Contact.Models.Contact?> GetCurrentUser(HttpRequestMessage request)
     {
         var token = JwtHelper.ExtractBearerToken(request);
 
@@ -75,21 +78,21 @@ public class ContactHandler : DelegatingHandler
         // (IContactService, a scoped service) into a component that has an application-wide lifespan (our ContactHandler, a singleton).
         var scope = _serviceProviderFactory.CreateScope();
         var cacheService = scope.ServiceProvider.GetRequiredService<ICacheService>();
-        var contactId = await cacheService.GetAsync(userEmail);
-        if (string.IsNullOrWhiteSpace(contactId))
+        var contact = await cacheService.GetAsync(userEmail);
+        if (contact == null)
         {
             var contactService = scope.ServiceProvider.GetRequiredService<IContactService>();
-            contactId = await contactService.GetContactIdAsync(userEmail);
+            contact = await contactService.GetContactAsync(userEmail);
 
-            if (string.IsNullOrWhiteSpace(contactId))
+            if (contact == null)
             {
                 _logger.LogDebug("Le contact avec l'adresse e-mail : {email} est introuvable.", userEmail);
                 return null;
             }
 
-            await cacheService.SetContactIdAsync(userEmail, contactId);
+            await cacheService.SetContactAsync(userEmail, contact);
         }
 
-        return contactId;
+        return contact;
     }
 }

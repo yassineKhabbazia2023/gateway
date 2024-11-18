@@ -1,11 +1,9 @@
 ﻿using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
-using ApiGateway.Extensions;
-using Kpmg.Constellation.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
+using ApiGateway.Identity.context;
+using ApiGateway.Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 
 namespace ApiGateway.Contact
 {
@@ -32,7 +30,7 @@ namespace ApiGateway.Contact
         [HttpGet("me")]
         public async Task<ActionResult> Me()
         {
-            var userEmail = userContext.User.GetLogin();
+            var userEmail = userContext.User.GetEmail();
 
             Models.Contact? contact;
 

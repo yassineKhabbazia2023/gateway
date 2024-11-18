@@ -5,7 +5,7 @@
 namespace ApiGateway.Extensions
 {
     using System.Security.Claims;
-    using Kpmg.Constellation.Security.Claims;
+    using ApiGateway.Identity.context;
     using Microsoft.AspNetCore.Http;
 
     public class AspNetCoreUserContext : IUserContext
