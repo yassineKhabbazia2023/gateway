@@ -1,7 +1,7 @@
 parameters:
 - name: devIndex
   type: number
-  default: 3
+  default: 0
 - name: deployType
   type: string
   default: 'standard'
@@ -25,36 +25,41 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))) }}:
+      - '"Build & Deploy" cannot triggered from this branch, please choice a tag , contact PULSE Ops': error
+
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
+    
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
-- ${{ if ne(parameters.devIndex, 0) }}:
-  - stage: DEV
-    ${{ if lt(parameters.devIndex, 10) }}:
-      displayName: 'Development-dev0${{ parameters.devIndex }}'
-      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
-    ${{ else }}:
-      displayName: 'Development-dev${{ parameters.devIndex }}'
-      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating config'
-      environment: DEV
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
-            - template: update-config.yaml
-              parameters:
-                ${{ if lt(parameters.devIndex, 10) }}:
-                  environment: dev0${{ parameters.devIndex }}
-                ${{ else }}:
-                  environment: dev${{ parameters.devIndex }}
-                subscription: ceg-corp-pulse-dev
-                serviceConnection: Pulse-Tpme-Dev
-- ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
+- ${{ if and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+  - ${{ if ne(parameters.devIndex, 0) }}:
+    - stage: DEV
+      ${{ if lt(parameters.devIndex, 10) }}:
+        displayName: 'Development-dev0${{ parameters.devIndex }}'
+        pool: Pulse-dev0${{ parameters.devIndex }}
+      ${{ else }}:
+        displayName: 'Development-dev${{ parameters.devIndex }}'
+        pool: Pulse-dev${{ parameters.devIndex }}
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating config'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
+
+              - template: update-config.yaml
+                parameters:
+                  ${{ if lt(parameters.devIndex, 10) }}:
+                    environment: dev0${{ parameters.devIndex }}
+                  ${{ else }}:
+                    environment: dev${{ parameters.devIndex }}
+                  subscription: PULSE-DEV
+- ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
     pool: Pulse-itg01
