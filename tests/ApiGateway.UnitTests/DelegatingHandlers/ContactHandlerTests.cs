@@ -78,6 +78,15 @@ public class ContactHandlerTests
             .ReturnsAsync(new ApiGateway.Contact.Models.Contact() { Id = contactId })
             .Verifiable();
 
+        _mockLogger
+            .Setup(x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Passing the following headers to downstream")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)))
+            .Verifiable();
+
         var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts?search=firstname");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
 
@@ -128,6 +137,15 @@ public class ContactHandlerTests
             .ReturnsAsync(new ApiGateway.Contact.Models.Contact() { Id = contactId })
             .Verifiable();
 
+        _mockLogger
+            .Setup(x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Passing the following headers to downstream")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)))
+            .Verifiable();
+
         var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts/currentuser?search=firstname");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
 
@@ -153,6 +171,15 @@ public class ContactHandlerTests
         _mockCacheService.Setup(x => x.GetAsync(It.IsAny<string>()))
                 .ReturnsAsync(new ApiGateway.Contact.Models.Contact() { Id = contactId })
                 .Verifiable();
+
+        _mockLogger
+            .Setup(x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Passing the following headers to downstream")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)))
+            .Verifiable();
 
         var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts/currentuser?search=firstname");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
