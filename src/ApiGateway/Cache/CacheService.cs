@@ -11,25 +11,21 @@ public class CacheService : ICacheService
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    public async Task<string> GetAsync(string key)
+    public async Task<Contact.Models.Contact?> GetAsync(string key)
     {
-        return await _cache.GetStringAsync(key);
+        var contactStr = await _cache.GetStringAsync(key);
+        if (string.IsNullOrEmpty(contactStr))
+        {
+            return null;
+        }
+        return System.Text.Json.JsonSerializer.Deserialize<Contact.Models.Contact>(contactStr);
     }
 
-    public async Task SetContactIdAsync(string userEmail, string contactId)
+    public async Task SetContactAsync(string userEmail, Contact.Models.Contact contact)
     {
-        var now = DateTime.UtcNow;
-        var targetTimeToday = new DateTime(now.Year, now.Month, now.Day, 3, 0, 0, DateTimeKind.Utc);
-        if (now > targetTimeToday)
+        await _cache.SetStringAsync(userEmail, System.Text.Json.JsonSerializer.Serialize(contact), new DistributedCacheEntryOptions
         {
-            targetTimeToday = targetTimeToday.AddDays(1);
-        }
-
-        var expiration = targetTimeToday - now;
-
-        await _cache.SetStringAsync(userEmail, contactId, new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = expiration
+            AbsoluteExpirationRelativeToNow = new TimeSpan(2, 0, 0)
         });
     }
 }

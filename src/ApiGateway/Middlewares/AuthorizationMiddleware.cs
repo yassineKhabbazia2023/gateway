@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
+using System.Runtime;
+using ApiGateway.Identity;
+using ApiGateway.Identity.Extensions;
 
 namespace ApiGateway.Middlewares;
 
@@ -21,6 +24,14 @@ public static class AuthorizationMiddleware
             var contactId = await contactService!.GetContactIdAsync(userEmail);
             var requiredClaims = ValidateRequireClaim(httpContext);
             int? accountId = ValidateAccountId(httpContext);
+            var identityService = httpContext.RequestServices.GetRequiredService<IIdentityService>();
+
+            var isValidIdentity = await IdentityServiceValidations(httpContext, userEmail, identityService);
+
+            if (!isValidIdentity)
+            {
+                return;
+            }
 
             if (requiredClaims.Count == 0 && !accountId.HasValue)
             {
@@ -42,7 +53,7 @@ public static class AuthorizationMiddleware
         {
             throw new GatewayException("There was an error while checking route settings.", ex);
         }
-        
+
         await next.Invoke();
     };
 
@@ -99,8 +110,7 @@ public static class AuthorizationMiddleware
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
-        // account number (ged url), we return null
-        if (httpContext.Request.Path.ToString().Contains("ged-services"))
+        if(Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
         {
             return null;
         }
@@ -114,6 +124,11 @@ public static class AuthorizationMiddleware
             {
                 accountIdParam = (string)match.Groups[1].Value;
             }
+        }
+
+        if (string.IsNullOrWhiteSpace(accountIdParam))
+        {
+            accountIdParam = httpContext.Request.Headers[GlobalsConstants.AccountIdHeader];
         }
 
         if (int.TryParse(accountIdParam, out var accountId))
@@ -174,5 +189,33 @@ public static class AuthorizationMiddleware
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
         httpContext.Items.SetError(new UnauthorizedError(
                            $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
+    }
+
+    private static async Task<bool> IdentityServiceValidations(HttpContext httpContext, string userEmail, IIdentityService identityServiceProvider)
+    {
+        bool isCollaborator = httpContext.User.IsCollaborator();
+        bool isCustomer = httpContext.User.IsCustomer();
+
+        if (isCollaborator)
+        {
+            var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
+            if (!isValidCollaborator)
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+        }
+
+        if (isCustomer)
+        {
+            var isValidCustomer = await identityServiceProvider.ValidateCustomerAsync(userEmail);
+            if (!isValidCustomer)
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+        }
+
+        return true;
     }
 }

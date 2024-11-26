@@ -1,4 +1,5 @@
 ﻿using ApiGateway.Cache;
+using ApiGateway.Contact.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -20,19 +21,20 @@ public class CacheServiceTests
     {
         // Arrange
         var key = "testKey";
-        var expectedValue = "testValue";
+        var expectedValue = new ApiGateway.Contact.Models.Contact() { Id = 5 };
         var options = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
         };
-        await _mockDistributedCache.SetStringAsync(key, expectedValue, options);
+        await _mockDistributedCache.SetStringAsync(key, System.Text.Json.JsonSerializer.Serialize(expectedValue), options);
         var cacheService = new CacheService(_mockDistributedCache);
 
         // Act
         var result = await cacheService.GetAsync(key);
 
         // Assert
-        result.Should().Be(expectedValue);
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(5);
     }
 
     [Fact]
@@ -40,12 +42,12 @@ public class CacheServiceTests
     {
         // Arrange
         var key = "testKey";
-        var expectedValue = "testValue";
+        var expectedValue = new ApiGateway.Contact.Models.Contact() { Id = 5 };
         var options = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMicroseconds(1),
         };
-        await _mockDistributedCache.SetStringAsync(key, expectedValue, options);
+        await _mockDistributedCache.SetStringAsync(key, System.Text.Json.JsonSerializer.Serialize(expectedValue), options);
         var cacheService = new CacheService(_mockDistributedCache);
         
         // Simulates cache expiration 
@@ -74,19 +76,20 @@ public class CacheServiceTests
     }
 
     [Fact]
-    public async Task SetContactIdAsync_WhenKeyNotExist_ShouldInsertConatcInCache()
+    public async Task SetContactAsync_WhenKeyNotExist_ShouldInsertContactInCache()
     {
         // Arrange
         var key = "testKey";
-        var expectedValue = "testValue";
+        var expectedValue = new ApiGateway.Contact.Models.Contact() { Id = 5 };
         var cacheService = new CacheService(_mockDistributedCache);
 
         // Act
-        await cacheService.SetContactIdAsync(key, expectedValue);
+        await cacheService.SetContactAsync(key, expectedValue);
 
         // Assert
         var result = await cacheService.GetAsync(key);
-        result.Should().Be(expectedValue);
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(5);
     }
 }
 

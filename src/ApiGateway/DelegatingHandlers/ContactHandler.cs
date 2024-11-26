@@ -1,8 +1,10 @@
-﻿using ApiGateway.Cache;
+﻿using ApiGateway.Account;
+using ApiGateway.Cache;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Models;
 using ApiGateway.Extensions;
 using ApiGateway.Helpers;
+using Azure.Core;
 
 namespace ApiGateway.DelegatingHandlers;
 
@@ -10,32 +12,29 @@ public class ContactHandler : DelegatingHandler
 {
     private readonly IServiceScopeFactory _serviceProviderFactory;
     private readonly ILogger<ContactHandler> _logger;
+    private readonly IAccountService _accountService;
 
     public ContactHandler(
         IServiceScopeFactory serviceProviderFactory,
-        ILogger<ContactHandler> logger
+        ILogger<ContactHandler> logger,
+        IAccountService accountService
         )
     {
         _serviceProviderFactory = serviceProviderFactory;
         _logger = logger;
+        _accountService = accountService;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
     CancellationToken cancellationToken)
     {
-        var contactId = await GetCurrentUser(request);
+        var contact = await GetCurrentUser(request);
         var contactEmail = GetUserEmail(request);
 
-        if (!string.IsNullOrWhiteSpace(contactId))
+        if (contact != null)
         {
-            request.Headers.Add("CurrentUser", contactId);
-            request.Headers.Add("ContactEmail", contactEmail);
-
-            // Pour les routes qui contiennent le segment /currentuser et qui préfèrent ne pas utiliser le header.
-            if (request.ShouldSetContactId())
-            {
-                request.ModifyRequestUri("contactId", contactId!);
-            }
+            this._logger.LogInformation($"{nameof(ContactHandler)} Passing the following headers to downstream: CurrentUser: {contact.Id.ToString()}, ContactEmail: {contactEmail}, ContactType: {contact.Type} ");
+            await request.PrepareRequestHeader(contactEmail, contact.Id.ToString(), contact.Type, _accountService);
         }
 
         return await base.SendAsync(request,
@@ -55,9 +54,9 @@ public class ContactHandler : DelegatingHandler
         var userEmail = JwtHelper.ExtractUserEmailFromToken(token);
 
         return userEmail;
-    } 
+    }
 
-    public async Task<string?> GetCurrentUser(HttpRequestMessage request)
+    public async Task<Contact.Models.Contact?> GetCurrentUser(HttpRequestMessage request)
     {
         var token = JwtHelper.ExtractBearerToken(request);
 
@@ -80,21 +79,21 @@ public class ContactHandler : DelegatingHandler
         // (IContactService, a scoped service) into a component that has an application-wide lifespan (our ContactHandler, a singleton).
         var scope = _serviceProviderFactory.CreateScope();
         var cacheService = scope.ServiceProvider.GetRequiredService<ICacheService>();
-        var contactId = await cacheService.GetAsync(userEmail);
-        if (string.IsNullOrWhiteSpace(contactId))
+        var contact = await cacheService.GetAsync(userEmail);
+        if (contact == null)
         {
             var contactService = scope.ServiceProvider.GetRequiredService<IContactService>();
-            contactId = await contactService.GetContactIdAsync(userEmail);
+            contact = await contactService.GetContactAsync(userEmail);
 
-            if (string.IsNullOrWhiteSpace(contactId))
+            if (contact == null)
             {
                 _logger.LogDebug("Le contact avec l'adresse e-mail : {email} est introuvable.", userEmail);
                 return null;
             }
 
-            await cacheService.SetContactIdAsync(userEmail, contactId);
+            await cacheService.SetContactAsync(userEmail, contact);
         }
 
-        return contactId;
+        return contact;
     }
 }

@@ -11,7 +11,6 @@ parameters:
   default:
   - 1
   - 2
-  - 3
 # PRD Iteration
 - name: prdIterations
   type: object
@@ -26,36 +25,41 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))) }}:
+      - '"Build & Deploy" cannot triggered from this branch, please choice a tag , contact PULSE Ops': error
+
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
+    
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
-- ${{ if ne(parameters.devIndex, 0) }}:
-  - stage: DEV
-    ${{ if lt(parameters.devIndex, 10) }}:
-      displayName: 'Development-dev0${{ parameters.devIndex }}'
-      pool: Pulse-dev0${{ parameters.devIndex }}
-    ${{ else }}:
-      displayName: 'Development-dev${{ parameters.devIndex }}'
-      pool: Pulse-dev${{ parameters.devIndex }}
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating config'
-      environment: DEV
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
+- ${{ if and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+  - ${{ if ne(parameters.devIndex, 0) }}:
+    - stage: DEV
+      ${{ if lt(parameters.devIndex, 10) }}:
+        displayName: 'Development-dev0${{ parameters.devIndex }}'
+        pool: Pulse-dev0${{ parameters.devIndex }}
+      ${{ else }}:
+        displayName: 'Development-dev${{ parameters.devIndex }}'
+        pool: Pulse-dev${{ parameters.devIndex }}
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating config'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
 
-            - template: update-config.yaml
-              parameters:
-                ${{ if lt(parameters.devIndex, 10) }}:
-                  environment: dev0${{ parameters.devIndex }}
-                ${{ else }}:
-                  environment: dev${{ parameters.devIndex }}
-                subscription: PULSE-DEV
-- ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
+              - template: update-config.yaml
+                parameters:
+                  ${{ if lt(parameters.devIndex, 10) }}:
+                    environment: dev0${{ parameters.devIndex }}
+                  ${{ else }}:
+                    environment: dev${{ parameters.devIndex }}
+                  subscription: PULSE-DEV
+- ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
     pool: Pulse-itg01
@@ -74,7 +78,7 @@ stages:
               parameters:
                 environment: itg01
                 subscription: PULSE-ITG
-- ${{ if and(or(contains(variables['Build.SourceBranch'], 'release'), contains(variables['Build.SourceBranch'], 'hotfix')), ne(parameters.deployType, 'onlyDev')) }}:
+- ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), ne(parameters.deployType, 'onlyDev')) }}:
   - ${{ each index in parameters.recIterations }}:
     - stage: REC${{ index }}
       displayName: Recette-rec0${{ index }}
@@ -101,36 +105,11 @@ stages:
                 parameters:
                   environment: $(hubEnvironment)
                   subscription: PULSE-REC
-  - ${{ each index in parameters.prdIterations }}:
-    - stage: PRD${{ index }}
-      displayName: Production-prd0${{ index }}
-      pool: Pulse-prd0${{ index }}
-      dependsOn:
-      - REC1
-      - REC2
-      jobs:
-      - deployment: deploy
-        displayName: 'Updating PRD0${{ index }} config'
-        environment: PRD${{ index }}
-        variables:
-        - name: hubEnvironment
-          value: prd0${{ index }}
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - download: current
-                artifact: Module
-
-              - template: update-config.yaml
-                parameters:
-                  environment: $(hubEnvironment)
-                  subscription: PULSE-PRD
   - stage: PPR1
     displayName: Preproduction-J-1
     pool: Pulse-ppr01
     dependsOn:
-    - PRD1
+    - REC1
     jobs:
     - deployment: deploy
       displayName: 'Updating J-1 config'
@@ -149,3 +128,27 @@ stages:
               parameters:
                 environment: $(hubEnvironment)
                 subscription: PULSE-PPR
+  - ${{ each index in parameters.prdIterations }}:
+    - stage: PRD${{ index }}
+      displayName: Production-prd0${{ index }}
+      pool: Pulse-prd0${{ index }}
+      dependsOn:
+      - PPR1
+      jobs:
+      - deployment: deploy
+        displayName: 'Updating PRD0${{ index }} config'
+        environment: PRD${{ index }}
+        variables:
+        - name: hubEnvironment
+          value: prd0${{ index }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: Module
+
+              - template: update-config.yaml
+                parameters:
+                  environment: $(hubEnvironment)
+                  subscription: PULSE-PRD
