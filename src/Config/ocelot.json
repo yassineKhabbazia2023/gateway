@@ -848,8 +848,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
-      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory?accountId={relativeAccountId}",
+      "DownstreamPathTemplate": "/api/roles/signatory/{relativeAccountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
