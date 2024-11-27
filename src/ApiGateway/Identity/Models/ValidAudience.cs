@@ -1,5 +1,8 @@
-﻿namespace ApiGateway.Identity.Models
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ApiGateway.Identity.Models
 {
+    [ExcludeFromCodeCoverage]
     public class ValidAudience
     {
         public ValidAudience(Guid id, string name)

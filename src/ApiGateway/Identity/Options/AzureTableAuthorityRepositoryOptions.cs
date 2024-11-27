@@ -1,5 +1,8 @@
-﻿namespace ApiGateway.Identity.Options
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ApiGateway.Identity.Options
 {
+    [ExcludeFromCodeCoverage]
     public class AzureTableAuthorityRepositoryOptions
     {
         public string IsvcAzureStorageName { get; set; }

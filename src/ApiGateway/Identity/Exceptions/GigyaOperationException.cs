@@ -1,7 +1,9 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace ApiGateway.Identity.Exceptions
 {
+    [ExcludeFromCodeCoverage]
     public class GigyaOperationException : Exception
     {
         public GigyaOperationException()

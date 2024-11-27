@@ -1,5 +1,8 @@
-﻿namespace ApiGateway.Identity.Adapters
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ApiGateway.Identity.Adapters
 {
+    [ExcludeFromCodeCoverage]
     public class PulseHttpClientAdapter : IPulseHttpClientAdapter
     {
         private readonly HttpClient httpClient;

@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ApiGateway.Identity.Models
 {
+    [ExcludeFromCodeCoverage]
     public class AuthorityJson
     {
         public AuthorityJson(

@@ -1,6 +1,30 @@
 {
   "Routes": [
     {
+      "SwaggerKey": "EntityCreator",
+      "UpstreamPathTemplate": "/gtw/entitycreator/api/{everything}",
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseect#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COADMI007"
+      }
+    },
+    {
       "SwaggerKey": "Reporting",
       "UpstreamPathTemplate": "/gtw/reporting/api/reports/{everything}",
       "DownstreamPathTemplate": "/api/reports/{everything}",
@@ -1490,6 +1514,111 @@
       }
     },
     {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser/unread/count",
+      "DownstreamPathTemplate": "/api/feedcenter/notifications/unread-count/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/read/currentuser",
+      "DownstreamPathTemplate": "/api/feedcenter/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser",
+      "DownstreamPathTemplate": "/api/feedcenter/notifications/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser/unread/count",
+      "DownstreamPathTemplate": "/api/feedcenter/notifications/unread-count/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/read/currentuser",
+      "DownstreamPathTemplate": "/api/feedcenter/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "ContactRegistry",
       "UpstreamPathTemplate": "/gtw/registry/api/operations",
       "UpstreamHttpMethod": [
@@ -1511,6 +1640,72 @@
       },
       "RouteClaimsRequirement": {
         "GET": "COUSER001"
+      }
+    },
+    {
+      "SwaggerKey": "GedAccounting",
+      "UpstreamPathTemplate": "/gtw/ged/api/93012CC8-77B9-4161-8DBD-61915D935E21/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "GedSocial",
+      "UpstreamPathTemplate": "/gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegso#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/hub/ged/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "ws",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
+          "Port": 5001
+        }
+      ],
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     }
   ],
@@ -1577,6 +1772,17 @@
       ]
     },
     {
+      "Key": "EntityCreator",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.EntityCreator",
+          "Version": "v1",
+          "Url": "https://appcegpulseect#{env_id}#01.azurewebsites.net/entityCreator/api/v1/api.json"
+        }
+      ]
+    },
+    {
       "Key": "Notifications",
       "TransformByOcelotConfig": true,
       "Config": [
@@ -1621,6 +1827,17 @@
       ]
     },
     {
+      "Key": "Feedcenter",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.FeedCenter",
+          "Version": "v1",
+          "Url": "https://appcegpulserpt#{env_id}#01.azurewebsites.net/api/api.json"
+        }
+      ]
+    },
+    {
       "Key": "ContactRegistry",
       "TransformByOcelotConfig": true,
       "Config": [
@@ -1628,6 +1845,28 @@
           "Name": "Pulse.Back.ContactRegistry",
           "Version": "v1",
           "Url": "https://appcegpulsereg#{env_id}#01.azurewebsites.net/api/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "GedAccounting",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Ged.Accounting",
+          "Version": "v1",
+          "Url": "https://appcegpulsegac#{env_id}#01.azurewebsites.net/api/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "GedSocial",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Ged.Social",
+          "Version": "v1",
+          "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/api.json"
         }
       ]
     }

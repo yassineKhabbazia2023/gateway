@@ -49,7 +49,7 @@ Typically, this is done during a pipeline by using the AzureCLI@2 task.
     az account set --subscription $Subscription
 
     $expRg = "rgcegpulse$($Environment)gtw"
-    $accountName = "sacegpulsegtw$($Environment)01"    
+    $accountName = "sacegpulsegtw$($Environment)01"   
     $AccountKey = $(az storage account keys list -g $expRg -n $accountName --query [0].value -o tsv)
 
     $shareName = 'desktop'

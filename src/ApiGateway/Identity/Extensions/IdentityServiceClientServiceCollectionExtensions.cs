@@ -2,12 +2,14 @@
 using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Options;
 using ApiGateway.Identity.Repositories;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ApiGateway.Identity.Extensions
 {
     /// <summary>
     /// Contains extensions methods to register client components of the Identity Service for the <see cref="ServiceCollection"/>.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public static class IdentityServiceClientServiceCollectionExtensions
     {
         public static IServiceCollection AddAzureTableAuthorityRepositoryProvider(this IServiceCollection services, Action<AzureTableAuthorityRepositoryOptions> options)

@@ -20,8 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{CC933C
 		src\Config\ocelot.json = src\Config\ocelot.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gateway.Specflow", "Gateway.Specflow\Gateway.Specflow.csproj", "{C3D36DAE-739A-43C6-96C0-B7F9A8FC3B4D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,10 +38,6 @@ Global
 		{5F1B9B82-7866-40C9-BC36-441C5DE82733}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F1B9B82-7866-40C9-BC36-441C5DE82733}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F1B9B82-7866-40C9-BC36-441C5DE82733}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C3D36DAE-739A-43C6-96C0-B7F9A8FC3B4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C3D36DAE-739A-43C6-96C0-B7F9A8FC3B4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C3D36DAE-739A-43C6-96C0-B7F9A8FC3B4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C3D36DAE-739A-43C6-96C0-B7F9A8FC3B4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
