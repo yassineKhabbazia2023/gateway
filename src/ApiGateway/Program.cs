@@ -27,9 +27,10 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);
-builder.Services.AddHttpLogging(o => 
-{ 
+builder.Services.AddHttpLogging(o =>
+{
 });
+
 
 builder.Configuration.AddJsonConfiguration();
 
@@ -43,7 +44,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 });
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName.ToLower() == "local")
 {
     app.UseSwaggerForOcelotUI(opt =>
     {

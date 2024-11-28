@@ -10,6 +10,12 @@ using ApiGateway.Exceptions;
 using System.Runtime;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Extensions;
+using Microsoft.AspNetCore.Http.Extensions;
+using Newtonsoft.Json;
+using ApiGateway.Models;
+using Microsoft.Extensions.Azure;
+using StackExchange.Redis;
+using System.Text;
 
 namespace ApiGateway.Middlewares;
 
@@ -19,6 +25,7 @@ public static class AuthorizationMiddleware
     {
         try
         {
+
             var userEmail = ValidateUserIdentity(httpContext);
             var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
             var contactId = await contactService!.GetContactIdAsync(userEmail);
@@ -48,6 +55,11 @@ public static class AuthorizationMiddleware
             {
                 return;
             }
+
+            if (!await CheckCustomerCreation(httpContext, contactId, accountId))
+            {
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -56,6 +68,52 @@ public static class AuthorizationMiddleware
 
         await next.Invoke();
     };
+
+
+    private static async Task<bool> CheckCustomerCreation(HttpContext httpContext, string contactId, int? accountId)
+    {
+
+        int.TryParse(contactId, out int currentContactId);
+
+        if (httpContext.Request.GetDisplayUrl().Contains("/gtw/account/api/customers?accountId=")
+            && httpContext.Request.Method == "POST"
+            && contactId != default
+            && accountId != null)
+        {
+            var contactCreated = await httpContext.GetRequestBody<CreatedContact>();
+            ArgumentNullException.ThrowIfNull(contactCreated);
+            var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
+            var relatedAccounts = await accountService!.GetContactRolesAsync(currentContactId);
+            var hasTheRight = relatedAccounts.Items.Any(x => x.AccountNumber == contactCreated?.AccountNumber);
+            if (!hasTheRight)
+            {
+                ForbiddenRequest(httpContext);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private async static Task<T?> GetRequestBody<T>(this HttpContext context)
+    {
+        string requestBody = await context.Request.PeekBody();
+        return JsonConvert.DeserializeObject<T>(requestBody);
+    }
+
+    public static async Task<string> PeekBody(this HttpRequest request)
+    {
+        try
+        {
+            request.EnableBuffering();
+            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
+            await request.Body.ReadAsync(buffer, 0, buffer.Length);
+            return Encoding.UTF8.GetString(buffer);
+        }
+        finally
+        {
+            request.Body.Position = 0;
+        }
+    }
 
     private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
     {
@@ -110,7 +168,7 @@ public static class AuthorizationMiddleware
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
-        if(Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
+        if (Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
         {
             return null;
         }
