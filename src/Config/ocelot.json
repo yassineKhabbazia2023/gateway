@@ -743,7 +743,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "NormalConfiguration"
+      "Key": "NormalConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -765,7 +768,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "CollabConfiguration"
+      "Key": "CollabConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COADMI003, COADMI004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -787,7 +793,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "GedConfiguration"
+      "Key": "GedConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
