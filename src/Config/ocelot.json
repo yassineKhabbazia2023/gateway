@@ -1825,7 +1825,7 @@
           "Name": "Pulse.Back.Ged.Social",
           "Version": "v1",
           "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/api.json"
-        }fe
+        }
       ]
     }
   ],
