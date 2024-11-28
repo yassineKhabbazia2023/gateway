@@ -1515,48 +1515,6 @@
     },
     {
       "SwaggerKey": "FeedCenter",
-      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser/unread/count",
-      "DownstreamPathTemplate": "/api/feedcenter/notifications/unread-count/currentuser",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "FeedCenter",
-      "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/read/currentuser",
-      "DownstreamPathTemplate": "/api/feedcenter/currentuser",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "PUT"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "FeedCenter",
       "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser",
       "DownstreamPathTemplate": "/api/feedcenter/notifications/currentuser",
       "DownstreamScheme": "https",
@@ -1867,7 +1825,7 @@
           "Name": "Pulse.Back.Ged.Social",
           "Version": "v1",
           "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/api.json"
-        }
+        }fe
       ]
     }
   ],
