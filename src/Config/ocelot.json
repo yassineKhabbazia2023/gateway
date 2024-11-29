@@ -1065,10 +1065,7 @@
       ],
       "UpstreamHttpMethod": [
         "POST"
-      ],
-      "RouteClaimsRequirement": {
-        "POST": "CLUSER002"
-      }
+      ]
     },
     {
       "SwaggerKey": "Notifications",
