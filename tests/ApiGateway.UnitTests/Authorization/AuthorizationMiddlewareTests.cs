@@ -53,7 +53,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
@@ -95,7 +95,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
@@ -126,7 +126,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -182,7 +182,7 @@ public class AuthorizationMiddlewareTests
             Items = { new Models.Account { AccountId = 1 } }
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -228,7 +228,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
            .AddSingleton(_mockContactService.Object)
            .AddSingleton(_mockAuthorizationService.Object)
@@ -265,7 +265,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -304,7 +304,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -345,7 +345,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -377,65 +377,7 @@ public class AuthorizationMiddlewareTests
         _mockAuthorizationService.VerifyAll();
     }
 
-    private static DefaultHttpContext DummyHttpContext(
-        string path,
-        string method,
-        string contactEmail,
-        Dictionary<string, string> requiredClaims,
-        Dictionary<string, string> headers = default)
-    {
-        if (headers == null) headers = new Dictionary<string, string>();
-        // Mock HttpContext
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Path = path;
-        httpContext.Request.Method = method;
-        httpContext.Request.Headers.Authorization = new StringValues($"Bearer {GenerateDummyJwtToken(contactEmail)}");
-        foreach (var kv in headers)
-        {
-            httpContext.Request.Headers.Add(kv.Key, kv.Value);
-        }
-
-        var downstreamRoute = new DownstreamRoute(
-            key: "key",
-            upstreamPathTemplate: new UpstreamPathTemplate("template", 1, true, ""),
-            upstreamHeadersFindAndReplace: null,
-            downstreamHeadersFindAndReplace: null,
-            downstreamAddresses: null,
-            serviceName: "serviceName",
-            serviceNamespace: "serviceNamespace",
-            httpHandlerOptions: null,
-            useServiceDiscovery: false,
-            enableEndpointEndpointRateLimiting: false,
-            qosOptions: null,
-            downstreamScheme: "http",
-            requestIdKey: null,
-            isCached: false,
-            cacheOptions: null,
-            loadBalancerOptions: null,
-            rateLimitOptions: null,
-            routeClaimsRequirement: requiredClaims,
-            claimsToQueries: null,
-            claimsToHeaders: null,
-            claimsToClaims: null,
-            claimsToPath: null,
-            isAuthenticated: false,
-            isAuthorized: false,
-            authenticationOptions: null,
-            downstreamPathTemplate: null,
-            loadBalancerKey: null,
-            delegatingHandlers: null,
-            addHeadersToDownstream: null,
-            addHeadersToUpstream: null,
-            dangerousAcceptAnyServerCertificateValidator: false,
-            securityOptions: null,
-            downstreamHttpMethod: null,
-            downstreamHttpVersion: null
-        );
-
-        httpContext.Items["DownstreamRoute"] = downstreamRoute;
-
-        return httpContext;
-    }
+    
 
     [Fact]
     public async Task AuthorizationFilter_WhenHasRelatedAccounts_ShouldAllowAccess()
@@ -446,7 +388,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -488,7 +430,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -530,7 +472,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -569,7 +511,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -608,7 +550,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -643,7 +585,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -696,7 +638,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(relatedAccounts)
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
 
         // Add the "Customer" role to the ClaimsPrincipal
         httpContext.User = new ClaimsPrincipal(
@@ -729,25 +671,5 @@ public class AuthorizationMiddlewareTests
 
 
 
-    private static string GenerateDummyJwtToken(string userEmail)
-    {
-        var header = Base64UrlEncode("{\"alg\":\"none\",\"typ\":\"JWT\"}");
-        var claims = new Dictionary<string, string>
-        {
-            {"email", userEmail}
-        };
-        var payload = Base64UrlEncode(System.Text.Json.JsonSerializer.Serialize(claims));
-        var signature = "";
 
-        return $"{header}.{payload}.{signature}";
-    }
-
-    private static string Base64UrlEncode(string input)
-    {
-        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
-        return Convert.ToBase64String(inputBytes)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
-    }
 }
