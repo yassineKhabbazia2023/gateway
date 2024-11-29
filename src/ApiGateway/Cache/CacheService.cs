@@ -1,14 +1,18 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ApiGateway.Cache;
 
 public class CacheService : ICacheService
 {
     private readonly IDistributedCache _cache;
+    private readonly IMemoryCache _memoryCache;
 
-    public CacheService(IDistributedCache cache)
+
+    public CacheService(IDistributedCache cache, IMemoryCache memoryCache)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
     }
 
     public async Task<Contact.Models.Contact?> GetAsync(string key)
@@ -27,6 +31,25 @@ public class CacheService : ICacheService
         {
             AbsoluteExpirationRelativeToNow = new TimeSpan(2, 0, 0)
         });
+    }
+
+    public T? GetOrCreate<T>(
+        string cacheKey,
+       T? data,
+        TimeSpan? slidingExpiration = null)
+    {
+        if (data == null)
+        {
+            _memoryCache.TryGetValue(cacheKey, out T? cachedData);
+            return cachedData;
+        }
+        var cacheEntryOptions = new MemoryCacheEntryOptions
+        {
+            SlidingExpiration = slidingExpiration ?? TimeSpan.FromSeconds(120)
+        };
+
+        _memoryCache.Set(cacheKey, data, cacheEntryOptions);
+        return data;
     }
 }
 
