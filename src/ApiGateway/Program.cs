@@ -27,6 +27,7 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);
+
 builder.Services.AddHttpLogging(o =>
 {
 });
@@ -89,8 +90,10 @@ app.UseSwagger();
 var config = new OcelotPipelineConfiguration
 {
     AuthorizationMiddleware
-                = async (downStreamContext, next) =>
-                await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next)
+                = async (downStreamContext, next) => 
+                {
+                    await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next);
+                }
 };
 
 app.UseWebSockets();
@@ -119,6 +122,11 @@ app.MapWhen(httpContext => httpContext.WebSockets.IsWebSocketRequest,
 
 await app.UseOcelot(config);
 app.UseRouting();
+
+app.Use(async (context, next) => { 
+    await ApiGateway.Middlewares.CustomerCreationMiddleWare.InvokeAsync(context, next);
+    await ApiGateway.Middlewares.CustomerInvitationMiddleWare.InvokeAsync(context, next);
+});
 
 app.MapGet("/", async context =>
 {
