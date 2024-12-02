@@ -1185,7 +1185,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseged#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulseged#{env_id}#02.azurewebsites.net",
           "Port": 443
         }
       ],
