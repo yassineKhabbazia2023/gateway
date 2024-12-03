@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using YamlDotNet.Core.Tokens;
 
 namespace ApiGateway.Cache;
 
@@ -38,7 +39,7 @@ public class CacheService : ICacheService
        T? data,
         TimeSpan? slidingExpiration = null)
     {
-        if (data == null)
+        if (EqualityComparer<T>.Default.Equals(data, default(T)))
         {
             _memoryCache.TryGetValue(cacheKey, out T? cachedData);
             return cachedData;
