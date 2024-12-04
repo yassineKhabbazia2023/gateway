@@ -9,11 +9,13 @@ namespace ApiGateway.UnitTests.Cache;
 public class CacheServiceTests
 {
     private readonly IDistributedCache _mockDistributedCache;
+    private readonly IMemoryCache _mockMemoryCache;
 
     public CacheServiceTests()
     {
         var opt = Options.Create(new MemoryDistributedCacheOptions());
         _mockDistributedCache = new MemoryDistributedCache(opt);
+        _mockMemoryCache = new MemoryCache(opt);
     }
 
     [Fact]
@@ -27,7 +29,7 @@ public class CacheServiceTests
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
         };
         await _mockDistributedCache.SetStringAsync(key, System.Text.Json.JsonSerializer.Serialize(expectedValue), options);
-        var cacheService = new CacheService(_mockDistributedCache);
+        var cacheService = new CacheService(_mockDistributedCache, _mockMemoryCache);
 
         // Act
         var result = await cacheService.GetAsync(key);
@@ -48,7 +50,7 @@ public class CacheServiceTests
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMicroseconds(1),
         };
         await _mockDistributedCache.SetStringAsync(key, System.Text.Json.JsonSerializer.Serialize(expectedValue), options);
-        var cacheService = new CacheService(_mockDistributedCache);
+        var cacheService = new CacheService(_mockDistributedCache, _mockMemoryCache);
         
         // Simulates cache expiration 
         await Task.Delay(TimeSpan.FromMicroseconds(2));
@@ -65,7 +67,7 @@ public class CacheServiceTests
     {
         // Arrange
         var key = "nonExistingKey";
-        var cacheService = new CacheService(_mockDistributedCache);
+        var cacheService = new CacheService(_mockDistributedCache, _mockMemoryCache);
 
         // Act
         var result = await cacheService.GetAsync(key);
@@ -81,7 +83,7 @@ public class CacheServiceTests
         // Arrange
         var key = "testKey";
         var expectedValue = new ApiGateway.Contact.Models.Contact() { Id = 5 };
-        var cacheService = new CacheService(_mockDistributedCache);
+        var cacheService = new CacheService(_mockDistributedCache, _mockMemoryCache);
 
         // Act
         await cacheService.SetContactAsync(key, expectedValue);

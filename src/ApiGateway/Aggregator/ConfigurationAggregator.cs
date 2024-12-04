@@ -17,6 +17,11 @@ namespace ApiGateway.Aggregrator
         {
             var responsesDownstream = responses.Select(x => x.Items.DownstreamResponse()).Where(x => x != null).ToArray();
 
+            if (responses.Any(r => r.Response.StatusCode == (int)HttpStatusCode.Forbidden))
+            {
+                return new DownstreamResponse(null, HttpStatusCode.Forbidden, responsesDownstream.SelectMany(x => x.Headers).ToList(), "reason");
+            }
+
             var result = new List<Aggregator.Models.Configuration>();
             foreach (var response in responsesDownstream)
             {

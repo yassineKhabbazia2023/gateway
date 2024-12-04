@@ -743,7 +743,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "NormalConfiguration"
+      "Key": "NormalConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -765,7 +768,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "CollabConfiguration"
+      "Key": "CollabConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COADMI003, COADMI004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -787,7 +793,10 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "Key": "GedConfiguration"
+      "Key": "GedConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -848,8 +857,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory/{accountId}",
-      "DownstreamPathTemplate": "/api/roles/signatory/{accountId}",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/signatory?accountId={relativeAccountId}",
+      "DownstreamPathTemplate": "/api/roles/signatory/{relativeAccountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1012,30 +1021,6 @@
       }
     },
     {
-      "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/contact/api/customers/{everything}",
-      "DownstreamPathTemplate": "/api/customers/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "RouteClaimsRequirement": {
-        "POST": "COUSER001, CLUSER003, CLADMI001"
-      }
-    },
-    {
       "UpstreamPathTemplate": "/gtw/authentication/api/cgu/accept-terms",
       "DownstreamPathTemplate": "/api/cgu/accept-terms",
       "DownstreamScheme": "https",
@@ -1051,8 +1036,26 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/account/api/customers/invite/{contactId}",
-      "DownstreamPathTemplate": "/api/customers/{contactId}",
+      "UpstreamPathTemplate": "/gtw/account/api/customers?accountId={relativeAccountId}",
+      "DownstreamPathTemplate": "/api/customers",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "RouteClaimsRequirement": {
+        "POST": "CLUSER002"
+      }
+    },
+    {
+      "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/account/api/customers/invite/{contactId}?accountNumber={relativeAccountNumber}",
+      "DownstreamPathTemplate": "/api/customers/{contactId}?accountNumber={relativeAccountNumber}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1063,27 +1066,6 @@
       "UpstreamHttpMethod": [
         "POST"
       ]
-    },
-    {
-      "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/account/api/customers/{everything}",
-      "DownstreamPathTemplate": "/api/customers/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "fr#{env_id}#cntapp01contact.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
     },
     {
       "SwaggerKey": "Notifications",
