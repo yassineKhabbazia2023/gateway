@@ -22,7 +22,7 @@ parameters:
 resources:
   repositories:
   - repository: Pulse
-    name: 'Constellation/ConstellationDevOps'
+    name: 'Pulse.ConstellationDevOps'
     type: git
     ref: 'refs/heads/Release/v2.1'
 

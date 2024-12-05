@@ -17,7 +17,7 @@ parameters:
 resources:
   repositories:
     - repository: CICD
-      name: 'Plateforme Technologique/CICD'
+      name: 'Industrialisation/Industrialisation'
       type: git
       ref: 'refs/heads/Release/v6.1'
 
