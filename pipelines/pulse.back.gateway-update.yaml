@@ -17,7 +17,7 @@ parameters:
 resources:
   repositories:
   - repository: Pulse
-    name: 'Pulse.ConstellationDevOps'
+    name: 'Pulse.Operations.Pipelines'
     type: git
     ref: 'refs/heads/features/change-naming'
 
