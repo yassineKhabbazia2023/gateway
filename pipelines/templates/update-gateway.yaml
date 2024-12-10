@@ -32,10 +32,10 @@ stages:
   - stage: DEV
     ${{ if lt(parameters.devIndex, 10) }}:
       displayName: 'Development-dev0${{ parameters.devIndex }}'
-      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
+      pool: Pulse-dev
     ${{ else }}:
       displayName: 'Development-dev${{ parameters.devIndex }}'
-      pool: Pulse-Tpme-Dev #Pulse-dev0${{ parameters.devIndex }}
+      pool: Pulse-dev
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
@@ -53,7 +53,7 @@ stages:
                 ${{ else }}:
                   environment: dev${{ parameters.devIndex }}
                 subscription: ceg-corp-pulse-dev
-                serviceConnection: Pulse-Tpme-Dev
+                serviceConnection: Rydge-dev
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
