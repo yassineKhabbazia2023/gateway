@@ -19,7 +19,7 @@ resources:
     - repository: CICD
       name: 'Industrialisation/Industrialisation'
       type: git
-      ref: 'refs/heads/Release/v6.1'
+      ref: 'refs/heads/features/cicd_as_conf'
 
 stages:
 - template: templates/update-gateway.yaml
