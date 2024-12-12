@@ -86,7 +86,7 @@ stages:
       jobs:
       - deployment: deploy
         displayName: 'Updating REC0${{ index }} config'
-        environment: REC${{ index }}
+        environment: REC0${{ index }}
         variables:
         - name: hubEnvironment
           value: rec0${{ index }}
@@ -110,7 +110,7 @@ stages:
     jobs:
     - deployment: deploy
       displayName: 'Updating J-1 config'
-      environment: PPR1
+      environment: PPR01
       variables:
       - name: hubEnvironment
         value: ppr01
@@ -135,7 +135,7 @@ stages:
       jobs:
       - deployment: deploy
         displayName: 'Updating PRD0${{ index }} config'
-        environment: PRD${{ index }}
+        environment: PRD0${{ index }}
         variables:
         - name: hubEnvironment
           value: prd0${{ index }}
