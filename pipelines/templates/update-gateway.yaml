@@ -57,7 +57,7 @@ stages:
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
-    pool: Pulse-itg01
+    pool: Pulse-itg
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
@@ -72,12 +72,13 @@ stages:
             - template: update-config.yaml
               parameters:
                 environment: itg01
-                subscription: PULSE-ITG
+                subscription: ceg-corp-pulse-itg
+                serviceConnection: Rydge-itg
 - ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), ne(parameters.deployType, 'onlyDev')) }}:
   - ${{ each index in parameters.recIterations }}:
     - stage: REC${{ index }}
       displayName: Recette-rec0${{ index }}
-      pool: Pulse-rec0${{ index }}
+      pool: Pulse-rec
       ${{ if eq(parameters.devIndex, 0) }}:
         dependsOn: Build
       ${{ else }}:
@@ -99,10 +100,11 @@ stages:
               - template: update-config.yaml
                 parameters:
                   environment: $(hubEnvironment)
-                  subscription: PULSE-REC
+                  subscription: ceg-corp-pulse-rec
+                  serviceConnection: Rydge-rec
   - stage: PPR1
     displayName: Preproduction-J-1
-    pool: Pulse-ppr01
+    pool: Pulse-ppr
     dependsOn:
     - REC1
     jobs:
@@ -122,11 +124,12 @@ stages:
             - template: update-config.yaml
               parameters:
                 environment: $(hubEnvironment)
-                subscription: PULSE-PPR
+                subscription: ceg-corp-pulse-ppr
+                serviceConnection: Rydge-ppr
   - ${{ each index in parameters.prdIterations }}:
     - stage: PRD${{ index }}
       displayName: Production-prd0${{ index }}
-      pool: Pulse-prd0${{ index }}
+      pool: Pulse-prd
       dependsOn:
       - PPR1
       jobs:
@@ -146,4 +149,5 @@ stages:
               - template: update-config.yaml
                 parameters:
                   environment: $(hubEnvironment)
-                  subscription: PULSE-PRD
+                  subscription: ceg-corp-pulse-prd
+                  serviceConnection: Rydge-prd
