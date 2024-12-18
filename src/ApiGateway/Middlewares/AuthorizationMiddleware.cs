@@ -50,7 +50,7 @@ public static class AuthorizationMiddleware
                 return;
             }
             
-            if (await CheckSuperAdmin(accountId, contactId, httpContext))
+            if (await NoRoleCheck(accountId, contactId, httpContext))
             {
                 await next.Invoke();
                 return;
@@ -117,7 +117,7 @@ public static class AuthorizationMiddleware
         return true;
     }
 
-    private static async Task<bool> CheckSuperAdmin(int? accountId, string? contactId, HttpContext httpContext)
+    private static async Task<bool> NoRoleCheck(int? accountId, string? contactId, HttpContext httpContext)
     {
         if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
