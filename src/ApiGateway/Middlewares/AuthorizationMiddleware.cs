@@ -50,7 +50,7 @@ public static class AuthorizationMiddleware
                 return;
             }
             
-            if (await NoRoleCheck(accountId, contactId, httpContext))
+            if (await SkipRoleCheck(accountId, contactId, httpContext))
             {
                 await next.Invoke();
                 return;
@@ -117,7 +117,7 @@ public static class AuthorizationMiddleware
         return true;
     }
 
-    private static async Task<bool> NoRoleCheck(int? accountId, string? contactId, HttpContext httpContext)
+    private static async Task<bool> SkipRoleCheck(int? accountId, string? contactId, HttpContext httpContext)
     {
         if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
