@@ -53,6 +53,7 @@ public static class AuthorizationMiddleware
             if (await CheckSuperAdmin(accountId, contactId, httpContext))
             {
                 await next.Invoke();
+                return;
             }
 
             if (!await CheckRoles(accountId, contactId, httpContext))
@@ -118,14 +119,17 @@ public static class AuthorizationMiddleware
 
     private static async Task<bool> CheckSuperAdmin(int? accountId, string? contactId, HttpContext httpContext)
     {
-        var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-        var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
-
-        if (permissions == null || !permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
+        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
-            return false;
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+
+            if (permissions != null && permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
+            {
+                return true;
+            }
         }
-        return true;
+        return false;
     }
 
     private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext)
