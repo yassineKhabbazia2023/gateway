@@ -6,6 +6,7 @@ namespace ApiGateway.Constants;
 public static class GlobalsConstants
 {
     public static readonly string[] NoAccountCheckPermissions = ["COOFF002", "CORAP001", "COADMI003"];
+    public static readonly string[] NoRoleCheckPermissions = ["COADMI004"];
     public static readonly string[] NoAccountCheckEndpoints = ["ged-services", "/api/authorizations/configuration/account"];
     public static readonly int CollaboratorAccountId = -1;
     public static readonly string AccountIdHeader = "Account-Id";

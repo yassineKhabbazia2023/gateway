@@ -2,22 +2,13 @@
 using Ocelot.Middleware;
 using ApiGateway.Contact;
 using ApiGateway.Helpers;
-using Ocelot.Authorization;
 using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
-using System.Runtime;
 using ApiGateway.Identity;
-using ApiGateway.Identity.Extensions;
-using Microsoft.AspNetCore.Http.Extensions;
-using Newtonsoft.Json;
-using ApiGateway.Models;
-using Microsoft.Extensions.Azure;
-using StackExchange.Redis;
 using System.Text;
 using ApiGateway.Extensions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ApiGateway.Cache;
 
 namespace ApiGateway.Middlewares;
@@ -57,6 +48,11 @@ public static class AuthorizationMiddleware
             if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
             {
                 return;
+            }
+            
+            if (await CheckSuperAdmin(accountId, contactId, httpContext))
+            {
+                await next.Invoke();
             }
 
             if (!await CheckRoles(accountId, contactId, httpContext))
@@ -117,6 +113,18 @@ public static class AuthorizationMiddleware
             }
         }
 
+        return true;
+    }
+
+    private static async Task<bool> CheckSuperAdmin(int? accountId, string? contactId, HttpContext httpContext)
+    {
+        var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+        var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+
+        if (permissions == null || !permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
+        {
+            return false;
+        }
         return true;
     }
 
