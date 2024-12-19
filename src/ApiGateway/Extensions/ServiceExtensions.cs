@@ -27,6 +27,7 @@ public static class ServiceExtensions
     public static void AddApiGatewayServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Add services to the container.
+        services.AddMemoryCache();
         services.AddScoped<IContactService, ContactService>();
         services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
         services.AddScoped<IAccountService, AccountService>();

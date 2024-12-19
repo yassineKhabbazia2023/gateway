@@ -1,7 +1,7 @@
 parameters:
 - name: devIndex
   type: number
-  default: 3
+  default: 0
 - name: deployType
   type: string
   default: 'standard'
@@ -25,6 +25,9 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))) }}:
+      - '"Build & Deploy" cannot triggered from this branch, please choice a tag , contact PULSE Ops': error
+
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
@@ -146,4 +149,4 @@ stages:
               - template: update-config.yaml
                 parameters:
                   environment: $(hubEnvironment)
-                  subscription: PULSE-PRD
+                  subscription: PRD

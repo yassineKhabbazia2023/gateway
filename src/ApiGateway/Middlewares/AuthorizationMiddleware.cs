@@ -2,14 +2,14 @@
 using Ocelot.Middleware;
 using ApiGateway.Contact;
 using ApiGateway.Helpers;
-using Ocelot.Authorization;
 using System.Text.RegularExpressions;
 using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
-using System.Runtime;
 using ApiGateway.Identity;
-using ApiGateway.Identity.Extensions;
+using System.Text;
+using ApiGateway.Extensions;
+using ApiGateway.Cache;
 
 namespace ApiGateway.Middlewares;
 
@@ -19,14 +19,20 @@ public static class AuthorizationMiddleware
     {
         try
         {
+            var cacheService = httpContext.RequestServices.GetService<ICacheService>();
             var userEmail = ValidateUserIdentity(httpContext);
             var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
             var contactId = await contactService!.GetContactIdAsync(userEmail);
             var requiredClaims = ValidateRequireClaim(httpContext);
             int? accountId = ValidateAccountId(httpContext);
             var identityService = httpContext.RequestServices.GetRequiredService<IIdentityService>();
+            var isValidIdentity = await httpContext.IdentityServiceValidations(userEmail, identityService);
 
-            var isValidIdentity = await IdentityServiceValidations(httpContext, userEmail, identityService);
+            string content = await PeekBody(httpContext.Request);
+
+            cacheService.GetOrCreate(GlobalsConstants.cacheContactId, contactId);
+            cacheService.GetOrCreate(GlobalsConstants.cacheAccountId, accountId.ToString());
+            cacheService.GetOrCreate(GlobalsConstants.cacheContent, content);
 
             if (!isValidIdentity)
             {
@@ -43,6 +49,12 @@ public static class AuthorizationMiddleware
             {
                 return;
             }
+            
+            if (await SkipRoleCheck(accountId, contactId, httpContext))
+            {
+                await next.Invoke();
+                return;
+            }
 
             if (!await CheckRoles(accountId, contactId, httpContext))
             {
@@ -56,6 +68,24 @@ public static class AuthorizationMiddleware
 
         await next.Invoke();
     };
+    public static async Task<string> PeekBody(HttpRequest request)
+    {
+        try
+        {
+            request.EnableBuffering();
+            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
+            await request.Body.ReadAsync(buffer, 0, buffer.Length);
+            return Encoding.UTF8.GetString(buffer);
+        }
+        finally
+        {
+            request.Body.Position = 0;
+        }
+    }
+
+
+
+
 
     private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
     {
@@ -63,14 +93,14 @@ public static class AuthorizationMiddleware
         {
             if (string.IsNullOrWhiteSpace(userEmail))
             {
-                ForbiddenRequest(httpContext);
+                httpContext.ForbiddenRequest();
                 return false;
             }
 
 
             if (string.IsNullOrWhiteSpace(contactId))
             {
-                ForbiddenRequest(httpContext);
+                httpContext.ForbiddenRequest();
                 return false;
             }
 
@@ -79,12 +109,27 @@ public static class AuthorizationMiddleware
 
             if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
             {
-                ForbiddenRequest(httpContext);
+                httpContext.ForbiddenRequest();
                 return false;
             }
         }
 
         return true;
+    }
+
+    private static async Task<bool> SkipRoleCheck(int? accountId, string? contactId, HttpContext httpContext)
+    {
+        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
+        {
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+
+            if (permissions != null && permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext)
@@ -99,7 +144,7 @@ public static class AuthorizationMiddleware
                 var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
                 if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
                 {
-                    ForbiddenAccount(httpContext, accountId.Value);
+                    httpContext.ForbiddenAccount(accountId.Value);
                     return false;
                 }
             }
@@ -110,7 +155,7 @@ public static class AuthorizationMiddleware
 
     private static int? ValidateAccountId(HttpContext httpContext)
     {
-        if(Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
+        if (Array.Exists(GlobalsConstants.NoAccountCheckEndpoints, e => httpContext.Request.Path.ToString().Contains(e)))
         {
             return null;
         }
@@ -176,46 +221,7 @@ public static class AuthorizationMiddleware
         return string.IsNullOrWhiteSpace(userEmail) ? string.Empty : userEmail;
     }
 
-    private static void ForbiddenRequest(HttpContext httpContext)
-    {
-        var downstreamRoute = httpContext.Items.DownstreamRoute();
-        httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-        httpContext.Items.SetError(new UnauthorizedError(
-                           $"{httpContext!.User!.Identity!.Name} unable to access {downstreamRoute.UpstreamPathTemplate.OriginalValue}"));
-    }
 
-    private static void ForbiddenAccount(HttpContext httpContext, int accountId)
-    {
-        httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-        httpContext.Items.SetError(new UnauthorizedError(
-                           $"{httpContext!.User!.Identity!.Name} unable to access {accountId}"));
-    }
 
-    private static async Task<bool> IdentityServiceValidations(HttpContext httpContext, string userEmail, IIdentityService identityServiceProvider)
-    {
-        bool isCollaborator = httpContext.User.IsCollaborator();
-        bool isCustomer = httpContext.User.IsCustomer();
 
-        if (isCollaborator)
-        {
-            var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
-            if (!isValidCollaborator)
-            {
-                ForbiddenRequest(httpContext);
-                return false;
-            }
-        }
-
-        if (isCustomer)
-        {
-            var isValidCustomer = await identityServiceProvider.ValidateCustomerAsync(userEmail);
-            if (!isValidCustomer)
-            {
-                ForbiddenRequest(httpContext);
-                return false;
-            }
-        }
-
-        return true;
-    }
 }
