@@ -1,7 +1,7 @@
 parameters:
 - name: devIndex
   type: number
-  default: 0
+  default: 3
 - name: deployType
   type: string
   default: 'standard'
@@ -25,44 +25,39 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
-    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))) }}:
-      - '"Build & Deploy" cannot triggered from this branch, please choice a tag , contact PULSE Ops': error
-
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
-    
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
-- ${{ if and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
-  - ${{ if ne(parameters.devIndex, 0) }}:
-    - stage: DEV
-      ${{ if lt(parameters.devIndex, 10) }}:
-        displayName: 'Development-dev0${{ parameters.devIndex }}'
-        pool: Pulse-dev0${{ parameters.devIndex }}
-      ${{ else }}:
-        displayName: 'Development-dev${{ parameters.devIndex }}'
-        pool: Pulse-dev${{ parameters.devIndex }}
-      jobs:
-      - deployment: deploy
-        displayName: 'Updating config'
-        environment: DEV
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - download: current
-                artifact: Module
-
-              - template: update-config.yaml
-                parameters:
-                  ${{ if lt(parameters.devIndex, 10) }}:
-                    environment: dev0${{ parameters.devIndex }}
-                  ${{ else }}:
-                    environment: dev${{ parameters.devIndex }}
-                  subscription: PULSE-DEV
-- ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), eq(parameters.deployType, 'standard')) }}:
+- ${{ if ne(parameters.devIndex, 0) }}:
+  - stage: DEV
+    ${{ if lt(parameters.devIndex, 10) }}:
+      displayName: 'Development-dev0${{ parameters.devIndex }}'
+      pool: Pulse-dev
+    ${{ else }}:
+      displayName: 'Development-dev${{ parameters.devIndex }}'
+      pool: Pulse-dev
+    jobs:
+    - deployment: deploy
+      displayName: 'Updating config'
+      environment: DEV
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Module
+            - template: update-config.yaml
+              parameters:
+                ${{ if lt(parameters.devIndex, 10) }}:
+                  environment: dev0${{ parameters.devIndex }}
+                ${{ else }}:
+                  environment: dev${{ parameters.devIndex }}
+                subscription: ceg-corp-pulse-dev
+                serviceConnection: Rydge-dev
+- ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
   - stage: ITG
     displayName: 'Integration'
-    pool: Pulse-itg01
+    pool: Pulse-itg
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
@@ -77,12 +72,13 @@ stages:
             - template: update-config.yaml
               parameters:
                 environment: itg01
-                subscription: PULSE-ITG
+                subscription: ceg-corp-pulse-itg
+                serviceConnection: Rydge-itg
 - ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), ne(parameters.deployType, 'onlyDev')) }}:
   - ${{ each index in parameters.recIterations }}:
     - stage: REC${{ index }}
       displayName: Recette-rec0${{ index }}
-      pool: Pulse-rec0${{ index }}
+      pool: Pulse-rec
       ${{ if eq(parameters.devIndex, 0) }}:
         dependsOn: Build
       ${{ else }}:
@@ -90,7 +86,7 @@ stages:
       jobs:
       - deployment: deploy
         displayName: 'Updating REC0${{ index }} config'
-        environment: REC${{ index }}
+        environment: REC0${{ index }}
         variables:
         - name: hubEnvironment
           value: rec0${{ index }}
@@ -104,16 +100,17 @@ stages:
               - template: update-config.yaml
                 parameters:
                   environment: $(hubEnvironment)
-                  subscription: PULSE-REC
+                  subscription: ceg-corp-pulse-rec
+                  serviceConnection: Rydge-rec
   - stage: PPR1
     displayName: Preproduction-J-1
-    pool: Pulse-ppr01
+    pool: Pulse-ppr
     dependsOn:
     - REC1
     jobs:
     - deployment: deploy
       displayName: 'Updating J-1 config'
-      environment: PPR1
+      environment: PPR01
       variables:
       - name: hubEnvironment
         value: ppr01
@@ -127,17 +124,18 @@ stages:
             - template: update-config.yaml
               parameters:
                 environment: $(hubEnvironment)
-                subscription: PULSE-PPR
+                subscription: ceg-corp-pulse-ppr
+                serviceConnection: Rydge-ppr
   - ${{ each index in parameters.prdIterations }}:
     - stage: PRD${{ index }}
       displayName: Production-prd0${{ index }}
-      pool: Pulse-prd0${{ index }}
+      pool: Pulse-prd
       dependsOn:
       - PPR1
       jobs:
       - deployment: deploy
         displayName: 'Updating PRD0${{ index }} config'
-        environment: PRD${{ index }}
+        environment: PRD0${{ index }}
         variables:
         - name: hubEnvironment
           value: prd0${{ index }}
@@ -151,4 +149,5 @@ stages:
               - template: update-config.yaml
                 parameters:
                   environment: $(hubEnvironment)
-                  subscription: PRD
+                  subscription: ceg-corp-pulse-prd
+                  serviceConnection: Rydge-prd
