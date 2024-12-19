@@ -1,7 +1,7 @@
 parameters:
 - name: devIndex
   type: number
-  default: 3
+  default: 0
 - name: deployType
   type: string
   default: 'standard'
