@@ -288,7 +288,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -757,7 +757,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -781,7 +781,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#autapp01authorization.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1556,7 +1556,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#accapp01account.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1577,7 +1577,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#fdcapp01feedcenter.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1598,7 +1598,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#fdcapp01feedcenter.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1619,7 +1619,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fr#{env_id}#fdcapp01feedcenter.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
