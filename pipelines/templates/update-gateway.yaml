@@ -5,6 +5,9 @@ parameters:
 - name: deployType
   type: string
   default: 'standard'
+  values:
+    - standard
+    - onlyDev
 # REC Iteration
 - name: recIterations
   type: object
@@ -55,13 +58,13 @@ stages:
                 subscription: ceg-corp-pulse-dev
                 serviceConnection: Rydge-dev
 - ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
-  - stage: ITG
+  - stage: ITG01
     displayName: 'Integration'
     pool: Pulse-itg
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
-      environment: ITG
+      environment: ITG01
       strategy:
         runOnce:
           deploy:
@@ -76,7 +79,7 @@ stages:
                 serviceConnection: Rydge-itg
 - ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), ne(parameters.deployType, 'onlyDev')) }}:
   - ${{ each index in parameters.recIterations }}:
-    - stage: REC${{ index }}
+    - stage: REC0${{ index }}
       displayName: Recette-rec0${{ index }}
       pool: Pulse-rec
       ${{ if eq(parameters.devIndex, 0) }}:
@@ -102,36 +105,36 @@ stages:
                   environment: $(hubEnvironment)
                   subscription: ceg-corp-pulse-rec
                   serviceConnection: Rydge-rec
-  - stage: PPR1
-    displayName: Preproduction-J-1
-    pool: Pulse-ppr
-    dependsOn:
-    - REC1
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating J-1 config'
-      environment: PPR01
-      variables:
-      - name: hubEnvironment
-        value: ppr01
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
+  # - stage: PPR1
+  #   displayName: Preproduction-J-1
+  #   pool: Pulse-ppr
+  #   dependsOn:
+  #   - REC1
+  #   jobs:
+  #   - deployment: deploy
+  #     displayName: 'Updating J-1 config'
+  #     environment: PPR01
+  #     variables:
+  #     - name: hubEnvironment
+  #       value: ppr01
+  #     strategy:
+  #       runOnce:
+  #         deploy:
+  #           steps:
+  #           - download: current
+  #             artifact: Module
 
-            - template: update-config.yaml
-              parameters:
-                environment: $(hubEnvironment)
-                subscription: ceg-corp-pulse-ppr
-                serviceConnection: Rydge-ppr
+  #           - template: update-config.yaml
+  #             parameters:
+  #               environment: $(hubEnvironment)
+  #               subscription: ceg-corp-pulse-ppr
+  #               serviceConnection: Rydge-ppr
   - ${{ each index in parameters.prdIterations }}:
-    - stage: PRD${{ index }}
+    - stage: PRD0${{ index }}
       displayName: Production-prd0${{ index }}
       pool: Pulse-prd
       dependsOn:
-      - PPR1
+      - REC01
       jobs:
       - deployment: deploy
         displayName: 'Updating PRD0${{ index }} config'
