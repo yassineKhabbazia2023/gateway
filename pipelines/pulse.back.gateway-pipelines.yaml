@@ -24,7 +24,7 @@ resources:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/Release/v2.0'
+    ref: 'refs/heads/features/change-naming'
 
 extends:
   template: pipelines\templates\platform.back.api.yaml@Pulse
@@ -33,9 +33,9 @@ extends:
     deployType: ${{ parameters.deployType }}
     sonarExclusions: '**/Program.cs, **/Extensions/SecurityServiceExtensions.cs'
     layer: Domain
-    domain: exp
+    domain: gtw
     resource:
-      id: '02'
+      id: '01'
       name: desktop
       path: src\ApiGateway\ApiGateway.csproj
       tests: tests\**\*.csproj
