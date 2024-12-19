@@ -648,68 +648,7 @@ public class AuthorizationMiddlewareTests
         var method = "GET";
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
-
-        var mockIdentityService = new Mock<IIdentityService>();
-        mockIdentityService
-            .Setup(x => x.ValidateCustomerAsync(contactEmail))
-            .ReturnsAsync(false);
-
-        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
-            .ReturnsAsync("90")
-            .Verifiable();
-
-        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
-            .ReturnsAsync(new List<string>())
-            .Verifiable();
-
-        var relatedAccounts = new Paging<Models.Account>
-        {
-            Items = { new Models.Account { AccountId = 1 } }
-        };
-        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>()))
-            .ReturnsAsync(relatedAccounts)
-            .Verifiable();
-
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
-
-        // Add the "Customer" role to the ClaimsPrincipal
-        httpContext.User = new ClaimsPrincipal(
-            new ClaimsIdentity(
-                new List<Claim>
-                {
-                new Claim(ClaimTypes.Email, contactEmail),
-                new Claim(ClaimTypes.Role, "Customer") // Add the "Customer" role
-                },
-                "TestAuthType"
-            )
-        );
-
-        httpContext.RequestServices = new ServiceCollection()
-            .AddSingleton(_mockContactService.Object)
-            .AddSingleton(_mockAuthorizationService.Object)
-            .AddSingleton(_mockAccountService.Object)
-            .AddSingleton(mockIdentityService.Object)
-            .BuildServiceProvider();
-
-        // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
-
-        // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
-        _mockContactService.VerifyAll();
-        mockIdentityService.Verify(x => x.ValidateCustomerAsync(contactEmail), Times.Once);
-    }
-
-
-
-    private static string GenerateDummyJwtToken(string userEmail)
-    {
-        // Arrange
-        var path = "/gtw/authorization/api/accounts/1";
-        var method = "GET";
-        var contactEmail = "user-demo@kpmg.fr";
-        var requiredClaims = new Dictionary<string, string>();
+        var cacheService = new Mock<ICacheService>();
 
         var mockIdentityService = new Mock<IIdentityService>();
         mockIdentityService
@@ -745,7 +684,7 @@ public class AuthorizationMiddlewareTests
                 "TestAuthType"
             )
         );
-        var cacheService = new Mock<ICacheService>();
+
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
@@ -763,7 +702,6 @@ public class AuthorizationMiddlewareTests
         _mockContactService.VerifyAll();
         mockIdentityService.Verify(x => x.ValidateCustomerAsync(contactEmail), Times.Once);
     }
-
 
 
 
