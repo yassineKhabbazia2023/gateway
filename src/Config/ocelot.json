@@ -855,7 +855,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseged#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulseged#{env_id}#02.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1826,7 +1826,7 @@
         {
           "Name": "Pulse.Back.FakeCustomer",
           "Version": "v1",
-          "Url": "https://appcegpulseged#{env_id}#01.azurewebsites.net/fakecustomer/api/v1/api.json"
+          "Url": "https://appcegpulseged#{env_id}#02.azurewebsites.net/fakecustomer/api/v1/api.json"
         }
       ]
     },
