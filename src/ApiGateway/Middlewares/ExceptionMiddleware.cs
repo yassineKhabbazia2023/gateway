@@ -1,5 +1,6 @@
 ﻿using ApiGateway.Exceptions;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using Ocelot.Middleware;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -28,6 +29,7 @@ public class ExceptionMiddleware
 
         try
         {
+            LogStreamInformation("Gateway", upstream, downstream.DownstreamPathTemplate?.Value ?? "", claims, userEmail, context?.Items?.DownstreamResponse());
             await _next.Invoke(context);
         }
         catch(GatewayException ex)
@@ -60,6 +62,12 @@ public class ExceptionMiddleware
     {
         _logger.LogError($@"[DownstreamResponse] >> There was an error while executing the request for the following downstream path: {path}.
                             Status Code: {response.StatusCode}, Reason Phrase: {response.ReasonPhrase}");
+    }
+
+    [ExcludeFromCodeCoverage]
+    private void LogStreamInformation(string prefix , string upstream,string downstream, IEnumerable<string> claims ,string userEmail, DownstreamResponse downstreamResponse)
+    {
+        _logger.LogInformation($"[Prefix]: {prefix} - [Upstream]: {upstream} [downstream]: {downstream}, [Claims]:{string.Join(',', claims)}, [UserEmail]: {userEmail}, [DownStreamResponse]: {JsonConvert.SerializeObject(downstreamResponse)}");
     }
 }
 public static class ExceptionMiddlewareExtensions
