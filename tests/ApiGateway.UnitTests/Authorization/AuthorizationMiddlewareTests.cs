@@ -1,15 +1,19 @@
 ﻿using ApiGateway.Account;
 using ApiGateway.Authorization;
+using ApiGateway.Cache;
 using ApiGateway.Contact;
 using ApiGateway.Identity;
 using ApiGateway.Middlewares;
 using ApiGateway.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Ocelot.Configuration;
 using Ocelot.Values;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace ApiGateway.UnitTests.Authorization;
 
@@ -53,13 +57,15 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         // Act
@@ -95,13 +101,15 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         // Act
@@ -126,12 +134,14 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -182,14 +192,15 @@ public class AuthorizationMiddlewareTests
             Items = { new Models.Account { AccountId = 1 } }
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
-
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
             .Callback<string>(email => email.Equals(contactEmail))
             .ReturnsAsync("90")
@@ -228,12 +239,15 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
-           .AddSingleton(_mockContactService.Object)
-           .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
-           .BuildServiceProvider();
+            .AddSingleton(cacheService.Object)
+            .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
                     .ReturnsAsync("90")
@@ -264,12 +278,17 @@ public class AuthorizationMiddlewareTests
             { "POST", "CLPEN001,COINFO001" },
             { "PUT", "CLRAPP002,COEVPO01" },
         };
+        var logger = Mock.Of<ILogger<Program>>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -297,6 +316,7 @@ public class AuthorizationMiddlewareTests
         var path = "/gtw/offer/api/subscription";
         var method = "GET";
         var contactEmail = "user-demo@kpmg.fr";
+        var logger = Mock.Of<ILogger<Program>>();
         var requiredClaims = new Dictionary<string, string>
         {
             { "GET", "CLADMI001,COADMI001" },
@@ -304,11 +324,15 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -344,12 +368,16 @@ public class AuthorizationMiddlewareTests
             { "POST", "CLPEN001,COINFO001" },
             { "PUT", "CLRAPP002,COEVPO01" },
         };
-
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var logger = Mock.Of<ILogger<Program>>();
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -377,65 +405,7 @@ public class AuthorizationMiddlewareTests
         _mockAuthorizationService.VerifyAll();
     }
 
-    private static DefaultHttpContext DummyHttpContext(
-        string path,
-        string method,
-        string contactEmail,
-        Dictionary<string, string> requiredClaims,
-        Dictionary<string, string> headers = default)
-    {
-        if (headers == null) headers = new Dictionary<string, string>();
-        // Mock HttpContext
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Path = path;
-        httpContext.Request.Method = method;
-        httpContext.Request.Headers.Authorization = new StringValues($"Bearer {GenerateDummyJwtToken(contactEmail)}");
-        foreach (var kv in headers)
-        {
-            httpContext.Request.Headers.Add(kv.Key, kv.Value);
-        }
 
-        var downstreamRoute = new DownstreamRoute(
-            key: "key",
-            upstreamPathTemplate: new UpstreamPathTemplate("template", 1, true, ""),
-            upstreamHeadersFindAndReplace: null,
-            downstreamHeadersFindAndReplace: null,
-            downstreamAddresses: null,
-            serviceName: "serviceName",
-            serviceNamespace: "serviceNamespace",
-            httpHandlerOptions: null,
-            useServiceDiscovery: false,
-            enableEndpointEndpointRateLimiting: false,
-            qosOptions: null,
-            downstreamScheme: "http",
-            requestIdKey: null,
-            isCached: false,
-            cacheOptions: null,
-            loadBalancerOptions: null,
-            rateLimitOptions: null,
-            routeClaimsRequirement: requiredClaims,
-            claimsToQueries: null,
-            claimsToHeaders: null,
-            claimsToClaims: null,
-            claimsToPath: null,
-            isAuthenticated: false,
-            isAuthorized: false,
-            authenticationOptions: null,
-            downstreamPathTemplate: null,
-            loadBalancerKey: null,
-            delegatingHandlers: null,
-            addHeadersToDownstream: null,
-            addHeadersToUpstream: null,
-            dangerousAcceptAnyServerCertificateValidator: false,
-            securityOptions: null,
-            downstreamHttpMethod: null,
-            downstreamHttpVersion: null
-        );
-
-        httpContext.Items["DownstreamRoute"] = downstreamRoute;
-
-        return httpContext;
-    }
 
     [Fact]
     public async Task AuthorizationFilter_WhenHasRelatedAccounts_ShouldAllowAccess()
@@ -446,12 +416,14 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -488,12 +460,14 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -530,12 +504,16 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
+        var logger = Mock.Of<ILogger<Program>>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -569,12 +547,14 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -608,12 +588,14 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -643,12 +625,14 @@ public class AuthorizationMiddlewareTests
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -674,6 +658,7 @@ public class AuthorizationMiddlewareTests
         var method = "GET";
         var contactEmail = "user-demo@kpmg.fr";
         var requiredClaims = new Dictionary<string, string>();
+        var cacheService = new Mock<ICacheService>();
 
         var mockIdentityService = new Mock<IIdentityService>();
         mockIdentityService
@@ -696,7 +681,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(relatedAccounts)
             .Verifiable();
 
-        var httpContext = DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
 
         // Add the "Customer" role to the ClaimsPrincipal
         httpContext.User = new ClaimsPrincipal(
@@ -715,6 +700,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
             .BuildServiceProvider();
 
         // Act
@@ -729,25 +715,4 @@ public class AuthorizationMiddlewareTests
 
 
 
-    private static string GenerateDummyJwtToken(string userEmail)
-    {
-        var header = Base64UrlEncode("{\"alg\":\"none\",\"typ\":\"JWT\"}");
-        var claims = new Dictionary<string, string>
-        {
-            {"email", userEmail}
-        };
-        var payload = Base64UrlEncode(System.Text.Json.JsonSerializer.Serialize(claims));
-        var signature = "";
-
-        return $"{header}.{payload}.{signature}";
-    }
-
-    private static string Base64UrlEncode(string input)
-    {
-        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
-        return Convert.ToBase64String(inputBytes)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
-    }
 }

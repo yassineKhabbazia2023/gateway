@@ -27,9 +27,13 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);
-builder.Services.AddHttpLogging(o => 
-{ 
+
+builder.Logging.AddApplicationInsights();
+
+builder.Services.AddHttpLogging(o =>
+{
 });
+
 
 builder.Configuration.AddJsonConfiguration();
 
@@ -43,7 +47,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 });
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName.ToLower() == "local")
 {
     app.UseSwaggerForOcelotUI(opt =>
     {
@@ -88,8 +92,10 @@ app.UseSwagger();
 var config = new OcelotPipelineConfiguration
 {
     AuthorizationMiddleware
-                = async (downStreamContext, next) =>
-                await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next)
+                = async (downStreamContext, next) => 
+                {
+                    await ApiGateway.Middlewares.AuthorizationMiddleware.AuthorizationFilter(downStreamContext, next);
+                }
 };
 
 app.UseWebSockets();
@@ -118,6 +124,11 @@ app.MapWhen(httpContext => httpContext.WebSockets.IsWebSocketRequest,
 
 await app.UseOcelot(config);
 app.UseRouting();
+
+app.Use(async (context, next) => { 
+    await ApiGateway.Middlewares.CustomerCreationMiddleWare.InvokeAsync(context, next);
+    await ApiGateway.Middlewares.CustomerInvitationMiddleWare.InvokeAsync(context, next);
+});
 
 app.MapGet("/", async context =>
 {
