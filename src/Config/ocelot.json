@@ -686,13 +686,7 @@
       ],
       "UpstreamHttpMethod": [
         "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Authorization",
