@@ -29,12 +29,12 @@ public class ExceptionMiddleware
 
         try
         {
-            LogStreamInformation("Gateway", upstream, downstream.DownstreamPathTemplate?.Value ?? "", claims, userEmail, context?.Items?.DownstreamResponse());
+            LogStreamInformation("Gateway", upstream, downstream?.DownstreamPathTemplate?.Value ?? "", claims, userEmail, context?.Items?.DownstreamResponse());
             await _next.Invoke(context);
         }
         catch(GatewayException ex)
         {
-            LogErrorWithPrefix("Gateway", upstream, claims, downstream.DownstreamPathTemplate?.Value ?? "", userEmail, ex);
+            LogErrorWithPrefix("Gateway", upstream, claims, downstream?.DownstreamPathTemplate?.Value ?? "", userEmail, ex);
         }
         catch (Exception ex)
         {
@@ -44,7 +44,7 @@ public class ExceptionMiddleware
                 LogDownstreamResponseError(downStreamResponse, downstreamRequest.AbsolutePath);
             }
 
-            LogErrorWithPrefix("Downstream", upstream, claims, downstream.DownstreamPathTemplate?.Value ?? "", userEmail, ex);
+            LogErrorWithPrefix("Downstream", upstream, claims, downstream?.DownstreamPathTemplate?.Value ?? "", userEmail, ex);
         }
     }
 
