@@ -375,7 +375,7 @@
     {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/contact/api/contacts/currentuser/terms",
-      "DownstreamPathTemplate": "/api/contacts/currentuser/terms",
+      "DownstreamPathTemplate": "/api/contacts/terms",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
