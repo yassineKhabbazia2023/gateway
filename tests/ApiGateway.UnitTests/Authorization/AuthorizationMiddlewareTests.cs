@@ -6,11 +6,14 @@ using ApiGateway.Identity;
 using ApiGateway.Middlewares;
 using ApiGateway.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Ocelot.Configuration;
 using Ocelot.Values;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace ApiGateway.UnitTests.Authorization;
 
@@ -275,6 +278,7 @@ public class AuthorizationMiddlewareTests
             { "POST", "CLPEN001,COINFO001" },
             { "PUT", "CLRAPP002,COEVPO01" },
         };
+        var logger = Mock.Of<ILogger<Program>>();
 
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         var cacheService = new Mock<ICacheService>();
@@ -284,6 +288,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -311,6 +316,7 @@ public class AuthorizationMiddlewareTests
         var path = "/gtw/offer/api/subscription";
         var method = "GET";
         var contactEmail = "user-demo@kpmg.fr";
+        var logger = Mock.Of<ILogger<Program>>();
         var requiredClaims = new Dictionary<string, string>
         {
             { "GET", "CLADMI001,COADMI001" },
@@ -326,6 +332,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -361,7 +368,7 @@ public class AuthorizationMiddlewareTests
             { "POST", "CLPEN001,COINFO001" },
             { "PUT", "CLRAPP002,COEVPO01" },
         };
-
+        var logger = Mock.Of<ILogger<Program>>();
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
@@ -370,6 +377,7 @@ public class AuthorizationMiddlewareTests
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
@@ -397,7 +405,7 @@ public class AuthorizationMiddlewareTests
         _mockAuthorizationService.VerifyAll();
     }
 
-    
+
 
     [Fact]
     public async Task AuthorizationFilter_WhenHasRelatedAccounts_ShouldAllowAccess()
@@ -498,12 +506,14 @@ public class AuthorizationMiddlewareTests
 
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         var cacheService = new Mock<ICacheService>();
+        var logger = Mock.Of<ILogger<Program>>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(_mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
