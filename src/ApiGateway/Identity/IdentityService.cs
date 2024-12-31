@@ -64,8 +64,7 @@ namespace ApiGateway.Identity
             {
                 gigyaResponse = JsonConvert.DeserializeObject<GigyaResponse>(responseContent)
                                 ?? throw new GigyaOperationException("Failed to deserialize Gigya response.");
-                logger.LogInformation($"[GIGYA RESPONSE]: {responseContent}");
-
+                logger.LogInformation($"[Function]: CheckUserExistsInGigyaAsync;  [GIGYA RESPONSE]: {responseContent}");
             }
             catch (JsonException ex)
             {
