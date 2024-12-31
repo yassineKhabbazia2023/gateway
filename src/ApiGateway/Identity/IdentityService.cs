@@ -10,11 +10,13 @@ namespace ApiGateway.Identity
     {
         private readonly HttpClient httpClient;
         private readonly IOptions<IdentityServiceOptions> options;
+        private readonly ILogger<IdentityService> logger;
 
-        public IdentityService(HttpClient httpClient, IOptions<IdentityServiceOptions> options)
+        public IdentityService(HttpClient httpClient, IOptions<IdentityServiceOptions> options, ILogger<IdentityService> logger)
         {
             this.httpClient = httpClient;
             this.options = options;
+            this.logger = logger;
         }
 
         public bool ValidateCollaborator(HttpContext httpContext)
@@ -62,6 +64,8 @@ namespace ApiGateway.Identity
             {
                 gigyaResponse = JsonConvert.DeserializeObject<GigyaResponse>(responseContent)
                                 ?? throw new GigyaOperationException("Failed to deserialize Gigya response.");
+                logger.LogInformation($"[GIGYA RESPONSE]: {responseContent}");
+
             }
             catch (JsonException ex)
             {
