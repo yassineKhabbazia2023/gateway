@@ -201,7 +201,13 @@
       ],
       "UpstreamHttpMethod": [
         "GET"
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Account",
@@ -267,6 +273,12 @@
       ],
       "RouteClaimsRequirement": {
         "GET": "COOFF001, COINFO001, COOFF002, COUSER001, CLINFO001, CLADMI001"
+      },
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
       }
     },
     {
@@ -309,7 +321,13 @@
       "UpstreamHttpMethod": [
         "PATCH",
         "GET"
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Account",
@@ -368,7 +386,13 @@
       "UpstreamHttpMethod": [
         "GET",
         "PATCH"
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Contact",
@@ -1146,7 +1170,13 @@
           "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Contact",
@@ -1161,7 +1191,13 @@
           "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Contact",
