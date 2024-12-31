@@ -38,13 +38,7 @@
       "UpstreamHttpMethod": [
         "GET",
         "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Reporting",
@@ -309,13 +303,7 @@
       "UpstreamHttpMethod": [
         "PATCH",
         "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Account",
@@ -352,13 +340,7 @@
       "UpstreamHttpMethod": [
         "GET",
         "PATCH"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Contact",
