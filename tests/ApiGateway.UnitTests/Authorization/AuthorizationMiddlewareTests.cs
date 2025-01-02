@@ -60,12 +60,16 @@ public class AuthorizationMiddlewareTests
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         var cacheService = new Mock<ICacheService>();
+        var logger = Mock.Of<ILogger<Program>>();
+
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
+
             .BuildServiceProvider();
 
         // Act
@@ -104,12 +108,14 @@ public class AuthorizationMiddlewareTests
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
         var cacheService = new Mock<ICacheService>();
+        var logger = Mock.Of<ILogger<Program>>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         // Act
@@ -695,12 +701,15 @@ public class AuthorizationMiddlewareTests
             )
         );
 
+        var logger = Mock.Of<ILogger<Program>>();
+
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
             .AddSingleton(_mockAuthorizationService.Object)
             .AddSingleton(_mockAccountService.Object)
             .AddSingleton(mockIdentityService.Object)
             .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
             .BuildServiceProvider();
 
         // Act
