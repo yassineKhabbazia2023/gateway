@@ -389,7 +389,6 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
           "GIGYA MyPulse v2"
         ]
       }
@@ -692,7 +691,13 @@
       ],
       "UpstreamHttpMethod": [
         "GET"
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Authorization",
@@ -1170,13 +1175,7 @@
           "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Contact",
@@ -1191,13 +1190,7 @@
           "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
+      ]
     },
     {
       "SwaggerKey": "Contact",
