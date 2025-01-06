@@ -1678,6 +1678,12 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+	  "RouteClaimsRequirement": {
+        "GET": "CLGED0002,COGED0002",
+		"POST": "CLGED0002,COGED0002",
+		"DELETE": "CLGED0002,COGED0002",
+		"PATCH": "CLGED0002,COGED0002"	
       }
     },
     {
@@ -1702,6 +1708,12 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+	  "RouteClaimsRequirement": {
+        "GET": "CLGED0001,COGED0001",
+		"POST": "CLGED0001,COGED0001",
+		"DELETE": "CLGED0001,COGED0001",
+		"PATCH": "CLGED0001,COGED0001"	
       }
     },
     {
