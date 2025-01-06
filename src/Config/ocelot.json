@@ -1663,7 +1663,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
+          "Host": "fritg01gacapp01gedaccounting.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1678,6 +1678,12 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+	  "RouteClaimsRequirement": {
+        "GET": "CLGED0002,COGED0002",
+		"POST": "CLGED0002,COGED0002",
+		"DELETE": "CLGED0002,COGED0002",
+		"PATCH": "CLGED0002,COGED0002"	
       }
     },
     {
@@ -1687,7 +1693,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulsegso#{env_id}#01.azurewebsites.net",
+          "Host": "fritg01gsoapp01gedsocial.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1702,6 +1708,12 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+	  "RouteClaimsRequirement": {
+        "GET": "CLGED0001,COGED0001",
+		"POST": "CLGED0001,COGED0001",
+		"DELETE": "CLGED0001,COGED0001",
+		"PATCH": "CLGED0001,COGED0001"	
       }
     },
     {
