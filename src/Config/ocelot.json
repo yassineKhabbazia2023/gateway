@@ -1663,7 +1663,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fritg01gacapp01gedaccounting.azurewebsites.net",
+          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1693,7 +1693,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "fritg01gsoapp01gedsocial.azurewebsites.net",
+          "Host": "appcegpulsegso#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
