@@ -9,6 +9,8 @@ using ApiGateway.Identity.Exceptions;
 using ApiGateway.Identity.Models;
 using Newtonsoft.Json;
 using ApiGateway.Identity.Extensions;
+using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace ApiGateway.UnitTests.Identity
 {
@@ -32,8 +34,9 @@ namespace ApiGateway.UnitTests.Identity
                 GigyaSecret = "secret",
                 GigyaUserKey = "user-key"
             };
+            var logger = Mock.Of<ILogger<IdentityService>>();
             mockOptions.Setup(o => o.Value).Returns(optionsValue);
-            identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object);
+            identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object,logger);
 
             // Setup HttpContext with a user and claims
             var claims = new List<Claim>
@@ -96,7 +99,8 @@ namespace ApiGateway.UnitTests.Identity
                 GigyaUserKey = "user-key"
             };
             mockOptions.Setup(o => o.Value).Returns(optionsValue);
-           var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object);
+            var logger = Mock.Of<ILogger<IdentityService>>();
+            var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object, logger);
 
             // Setup HttpContext with a user and claims
             var claims = new List<Claim>
@@ -129,8 +133,9 @@ namespace ApiGateway.UnitTests.Identity
 
             var httpClient = new HttpClient(handlerMock.Object);
             httpClient.BaseAddress = new Uri("https://gigya.api.endpoint");
+            var logger = Mock.Of<ILogger<IdentityService>>();
 
-            var identityService = new IdentityService(httpClient, mockOptions.Object);
+            var identityService = new IdentityService(httpClient, mockOptions.Object,logger);
 
             // Act
             var result = await identityService.ValidateCustomerAsync("test@example.com");
@@ -154,8 +159,8 @@ namespace ApiGateway.UnitTests.Identity
 
             var httpClient = new HttpClient(handlerMock.Object);
             httpClient.BaseAddress = new Uri("https://gigya.api.endpoint");
-
-            var identityService = new IdentityService(httpClient, mockOptions.Object);
+            var logger = Mock.Of<ILogger<IdentityService>>();
+            var identityService = new IdentityService(httpClient, mockOptions.Object, logger);
 
             // Act
             var result = await identityService.ValidateCustomerAsync("test@example.com");
@@ -179,9 +184,9 @@ namespace ApiGateway.UnitTests.Identity
 
             var httpClient = new HttpClient(handlerMock.Object);
             httpClient.BaseAddress = new Uri("https://gigya.api.endpoint");
+            var logger = Mock.Of<ILogger<IdentityService>>();
 
-
-            var identityService = new IdentityService(httpClient, mockOptions.Object);
+            var identityService = new IdentityService(httpClient, mockOptions.Object, logger);
 
             // Act
             Func<Task> act = async () => await identityService.ValidateCustomerAsync("test@example.com");
@@ -211,9 +216,9 @@ namespace ApiGateway.UnitTests.Identity
 
             var httpClient = new HttpClient(handlerMock.Object);
             httpClient.BaseAddress = new Uri("https://gigya.api.endpoint");
+            var logger = Mock.Of<ILogger<IdentityService>>();
 
-
-            var identityService = new IdentityService(httpClient, mockOptions.Object);
+            var identityService = new IdentityService(httpClient, mockOptions.Object, logger);
 
             // Act
             Func<Task> act = async () => await identityService.ValidateCustomerAsync("test@example.com");

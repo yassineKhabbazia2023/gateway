@@ -28,12 +28,14 @@ namespace ApiGateway.Extensions
         {
             bool isCollaborator = httpContext.User.IsCollaborator();
             bool isCustomer = httpContext.User.IsCustomer();
+            var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
 
             if (isCollaborator)
             {
                 var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
                 if (!isValidCollaborator)
                 {
+                    logger.LogWarning("[Response]:403 - [Function]:IdentityServiceValidations - [Reason]: Not Valid Collaborator");
                     ForbiddenRequest(httpContext);
                     return false;
                 }
@@ -44,6 +46,7 @@ namespace ApiGateway.Extensions
                 var isValidCustomer = await identityServiceProvider.ValidateCustomerAsync(userEmail);
                 if (!isValidCustomer)
                 {
+                    logger.LogWarning("[Response]:403 - [Function]:IdentityServiceValidations - [Reason]: Not Valid Customer");
                     ForbiddenRequest(httpContext);
                     return false;
                 }

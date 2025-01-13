@@ -19,6 +19,7 @@ public static class AuthorizationMiddleware
     {
         try
         {
+            var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
             var cacheService = httpContext.RequestServices.GetService<ICacheService>();
             var userEmail = ValidateUserIdentity(httpContext);
             var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
@@ -45,18 +46,18 @@ public static class AuthorizationMiddleware
                 return;
             }
 
-            if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
+            if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext, logger))
             {
                 return;
             }
-            
+
             if (await SkipRoleCheck(accountId, contactId, httpContext))
             {
                 await next.Invoke();
                 return;
             }
 
-            if (!await CheckRoles(accountId, contactId, httpContext))
+            if (!await CheckRoles(accountId, contactId, httpContext, logger))
             {
                 return;
             }
@@ -87,12 +88,13 @@ public static class AuthorizationMiddleware
 
 
 
-    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
+    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext, ILogger logger)
     {
         if (requiredClaims.Count != 0)
         {
             if (string.IsNullOrWhiteSpace(userEmail))
             {
+                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: UserEmail is null or empty");
                 httpContext.ForbiddenRequest();
                 return false;
             }
@@ -100,6 +102,7 @@ public static class AuthorizationMiddleware
 
             if (string.IsNullOrWhiteSpace(contactId))
             {
+                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: ContactId is null or empty");
                 httpContext.ForbiddenRequest();
                 return false;
             }
@@ -109,6 +112,7 @@ public static class AuthorizationMiddleware
 
             if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
             {
+                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User");
                 httpContext.ForbiddenRequest();
                 return false;
             }
@@ -132,7 +136,7 @@ public static class AuthorizationMiddleware
         return false;
     }
 
-    private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext)
+    private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext, ILogger logger)
     {
         if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
         {
@@ -144,6 +148,7 @@ public static class AuthorizationMiddleware
                 var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
                 if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
                 {
+                    logger.LogWarning($"[Response]:403 - [Function]:CheckRoles - [Reason]: ContactId:{contactId} has no roles with accountId:{accountId}");
                     httpContext.ForbiddenAccount(accountId.Value);
                     return false;
                 }

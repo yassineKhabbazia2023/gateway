@@ -28,6 +28,8 @@ builder.Services.AddFeatureManagement();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);
 
+builder.Logging.AddApplicationInsights();
+
 builder.Services.AddHttpLogging(o =>
 {
 });

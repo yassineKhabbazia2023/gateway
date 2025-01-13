@@ -4,13 +4,14 @@ parameters:
   type: string
 - name: subscription
   type: string
-  default: PULSE-DEV
+- name: serviceConnection
+  type: string
 
 steps:
 - task: AzureCLI@2
   displayName: "Updating config file ocelot.json"
   inputs:
-    azureSubscription: ${{ parameters.subscription }}
+    azureSubscription: ${{ parameters.serviceConnection }}
     scriptType: pscore
     scriptLocation: inlineScript
     inlineScript: |
