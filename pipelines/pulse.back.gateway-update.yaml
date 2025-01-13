@@ -13,13 +13,16 @@ parameters:
   displayName: "Technical parameter : don t modify it !"
   type: string
   default: 'standard'
+  values:
+    - standard
+    - onlyDev
 
 resources:
   repositories:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/features/change-naming'
+    ref: 'refs/heads/Release/v3.0'
 
 stages:
 - template: templates/update-gateway.yaml
