@@ -14,7 +14,7 @@ parameters:
   default: 0
 - name: deployType
   type: string
-  default: 'onlyDev'
+  default: 'standard'
   values:
     - standard
     - onlyDev
@@ -24,7 +24,7 @@ resources:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/features/change-naming'
+    ref: 'refs/heads/Release/v3.0'
 
 extends:
   template: pipelines\templates\platform.back.api.yaml@Pulse
