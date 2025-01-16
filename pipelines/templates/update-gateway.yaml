@@ -20,6 +20,10 @@ parameters:
   default:
   - 1
   - 2
+# Main branch to apply github flow
+- name: githubFlowBranch
+  type: string
+  default: 'main'
 
 stages:
 - stage: build
@@ -31,7 +35,7 @@ stages:
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
-- ${{ if ne(parameters.devIndex, 0) }}:
+- ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), and(ne(parameters.devIndex, 0) ,or(and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), and(eq(variables['Build.Reason'], 'IndividualCI'), contains(variables['Build.SourceBranch'], parameters.githubFlowBranch))))) }}:
   - stage: DEV
     ${{ if lt(parameters.devIndex, 10) }}:
       displayName: 'Development-dev0${{ parameters.devIndex }}'
@@ -57,7 +61,7 @@ stages:
                   environment: dev${{ parameters.devIndex }}
                 subscription: ceg-corp-pulse-dev
                 serviceConnection: Rydge-dev
-- ${{ if and(contains(variables['Build.SourceBranch'], 'develop'), eq(parameters.deployType, 'standard')) }}:
+- ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), and(or(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), contains(variables['Build.SourceBranch'], parameters.githubFlowBranch)), eq(parameters.deployType, 'standard'))) }}:
   - stage: ITG01
     displayName: 'Integration'
     pool: Pulse-itg
@@ -77,7 +81,7 @@ stages:
                 environment: itg01
                 subscription: ceg-corp-pulse-itg
                 serviceConnection: Rydge-itg
-- ${{ if and(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), ne(parameters.deployType, 'onlyDev')) }}:
+- ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), and(or(and(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.'))), contains(variables['Build.SourceBranch'], parameters.githubFlowBranch)), ne(parameters.deployType, 'onlyDev'))) }}:
   - ${{ each index in parameters.recIterations }}:
     - stage: REC0${{ index }}
       displayName: Recette-rec0${{ index }}
