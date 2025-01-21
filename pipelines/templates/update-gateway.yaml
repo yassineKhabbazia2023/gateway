@@ -13,13 +13,11 @@ parameters:
   type: object
   default:
   - 1
-  - 2
 # PRD Iteration
 - name: prdIterations
   type: object
   default:
   - 1
-  - 2
 # Main branch to apply github flow
 - name: githubFlowBranch
   type: string
