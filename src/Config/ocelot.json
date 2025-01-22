@@ -74,27 +74,6 @@
     },
     {
       "SwaggerKey": "Reporting",
-      "UpstreamPathTemplate": "/gtw/reporting/api/reports/demoEmbedToken",
-      "DownstreamPathTemplate": "/api/reports/demoEmbedToken",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Reporting",
       "UpstreamPathTemplate": "/gtw/reporting/api/reports/currentuser",
       "DownstreamPathTemplate": "/api/reports/currentuser",
       "DownstreamScheme": "https",
@@ -105,7 +84,6 @@
         }
       ],
       "UpstreamHttpMethod": [
-        "GET",
         "POST"
       ],
       "AuthenticationOptions": {
@@ -115,7 +93,6 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004, CORAP001, CORAPP001, CLRAPP001, CLRAPP002",
         "POST": "COADMI004, CORAP001, CORAPP001"
       }
     },
