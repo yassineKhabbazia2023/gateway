@@ -1812,11 +1812,11 @@
     {
       "UpstreamPathTemplate": "/gtw/hub/ged/{everything}",
       "DownstreamPathTemplate": "/{everything}",
-      "DownstreamScheme": "wss",
+      "DownstreamScheme": "ws",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulsegac#{env_id}#02.azurewebsites.net",
-          "Port": 443
+          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
+          "Port": 5001
         }
       ],
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
@@ -1825,10 +1825,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-	    "AddQueriesToRequest": {
-		    "ContactEmail": "Claims[email] > value",
-	    }
+      }
     }
   ],
   "Aggregates": [
