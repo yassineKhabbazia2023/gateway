@@ -98,6 +98,8 @@ public static class AuthorizationMiddleware
                 httpContext.ForbiddenRequest();
                 return false;
             }
+
+
             if (string.IsNullOrWhiteSpace(contactId))
             {
                 logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: ContactId is null or empty");
@@ -106,13 +108,11 @@ public static class AuthorizationMiddleware
             }
 
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-            var permissions = await userPermissionService!.GetAllContactAuthorizationAsync(int.Parse(contactId!), accountId) ?? [];
+            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
 
-            if (!permissions.Any(x => requiredClaims.Contains(x)))
+            if (permissions == null || !permissions.Any(x => requiredClaims.Contains(x)))
             {
-                string permissionCodes = permissions == null ? "" : String.Join(",", permissions);
-                string warningMessage = $"[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User '{contactId}'/'{accountId}' permissions: {permissionCodes}";
-                logger.LogWarning(warningMessage);
+                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User");
                 httpContext.ForbiddenRequest();
                 return false;
             }

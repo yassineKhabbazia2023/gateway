@@ -1,4 +1,8 @@
 ﻿
+using ApiGateway.Contact.Exceptions;
+using ApiGateway.Contact.Models;
+using System.Net.Http;
+using System;
 using System.Text.Json;
 
 namespace ApiGateway.Authorization;
@@ -12,7 +16,7 @@ public class AuthorizationSevice : IAuthorizationSevice
         _httpClient = httpClient;
     }
 
-    public async Task<List<string>> GetContactAuthorizationAsync(int contactId, int? accountId)
+    public async Task<IList<string>> GetContactAuthorizationAsync(int contactId, int? accountId)
     {
         var url = string.Concat($"api/authorization?contactId={contactId}", accountId == null ? "" : $"&accountId={accountId}");
         var response = await _httpClient.GetAsync(url);
@@ -24,23 +28,10 @@ public class AuthorizationSevice : IAuthorizationSevice
                 return new List<string>();
             }
 
-            var contactResult = JsonSerializer.Deserialize<List<string>>(jsonString!);
+            var contactResult = JsonSerializer.Deserialize<IList<string>>(jsonString!);
             return contactResult ?? new List<string>();
         }
 
         return new List<string>();
-    }
-
-    public async Task<List<string>> GetAllContactAuthorizationAsync(int contactId, int? accountId)
-    {
-        var permissions = await GetContactAuthorizationAsync(contactId, null);
-
-        if (accountId.HasValue)
-        {
-            var unitaryPermissions = await GetContactAuthorizationAsync(contactId, accountId);
-            permissions.AddRange(unitaryPermissions);
-        }
-
-        return permissions;
     }
 }
