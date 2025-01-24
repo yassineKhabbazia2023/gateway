@@ -1810,22 +1810,46 @@
       }
     },
     {
-      "UpstreamPathTemplate": "/gtw/hub/ged/{everything}",
-      "DownstreamPathTemplate": "/{everything}",
-      "DownstreamScheme": "ws",
+      "UpstreamPathTemplate": "/gtw/hub/ged/Pia/negotiate?{queryString}",
+      "DownstreamPathTemplate": "/Pia/negotiate?{queryString}",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
-          "Port": 5001
+          "Host": "appcegpulsegac#{env_id}#02.azurewebsites.net",
+          "Port": 443
         }
       ],
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
+      "UpstreamHttpMethod": [
+        "POST",
+        "OPTIONS"
+      ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "AddQueriesToRequest": {
+        "ContactEmail": "Claims[http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress] > value"
       }
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/hub/ged/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "wss",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegac#{env_id}#02.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ]
     }
   ],
   "Aggregates": [

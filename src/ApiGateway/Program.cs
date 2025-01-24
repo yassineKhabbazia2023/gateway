@@ -25,6 +25,7 @@ builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
+builder.Services.AddSignalR();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);
 
