@@ -21,13 +21,6 @@ parameters:
     - standard
     - onlyDev
 
-resources:
-  repositories:
-  - repository: Pulse
-    name: 'Pulse.Operations.Pipelines'
-    type: git
-    ref: 'refs/heads/Release/v3.0'
-
 stages:
 - template: templates/update-gateway.yaml
   parameters:
