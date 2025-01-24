@@ -20,6 +20,131 @@ public class AuthorizationSeviceTests
     }
 
     [Fact]
+    public async Task GetAllContactAuthorizationAsync_WhenHasGlobalAndUnitaryAuthorizations_ReturnsCombinedPermissions()
+    {
+        // Arrange
+        var unitaryPermissions = new List<string> { "CLADMI001" };
+        var globalPermissions = new List<string> { "COADMI001" };
+        var expectedList = new List<string> { "CLADMI001", "COADMI001" };
+
+        var unitaryResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(unitaryPermissions)),
+        };
+
+        var globalResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(globalPermissions)),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .SetupSequence<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(unitaryResponse) // First call for unitary permissions
+            .ReturnsAsync(globalResponse); // Second call for global permissions
+
+        // Act
+        var result = await _authorizationSevice.GetAllContactAuthorizationAsync(1, 1);
+
+        // Assert
+        Assert.Equal(expectedList, result);
+    }
+
+    [Fact]
+    public async Task GetAllContactAuthorizationAsync_WhenHasOnlyGlobalAuthorizations_ReturnsGlobalPermissions()
+    {
+        // Arrange
+        var globalPermissions = new List<string> { "COADMI001" };
+        var expectedList = new List<string> { "COADMI001" };
+
+        var unitaryResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(string.Empty), // No unitary permissions
+        };
+
+        var globalResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(globalPermissions)),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .SetupSequence<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(unitaryResponse) // First call for unitary permissions
+            .ReturnsAsync(globalResponse); // Second call for global permissions
+
+        // Act
+        var result = await _authorizationSevice.GetAllContactAuthorizationAsync(1, 1);
+
+        // Assert
+        Assert.Equal(expectedList, result);
+    }
+
+    [Fact]
+    public async Task GetAllContactAuthorizationAsync_WhenAccountIdIsNull_ReturnsGlobalPermissions()
+    {
+        // Arrange
+        var globalPermissions = new List<string> { "COADMI001" };
+        var expectedList = new List<string> { "COADMI001" };
+
+        var globalResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(globalPermissions)),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .SetupSequence<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(globalResponse); // only on call for global permissions
+
+        // Act
+        var result = await _authorizationSevice.GetAllContactAuthorizationAsync(1, null);
+
+        // Assert
+        Assert.Equal(expectedList, result);
+    }
+
+    [Fact]
+    public async Task GetAllContactAuthorizationAsync_WhenHasNoAuthorizations_ReturnsEmptyList()
+    {
+        // Arrange
+        var emptyResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(string.Empty),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .SetupSequence<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(emptyResponse) // First call for unitary permissions
+            .ReturnsAsync(emptyResponse); // Second call for global permissions
+
+        // Act
+        var result = await _authorizationSevice.GetAllContactAuthorizationAsync(1, 1);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task GetContactAuthorizationAsync_WhenContactHasAuthorization_ReturnsContactAuthorizationList()
     {
         // Arrange

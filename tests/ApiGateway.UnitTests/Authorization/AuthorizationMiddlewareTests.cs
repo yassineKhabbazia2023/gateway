@@ -155,12 +155,14 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync("90")
             .Verifiable();
 
-        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+        var mockedPermissions = new List<string>() { "COADMI001" };
+        
+        _mockAuthorizationService.Setup(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .Callback<int, int?>((contactId, accountId) =>
             {
                 contactId.Equals(contactId);
             })
-            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .ReturnsAsync(mockedPermissions)
             .Verifiable();
 
         //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
@@ -214,6 +216,7 @@ public class AuthorizationMiddlewareTests
         _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturnRole).Verifiable();
 
         bool expectedAccountIdOnePassed = false;
+        var mockedAutorisations = new List<string>() { "COADMI001" };
         _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .Callback<int, int?>((contactId, accountId) =>
             {
@@ -223,7 +226,19 @@ public class AuthorizationMiddlewareTests
                     expectedAccountIdOnePassed = true;
                 }
             })
-            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .ReturnsAsync(mockedAutorisations)
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .Callback<int, int?>((contactId, accountId) =>
+            {
+                contactId.Equals(contactId);
+                if (accountId == 1)
+                {
+                    expectedAccountIdOnePassed = true;
+                }
+            })
+            .ReturnsAsync(mockedAutorisations)
             .Verifiable();
 
         // Act
@@ -391,12 +406,14 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync("90")
             .Verifiable();
 
-        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+        var mockedEmptyPermissions = new List<string>();
+
+        _mockAuthorizationService.Setup(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .Callback<int, int?>((contactId, accountId) =>
             {
                 contactId.Equals(contactId);
             })
-            .ReturnsAsync(new List<string>())
+            .ReturnsAsync(mockedEmptyPermissions)
             .Verifiable();
 
         //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);

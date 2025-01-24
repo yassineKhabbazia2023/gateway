@@ -106,7 +106,7 @@ public static class AuthorizationMiddleware
             }
 
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
+            var permissions = await userPermissionService!.GetAllContactAuthorizationAsync(int.Parse(contactId!), accountId) ?? [];
 
             if (!permissions.Any(x => requiredClaims.Contains(x)))
             {
