@@ -195,11 +195,6 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var toReturnRole = new Paging<Models.Account>
-        {
-            Items = { new Models.Account { AccountId = 1 } }
-        };
-
         var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, headers);
         var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
@@ -213,7 +208,7 @@ public class AuthorizationMiddlewareTests
             .Callback<string>(email => email.Equals(contactEmail))
             .ReturnsAsync("90")
             .Verifiable();
-        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturnRole).Verifiable();
+        _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(true).Verifiable();
 
         bool expectedAccountIdOnePassed = false;
         var mockedAutorisations = new List<string>() { "COADMI001" };
@@ -457,12 +452,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(new List<string>() { "COADMI001" })
             .Verifiable();
 
-        var toReturn = new Paging<Models.Account>
-        {
-            Items = { new Models.Account { AccountId = 1 } }
-        };
-
-        _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(toReturn).Verifiable();
+        _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(true).Verifiable();
 
         //_mockIdentityService.Setup(x => x.IsCollaborator(httpContext)).Returns(true);
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);

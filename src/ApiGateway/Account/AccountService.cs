@@ -37,6 +37,29 @@ public class AccountService : IAccountService
 
         return toReturn;
     }
+
+    public async Task<bool> CheckContactRoleAsync(int contactId, int? accountId, string? accountNumber)
+    {
+        var accountParam = accountId.HasValue ? $"accountId={accountId}" : $"accountNumber={accountNumber}";
+
+        var url = $"api/roles/check-contact-role-on-account?contactId={contactId}&{accountParam}";
+
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync();
+            try
+            {
+                return JsonSerializer.Deserialize<bool>(stream, _jsonSerializerOptions);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     public async Task<Models.Account?> GetAccountAsync(int accountId)
     {
         var url = $"api/accounts/{accountId}";

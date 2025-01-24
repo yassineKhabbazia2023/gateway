@@ -130,15 +130,14 @@ namespace ApiGateway.UnitTests.MiddleWares
                .Verifiable();
             _mockCacheService.Setup(x => x.GetOrCreate<string>(GlobalsConstants.cacheContent, null, null)).Returns(JsonConvert.SerializeObject(contactCreated))
                 .Verifiable();
-            Paging<Models.Account> accountsPages = new Fixture().Build<Paging<Models.Account>>().Create();
 
-            _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(accountsPages);
+            _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), null, It.IsAny<string>())).ReturnsAsync(false).Verifiable();
 
             Func<Task> task = () => Task.CompletedTask;
 
             await CustomerCreationMiddleWare.InvokeAsync(httpContext, task);
 
-            _mockAccountService.Verify(x => x.GetContactRolesAsync(It.IsAny<int>()), Times.Once);
+            _mockAccountService.Verify(x => x.CheckContactRoleAsync(It.IsAny<int>(), null, It.IsAny<string>()), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheContactId, null, null), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheAccountId, null, null), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheContent, null, null), Times.Once);
@@ -166,16 +165,13 @@ namespace ApiGateway.UnitTests.MiddleWares
                .Verifiable();
             _mockCacheService.Setup(x => x.GetOrCreate<string>(GlobalsConstants.cacheContent, null, null)).Returns(JsonConvert.SerializeObject(contactCreated))
                 .Verifiable();
-            Paging<Models.Account> accountsPages = new Fixture().Build<Paging<Models.Account>>().Create();
-            accountsPages.Items.First().AccountNumber = "THIS_SHOULD_EXIST";
-
-            _mockAccountService.Setup(x => x.GetContactRolesAsync(It.IsAny<int>())).ReturnsAsync(accountsPages);
+            _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), null, It.IsAny<string>())).ReturnsAsync(true).Verifiable();
 
             Func<Task> task = () => Task.CompletedTask;
 
             await CustomerCreationMiddleWare.InvokeAsync(httpContext, task);
 
-            _mockAccountService.Verify(x => x.GetContactRolesAsync(It.IsAny<int>()), Times.Once);
+            _mockAccountService.Verify(x => x.CheckContactRoleAsync(It.IsAny<int>(), null, It.IsAny<string>()), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheContactId, null, null), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheAccountId, null, null), Times.Once);
             _mockCacheService.Verify(x => x.GetOrCreate<string>(GlobalsConstants.cacheContent, null, null), Times.Once);

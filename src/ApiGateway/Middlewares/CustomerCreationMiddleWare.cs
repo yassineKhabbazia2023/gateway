@@ -26,6 +26,7 @@ namespace ApiGateway.Middlewares
         /// <returns></returns>
         public static async Task InvokeAsync(HttpContext context, Func<Task> next)
         {
+            var logger = context.RequestServices.GetService<ILogger<Program>>();
             if (context.Request.GetDisplayUrl().Contains("/gtw/account/api/customers?accountId=") && context.Request.Method == HttpMethod.Post.Method)
             {
                 var cacheService = context.RequestServices.GetRequiredService<ICacheService>();
@@ -44,10 +45,11 @@ namespace ApiGateway.Middlewares
                 }
 
                 var accountService = context.RequestServices.GetRequiredService<IAccountService>();
-                var relatedAccounts = await accountService!.GetContactRolesAsync(customerId);
-                var hasTheRightToCreateCustomer = relatedAccounts.Items.Any(x => x.AccountNumber == contactCreated?.AccountNumber);
-                if (!hasTheRightToCreateCustomer)
+                var hasRoleToCreateCustomer = await accountService!.CheckContactRoleAsync(customerId, null, contactCreated?.AccountNumber);
+
+                if (!hasRoleToCreateCustomer)
                 {
+                    logger.LogWarning($"[Response]:403 - [Function]:CustomerCreationMiddleWare.InvokeAsync - [Reason]: ContactId:{contactId} has no roles with accountNumber:{contactCreated?.AccountNumber}");
                     context.ForbiddenRequest();
                     return;
                 }

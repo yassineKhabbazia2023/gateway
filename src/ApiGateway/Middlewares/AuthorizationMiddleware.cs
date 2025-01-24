@@ -145,8 +145,9 @@ public static class AuthorizationMiddleware
             if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
             {
                 var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
-                var relatedAccounts = await accountService!.GetContactRolesAsync(int.Parse(contactId!));
-                if (!relatedAccounts.Items.Any(a => a.AccountId == accountId.Value))
+                var hasRoleOnAccount = await accountService!.CheckContactRoleAsync(int.Parse(contactId!), accountId, null);
+
+                if (!hasRoleOnAccount)
                 {
                     logger.LogWarning($"[Response]:403 - [Function]:CheckRoles - [Reason]: ContactId:{contactId} has no roles with accountId:{accountId}");
                     httpContext.ForbiddenAccount(accountId.Value);

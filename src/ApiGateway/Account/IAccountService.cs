@@ -5,5 +5,8 @@ namespace ApiGateway.Account;
 public interface IAccountService
 {
     public Task<Paging<Models.Account>> GetContactRolesAsync(int contactId);
+
     public Task<Models.Account?> GetAccountAsync(int accountId);
+
+    Task<bool> CheckContactRoleAsync(int contactId, int? accountId, string? accountNumber);
 }

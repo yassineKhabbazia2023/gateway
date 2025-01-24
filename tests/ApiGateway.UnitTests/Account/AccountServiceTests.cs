@@ -79,6 +79,62 @@ public class AccountServiceTests
         Assert.Empty(result.Items);
     }
 
+    [Fact]
+    public async Task CheckContactRoleAsync_WhenContactHasRoles_ReturnsTrue()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(true)),
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+             .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+             {
+                 request.RequestUri.Should().Be("http://local.account/api/roles/check-contact-role-on-account?contactId=1&accountId=1");
+             })
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.CheckContactRoleAsync(1,1,null);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task CheckContactRoleAsync_WhenContactHasntRoles_ReturnsFalse()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(false)),
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+             .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+             {
+                 request.RequestUri.Should().Be("http://local.account/api/roles/check-contact-role-on-account?contactId=1&accountId=2");
+             })
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.CheckContactRoleAsync(1, 2, null);
+
+        // Assert
+        Assert.False(result);
+    }
+
 
     [Fact]
     public async Task GetAccountAsync_WhenContactHasRoles_ReturnsAccount()
