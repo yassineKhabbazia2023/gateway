@@ -1142,27 +1142,6 @@
       ]
     },
     {
-      "SwaggerKey": "Notifications",
-      "DownstreamPathTemplate": "/api/notifications/SendEmail",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulsentf#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamPathTemplate": "/gtw/notifications/api/notifications/SendEmail",
-      "UpstreamHttpMethod": [
-        "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
       "SwaggerKey": "Contact",
       "DownstreamPathTemplate": "/api/terms/latest",
       "UpstreamPathTemplate": "/gtw/contact/api/terms/latest",
