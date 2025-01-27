@@ -6,6 +6,7 @@ using ApiGateway.Middlewares;
 using ApiGateway.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -115,6 +116,7 @@ namespace ApiGateway.UnitTests.MiddleWares
         {
             string htmlPath = "/gtw/account/api/customers?accountId=306";
             string method = HttpMethod.Post.Method;
+            var logger = Mock.Of<ILogger<Program>>();
             var contactCreated = new CreatedContact { AccountNumber = "AN_ACCOUNT_NUMBER_THAT_SHOULD_NOT_EXISTS_IN_CONTACT_ROLES" };
             var httpContext = Dummies.DummyHttpContext(htmlPath, method, string.Empty, null);
             httpContext.Request.Path = htmlPath;
@@ -122,6 +124,7 @@ namespace ApiGateway.UnitTests.MiddleWares
             httpContext.RequestServices = new ServiceCollection()
                        .AddSingleton(_mockAccountService.Object)
                        .AddSingleton(_mockCacheService.Object)
+                       .AddSingleton(logger)
                        .BuildServiceProvider();
 
             _mockCacheService.Setup(x => x.GetOrCreate<string>(GlobalsConstants.cacheContactId, null, null)).Returns("118")
