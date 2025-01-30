@@ -876,6 +876,30 @@
     },
     {
       "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}&accountId={def}",
+      "DownstreamPathTemplate": "/api/authorizations/configuration?contactId={abc}&accountId={def}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseaut#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COADMI004, CLUSER004"
+      }
+    },
+    {
+      "SwaggerKey": "Authorization",
       "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}",
       "DownstreamPathTemplate": "/api/authorizations/configuration?contactId={abc}",
       "DownstreamScheme": "https",
@@ -900,36 +924,12 @@
     },
     {
       "SwaggerKey": "Authorization",
-      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}&accountId={def}",
-      "DownstreamPathTemplate": "/api/authorizations/configuration?contactId={abc}&accountId={def}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "POST"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "RouteClaimsRequirement": {
-        "POST": "COADMI004, CLUSER004"
-      }
-    },
-    {
-      "SwaggerKey": "Authorization",
       "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration/account?accountId={abc}&type={def}&configurable={ghi}",
       "DownstreamPathTemplate": "/api/authorizations/configuration/account?accountId={abc}&type={def}&configurable={ghi}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulseaut#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],

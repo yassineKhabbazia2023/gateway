@@ -111,7 +111,8 @@ public static class AuthorizationMiddleware
             if (!permissions.Any(x => requiredClaims.Contains(x)))
             {
                 string permissionCodes = permissions == null ? "" : String.Join(",", permissions);
-                string warningMessage = $"[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User '{contactId}'/'{accountId}' permissions: {permissionCodes}";
+                string requiredClaimsCodes = String.Join(",", requiredClaims);
+                string warningMessage = $"[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User {contactId}/{accountId} requiredClaims: {requiredClaimsCodes} permissions: {permissionCodes}";
                 logger.LogWarning(warningMessage);
                 httpContext.ForbiddenRequest();
                 return false;
