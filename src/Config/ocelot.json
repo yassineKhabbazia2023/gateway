@@ -919,7 +919,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "POST": "COADMI003"
+        "POST": "COUSER001, COADMI004, CLUSER004"
       }
     },
     {
