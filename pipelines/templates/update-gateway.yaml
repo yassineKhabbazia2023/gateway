@@ -107,30 +107,30 @@ stages:
                   environment: $(hubEnvironment)
                   subscription: ceg-corp-pulse-rec
                   serviceConnection: Rydge-rec
-  - stage: PPR01
-    displayName: Preproduction-J-1
-    pool: Pulse-ppr
-    dependsOn:
-    - REC01
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating J-1 config'
-      environment: PPR01
-      variables:
-      - name: hubEnvironment
-        value: ppr01
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
+  # - stage: PPR01
+  #   displayName: Preproduction-J-1
+  #   pool: Pulse-ppr
+  #   dependsOn:
+  #   - REC01
+  #   jobs:
+  #   - deployment: deploy
+  #     displayName: 'Updating J-1 config'
+  #     environment: PPR01
+  #     variables:
+  #     - name: hubEnvironment
+  #       value: ppr01
+  #     strategy:
+  #       runOnce:
+  #         deploy:
+  #           steps:
+  #           - download: current
+  #             artifact: Module
 
-            - template: update-config.yaml
-              parameters:
-                environment: $(hubEnvironment)
-                subscription: ceg-corp-pulse-ppr
-                serviceConnection: Rydge-ppr
+  #           - template: update-config.yaml
+  #             parameters:
+  #               environment: $(hubEnvironment)
+  #               subscription: ceg-corp-pulse-ppr
+  #               serviceConnection: Rydge-ppr
   - ${{ each index in parameters.prdIterations }}:
     - stage: PRD0${{ index }}
       displayName: Production-prd0${{ index }}
