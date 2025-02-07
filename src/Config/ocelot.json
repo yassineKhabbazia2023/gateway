@@ -1683,7 +1683,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1704,7 +1704,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1725,7 +1725,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -1978,7 +1978,7 @@
         {
           "Name": "Pulse.Back.FeedCenter",
           "Version": "v1",
-          "Url": "https://appcegpulserpt#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsefdc#{env_id}#01.azurewebsites.net/api/api.json"
         }
       ]
     },
