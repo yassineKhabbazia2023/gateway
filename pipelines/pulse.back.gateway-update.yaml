@@ -2,9 +2,6 @@ name: $(Date:yyyyMMdd)$(Rev:.r)-$(SourceBranchName)
 
 trigger:
   - main
-  - feature/*
-  - bugfix/*
-  - hotfix/* 
 
 pool:
   vmImage: windows-latest

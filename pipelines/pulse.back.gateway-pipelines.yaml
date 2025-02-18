@@ -1,8 +1,5 @@
 trigger:
   - main
-  - feature/*
-  - bugfix/*
-  - hotfix/*
 
 pool:
   vmImage: 'windows-latest'
