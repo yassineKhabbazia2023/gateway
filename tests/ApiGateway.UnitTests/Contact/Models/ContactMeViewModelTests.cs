@@ -7,7 +7,7 @@ namespace ApiGateway.UnitTests.Contact.Models
         [Fact]
         public void ContactMeViewModel_WhenTypeIsCustomer()
         {
-            var contact = new ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "Customer");
+            var contact = new ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "00000000-0000-0000-0000-000000000000", "Customer");
 
             contact.Id.Should().Be(1);
             contact.Email.Should().Be("jdoe@test.fr");
@@ -21,7 +21,7 @@ namespace ApiGateway.UnitTests.Contact.Models
         [Fact]
         public void ContactMeViewModel_WhenTypeIsCollab()
         {
-            var contact = new ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "Collaborator");
+            var contact = new ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "00000000-0000-0000-0000-000000000000", "Collaborator");
 
             contact.IsCustomer.Should().BeFalse();
         }

@@ -21,10 +21,11 @@ public class ContactControllerTests
             Email = "jdoe@test.fr",
             LandPhone = "123",
             MobilePhone = "456",
+            OldId = "00000000-0000-0000-0000-000000000000",
             Type = "Customer"
         };
 
-        var response = new ApiGateway.Contact.Models.ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "Customer");
+        var response = new ApiGateway.Contact.Models.ContactMeViewModel(1, "John", "Doe", "jdoe@test.fr", "123", "456", "00000000-0000-0000-0000-000000000000", "Customer");
 
         var contactService = new Mock<IContactService>(MockBehavior.Strict);
         contactService.Setup(c => c.GetContactAsync("jdoe@test.fr")).ReturnsAsync(contact);

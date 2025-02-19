@@ -4,7 +4,7 @@ namespace ApiGateway.Contact.Models
 {
     public class ContactMeViewModel
     {
-        public ContactMeViewModel(int id, string? firstName, string? lastName, string? email, string? officePhone, string? officeMobile, string? type)
+        public ContactMeViewModel(int id, string? firstName, string? lastName, string? email, string? officePhone, string? officeMobile, string? oldId, string? type)
         {
             this.Id = id;
             this.FirstName = firstName;
@@ -12,6 +12,7 @@ namespace ApiGateway.Contact.Models
             this.Email = email;
             this.OfficePhone = officePhone;
             this.OfficeMobile = officeMobile;
+            this.OldId = oldId;
             if(type != null)
             {
                 IsCustomer = (type == ContactType.Customer.ToString());
@@ -31,5 +32,7 @@ namespace ApiGateway.Contact.Models
         public string? OfficeMobile { get; }
 
         public bool? IsCustomer { get; }
+
+        public string? OldId { get; }
     }
 }

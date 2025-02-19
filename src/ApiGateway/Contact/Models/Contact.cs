@@ -27,6 +27,9 @@ public class Contact
     [JsonPropertyName("mobilePhone")]
     public string? MobilePhone { get; set; }
 
+    [JsonPropertyName("oldId")]
+    public string? OldId { get; set; }
+
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 }
