@@ -1,7 +1,12 @@
 name: $(Date:yyyyMMdd)$(Rev:.r)-$(SourceBranchName)
 
 trigger:
-  - main
+  branches:
+    include:
+     - main
+  paths:
+    include:
+    - src/Config
 
 pool:
   vmImage: windows-latest
