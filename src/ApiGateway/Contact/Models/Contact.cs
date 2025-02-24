@@ -30,6 +30,9 @@ public class Contact
     [JsonPropertyName("oldId")]
     public string? OldId { get; set; }
 
+    [JsonPropertyName("persona")]
+    public Persona? Persona { get; set; }
+
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 }
