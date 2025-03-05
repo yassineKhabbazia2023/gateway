@@ -6,15 +6,9 @@ using ApiGateway.Identity;
 using ApiGateway.Middlewares;
 using ApiGateway.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
-using Ocelot.Configuration;
-using Ocelot.Values;
-using System.Security.Claims;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
-
+using System.Security.Claims;
 namespace ApiGateway.UnitTests.Authorization;
 
 public class AuthorizationMiddlewareTests
@@ -156,7 +150,7 @@ public class AuthorizationMiddlewareTests
             .Verifiable();
 
         var mockedPermissions = new List<string>() { "COADMI001" };
-        
+
         _mockAuthorizationService.Setup(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
             .Callback<int, int?>((contactId, accountId) =>
             {

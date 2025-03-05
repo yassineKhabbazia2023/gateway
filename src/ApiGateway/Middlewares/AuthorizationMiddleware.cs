@@ -85,9 +85,6 @@ public static class AuthorizationMiddleware
     }
 
 
-
-
-
     private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext, ILogger logger)
     {
         if (requiredClaims.Count != 0)
@@ -186,8 +183,8 @@ public static class AuthorizationMiddleware
         if (int.TryParse(accountIdParam, out var accountId))
         {
             return accountId;
-
         }
+
         return null;
     }
 
