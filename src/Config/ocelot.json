@@ -12,6 +12,7 @@
         }
       ],
       "UpstreamHttpMethod": [
+        "GET",
         "POST"
       ],
       "AuthenticationOptions": {
@@ -21,6 +22,7 @@
         ]
       },
       "RouteClaimsRequirement": {
+        "GET": "COADMI007",
         "POST": "COADMI007"
       }
     },
