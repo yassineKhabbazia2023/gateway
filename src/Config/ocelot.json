@@ -147,8 +147,8 @@
     },
     {
       "SwaggerKey": "Reporting",
-      "UpstreamPathTemplate": "/gtw/reporting/api/account/{everything}",
-      "DownstreamPathTemplate": "/api/account/{everything}",
+      "UpstreamPathTemplate": "/gtw/reporting/api/account/currentuser",
+      "DownstreamPathTemplate": "/api/account/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
