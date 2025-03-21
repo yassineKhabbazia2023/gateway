@@ -31,7 +31,6 @@
     "GET /gtw/account/api/accounts/all",
     "GET /gtw/account/api/accounts/currentuser?pageNumber={abc}&pageSize={xyz}&search={ghi}",
     "GET /gtw/account/api/accounts/currentuser/{everything}",
-    "GET /gtw/account/api/contacts/{everything}",
     "GET /gtw/account/api/delegations/{everything}",
     "GET /gtw/account/api/roles/currentuser/hub/contact/{everything}",
     "GET /gtw/account/api/roles/signatory?accountId={relativeAccountId}",

@@ -1327,8 +1327,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/account/api/contacts/{everything}",
-      "DownstreamPathTemplate": "/api/contacts/{everything}",
+      "UpstreamPathTemplate": "/gtw/account/api/contacts",
+      "DownstreamPathTemplate": "/api/contacts",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1344,6 +1344,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI007"
       }
     },
     {

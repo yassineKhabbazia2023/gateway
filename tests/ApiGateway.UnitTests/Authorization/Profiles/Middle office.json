@@ -25,7 +25,6 @@
     "DELETE /gtw/social/api/company/currentuser/{everything}",
     "GET /gtw/account/api/accounts/{accountId}/currentuser",
     "GET /gtw/account/api/accounts/currentuser/{everything}",
-    "GET /gtw/account/api/contacts/{everything}",
     "GET /gtw/account/api/delegations/{everything}",
     "GET /gtw/account/api/roles/currentuser/hub/contact/{everything}",
     "GET /gtw/authentication/api/{everything}",
