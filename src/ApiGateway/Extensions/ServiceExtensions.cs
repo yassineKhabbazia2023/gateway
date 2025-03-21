@@ -32,20 +32,20 @@ public static class ServiceExtensions
         services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICacheService, CacheService>();
-        services.AddScoped<IIdentityService,IdentityService>();
+        services.AddScoped<IIdentityService, IdentityService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
         services.AddHealthChecks();
 
-        ConfigureMockService(services,configuration);
+        ConfigureMockService(services, configuration);
         AddSwaggerConfig(services, configuration);
 
         services.AddHttpClient<IContactService, ContactService>(client =>
-            {
-                client.BaseAddress = new Uri(configuration["ContactApiUri"]!);
-            })
+        {
+            client.BaseAddress = new Uri(configuration["ContactApiUri"]!);
+        })
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy());
 
