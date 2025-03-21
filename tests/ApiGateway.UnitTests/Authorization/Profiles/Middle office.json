@@ -51,7 +51,6 @@
     "GET /gtw/mandate/api/company/{everything}",
     "GET /gtw/mandate/api/mandate/{everything}",
     "GET /gtw/mandate/api/mandate/{mandateId}/check/status",
-    "GET /gtw/offer/api/contacts/{everything}",
     "GET /gtw/offer/api/subscription",
     "GET /gtw/offer/api/subscription?accountId={abc}",
     "GET /gtw/offer/api/subscription/{subscriptionId}",

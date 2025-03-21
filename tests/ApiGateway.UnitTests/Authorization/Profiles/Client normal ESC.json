@@ -4,7 +4,7 @@
     "CLGED0001",
     "CLMEG001",
     "CLPEN001",
-    "CLRAPP001 "
+    "CLRAPP001"
   ],
   "ProfileEndpoints": [
     "DELETE /gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
@@ -30,7 +30,6 @@
     "GET /gtw/mandate/api/company/{everything}",
     "GET /gtw/mandate/api/mandate/{everything}",
     "GET /gtw/mandate/api/mandate/{mandateId}/check/status",
-    "GET /gtw/offer/api/contacts/{everything}",
     "GET /gtw/reporting/api/reports/demoEmbedToken",
     "GET /gtw/social/api/companies/currentuser",
     "GET /gtw/social/api/company/currentuser/{everything}",
