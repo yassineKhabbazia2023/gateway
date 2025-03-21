@@ -491,7 +491,6 @@
         }
       ],
       "UpstreamHttpMethod": [
-        "GET",
         "PATCH"
       ],
       "AuthenticationOptions": {
@@ -573,7 +572,7 @@
     },
     {
       "SwaggerKey": "Contact",
-      "DownstreamPathTemplate": "/api/contacts/{contactId}",
+      "DownstreamPathTemplate": "/api/contact/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -598,7 +597,7 @@
     {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{contactId}",
-      "DownstreamPathTemplate": "/api/contacts/{contactId}",
+      "DownstreamPathTemplate": "/api/contact/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -651,7 +650,7 @@
         "PATCH"
       ],
       "UpstreamPathTemplate": "/gtw/wallet/api/contacts/{contactId}",
-      "DownstreamPathTemplate": "/api/contacts/{contactId}",
+      "DownstreamPathTemplate": "/api/contact/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {

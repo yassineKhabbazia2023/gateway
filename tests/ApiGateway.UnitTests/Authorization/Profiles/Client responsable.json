@@ -25,7 +25,6 @@
     "GET /gtw/account/api/accounts/currentuser/{everything}",
     "GET /gtw/authentication/api/{everything}",
     "GET /gtw/authorization/api/authorization/currentuser",
-    "GET /gtw/contact/api/contacts/currentuser",
     "GET /gtw/contact/api/contacts/currentuser/terms",
     "GET /gtw/contact/api/terms/latest",
     "GET /gtw/contact/api/terms/latest/content",
