@@ -1795,7 +1795,7 @@
         "GET": "CLGED0002,COGED0002",
         "POST": "CLGED0002,COGED0002",
         "DELETE": "CLGED0002,COGED0002",
-        "PATCH": "CLGED0002,COGED0002"	
+        "PATCH": "CLGED0002,COGED0002"
       }
     },
     {
@@ -1825,7 +1825,7 @@
         "GET": "CLGED0001,COGED0001",
         "POST": "CLGED0001,COGED0001",
         "DELETE": "CLGED0001,COGED0001",
-        "PATCH": "CLGED0001,COGED0001"	
+        "PATCH": "CLGED0001,COGED0001"
       }
     },
     {
@@ -1874,7 +1874,7 @@
       "SwaggerKey": "notifications",
       "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/accounts/{id}/contact/{destinationId}/message",
       "UpstreamHttpMethod": [ "POST" ],
-      "DownstreamPathTemplate": "/api/notifications/currentuser/message?destinationId={destinationId}",
+      "DownstreamPathTemplate": "/api/notifications/currentuser/message?destinationId={destinationId}&accountId={id}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
