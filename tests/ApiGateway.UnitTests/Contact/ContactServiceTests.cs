@@ -3,6 +3,7 @@ using System.Text;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
+using ApiGateway.Exceptions;
 using Moq.Protected;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -154,7 +155,7 @@ public class ContactServiceTests
             await contactService.GetContactAsync(contactEmail);
         };
 
-        await act.Should().ThrowAsync<ContactNotFoundException>();
+        await act.Should().ThrowAsync<GatewayException>();
 
         mockContactOperationHandler.Verify();
     }

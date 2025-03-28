@@ -1,4 +1,5 @@
-﻿using ApiGateway.Identity.Adapters;
+﻿using ApiGateway.Exceptions;
+using ApiGateway.Identity.Adapters;
 using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Options;
 using ApiGateway.Identity.Repositories;
@@ -16,12 +17,12 @@ namespace ApiGateway.Identity.Extensions
         {
             if (services == null)
             {
-                throw new ArgumentNullException(nameof(services));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, nameof(services)));
             }
 
             if (options == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, nameof(options)));
             }
             services.AddScoped<ITableClientFactory, TableClientFactory>();
             services.AddScoped<ITableClientAdapter, TableClientAdapter>();

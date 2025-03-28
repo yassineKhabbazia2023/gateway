@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using ApiGateway.Exceptions;
+using System.Security.Claims;
 
 namespace ApiGateway.Identity.Extensions
 {
@@ -23,14 +24,14 @@ namespace ApiGateway.Identity.Extensions
         {
             if (principal == null)
             {
-                throw new ArgumentNullException(nameof(principal));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(principal)));
             }
 
             var emailClaim = principal.FindFirst(ClaimTypes.Email);
 
             if (emailClaim == null)
             {
-                throw new ArgumentException($"The principal does not contains an email claim ({ClaimTypes.Email})", nameof(principal));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(emailClaim)));
             }
 
             return emailClaim.Value;
@@ -48,7 +49,8 @@ namespace ApiGateway.Identity.Extensions
         {
             if (principal == null)
             {
-                throw new ArgumentNullException(nameof(principal));
+
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(principal)));
             }
 
             return principal.IsInRole(CollaboratorRole);
@@ -66,7 +68,7 @@ namespace ApiGateway.Identity.Extensions
         {
             if (principal == null)
             {
-                throw new ArgumentNullException(nameof(principal));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(principal)));
             }
 
             return principal.IsInRole(CustomerRole);

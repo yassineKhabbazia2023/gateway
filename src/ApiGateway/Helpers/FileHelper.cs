@@ -16,7 +16,7 @@ public static class FileHelper
         var configFullPathName = configuration[ConfigConstants.OcelotConfigPath];
         if (string.IsNullOrWhiteSpace(configFullPathName))
         {
-            throw new InvalidConfigException(ConfigConstants.OcelotConfigPath);
+            throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, nameof(configFullPathName)));
         }
         return configFullPathName;
     }

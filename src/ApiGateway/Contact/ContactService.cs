@@ -2,6 +2,7 @@
 using System.Web;
 using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.Contact;
 
@@ -31,8 +32,7 @@ public class ContactService : IContactService
             {
                 return contactResult.Items[0];
             }
-
-            throw new ContactNotFoundException();
+            throw new GatewayException(StatusCodes.Status404NotFound, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, userEmail));
         }
 
         return null;

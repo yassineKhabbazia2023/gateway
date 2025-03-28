@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using ApiGateway.Exceptions;
 using ApiGateway.Identity.Handlers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -189,7 +190,7 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             );
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => handler.ExposedEvents);
+            Assert.Throws<GatewayException>(() => handler.ExposedEvents);
         }
 
         [Fact]

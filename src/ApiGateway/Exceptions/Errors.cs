@@ -1,0 +1,49 @@
+﻿namespace ApiGateway.Exceptions
+{
+    public static class Errors
+    {
+        public static readonly string NullArgumentCode = "GTW001";
+        public static readonly string NullArgumentMessage = "Le paramètre {0} est null ou vide";
+
+        public static readonly string NullConfigurationCode = "GTW002";
+        public static readonly string NullConfigurationMessage = "La configuration {0} est null ou vide";
+
+        public static readonly string NotFoundContactCode = "GTW003";
+        public static readonly string NotFoundContactMessage = "Le contact avec l'identifiant {0} est introuvable";
+
+        public static readonly string BadRequestDownstreamCode = "GTW004";
+        public static readonly string BadRequestDownstreamMessage = "Erreur au niveau du downstream";
+
+        public static readonly string NotValidObjectCode = "GTW005";
+        public static readonly string NotValidObjectMessage = "L'objet {0} dans la fonction {1} est invalide";
+
+        public static readonly string NotValidClaimCode = "GTW006";
+        public static readonly string NotValidClaimMessage = "L'utilisateur {0} n'a pas les permissions nécessaires sur l'entité {1} - Claims attendus : {2} - Les permissions de l'utilisateur: {3}";
+
+        public static readonly string NoRoleOnAccountCode = "GTW007";
+        public static readonly string NoRoleOnAccountMessage = "Le contact avec l'identifiant {0} n'a pas de rôle dans l'entité {1}";
+
+        public static readonly string NoRightOnAccountCode = "GTW008";
+        public static readonly string NoRightOnAccountMessage = "Le contact avec l'identifiant {0} n'a pas le droit sur l'entité {1}";
+
+        public static readonly string UnexpectedExceptionCode = "GTW009";
+        public static readonly string UnexptectedExceptionMessage = "Erreur inattendue sur la Gateway! {0}";
+
+        public static readonly string NotValidCollaboratorCode = "GTW010";
+        public static readonly string NotValidCollaboratorMessage = "l'utilisateur suivant {0} n'est pas un collaborateur valide.";
+
+        public static readonly string NotValidCustomerCode = "GTW011";
+        public static readonly string NotValidCustomerMessage = "l'utilisateur suivant {0} n'est pas un client valide.";
+
+        public static readonly string GigyaError = "GTW012";
+
+        public static readonly string PermissionRequiredCode = "GTW013";
+        public static readonly string PermissionRequiredMessage = "Les autorisations requises n'existent pas pour l'utilisateur actuel.";
+
+        public static readonly string RoleRequiredCode = "GTW014";
+        public static readonly string RoleRequiredMessage = "Le Contact {0} n'a pas de rôle sur l'Account: {1}.";
+
+        public static readonly string NoCommonAccountRoleCode = "GTW015";
+        public static readonly string NoCommonAccountRoleMessage = "Les Contacts: [{0}] , [{1}] n'ont pas de rôle commun au niveau des entités.";
+    }
+}

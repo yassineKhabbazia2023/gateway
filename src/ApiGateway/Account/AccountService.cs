@@ -60,6 +60,26 @@ public class AccountService : IAccountService
         return false;
     }
 
+    public async Task<bool> CheckContactsCommonAccountRole(int contactId)
+    {
+        var url = $"api/roles/check?contactId={contactId}";
+
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync();
+            try
+            {
+                return JsonSerializer.Deserialize<bool>(stream, _jsonSerializerOptions);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     public async Task<Models.Account?> GetAccountAsync(int accountId)
     {
         var url = $"api/accounts/{accountId}";

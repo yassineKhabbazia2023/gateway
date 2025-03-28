@@ -1,4 +1,5 @@
-﻿using ApiGateway.Identity.Exceptions;
+﻿using ApiGateway.Exceptions;
+using ApiGateway.Identity.Exceptions;
 using ApiGateway.Identity.Models;
 using ApiGateway.Identity.Options;
 using Microsoft.Extensions.Options;
@@ -63,18 +64,18 @@ namespace ApiGateway.Identity
             try
             {
                 gigyaResponse = JsonConvert.DeserializeObject<GigyaResponse>(responseContent)
-                                ?? throw new GigyaOperationException("Failed to deserialize Gigya response.");
+                                ?? throw new GatewayException(StatusCodes.Status500InternalServerError, Errors.GigyaError, "Failed to deserialize Gigya response.");
                 logger.LogInformation($"[Function]: CheckUserExistsInGigyaAsync;  [GIGYA RESPONSE]: {responseContent}");
             }
             catch (JsonException ex)
             {
-                throw new GigyaOperationException("Error deserializing Gigya response.", ex);
+                throw new GatewayException(StatusCodes.Status500InternalServerError, Errors.GigyaError, "Failed to deserialize Gigya response.");
             }
 
             var anomaly = GetAnomalyError(gigyaResponse);
             if (anomaly is not null)
             {
-                throw new GigyaOperationException($"Something went wrong while communicating with Gigya, details: {anomaly}");
+                throw new GatewayException(StatusCodes.Status500InternalServerError, Errors.GigyaError, $"Something went wrong while communicating with Gigya, details: {anomaly}");
             }
 
             return gigyaResponse.TotalCount > 0;

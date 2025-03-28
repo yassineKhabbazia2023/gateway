@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using ApiGateway.Identity.Extensions;
 using Castle.Core.Logging;
 using Microsoft.Extensions.Logging;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.UnitTests.Identity
 {
@@ -192,7 +193,7 @@ namespace ApiGateway.UnitTests.Identity
             Func<Task> act = async () => await identityService.ValidateCustomerAsync("test@example.com");
 
             // Assert
-            await act.Should().ThrowAsync<GigyaOperationException>().WithMessage("Error deserializing Gigya response.");
+            await act.Should().ThrowAsync<GatewayException>().WithMessage("Failed to deserialize Gigya response.");
         }
 
         [Fact]
@@ -224,7 +225,7 @@ namespace ApiGateway.UnitTests.Identity
             Func<Task> act = async () => await identityService.ValidateCustomerAsync("test@example.com");
 
             // Assert
-            await act.Should().ThrowAsync<GigyaOperationException>().WithMessage("Something went wrong while communicating with Gigya, details: Anomaly { errorCode = 123, errorDetails = An error occurred }");
+            await act.Should().ThrowAsync<GatewayException>().WithMessage("Something went wrong while communicating with Gigya, details: Anomaly { errorCode = 123, errorDetails = An error occurred }");
         }
     }
 }

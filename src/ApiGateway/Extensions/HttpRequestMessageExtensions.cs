@@ -1,9 +1,8 @@
-﻿using System.Net.Http;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Web;
 using ApiGateway.Account;
 using ApiGateway.Configuration;
-using ApiGateway.Contact.Models;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.Extensions;
 
@@ -17,6 +16,11 @@ public static class HttpRequestMessageExtensions
 
     public static void ModifyRequestUri(this HttpRequestMessage request, string paramName, string paramValue, string fragmentToRemove)
     {
+        if (request is null)
+        {
+            return;
+        }
+
         var uriBuilder = new UriBuilder(request.RequestUri!);
         var segments = uriBuilder.Path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
         segments.Remove(fragmentToRemove);
@@ -31,6 +35,7 @@ public static class HttpRequestMessageExtensions
 
         request.RequestUri = uriBuilder.Uri;
     }
+
     public static async Task PrepareRequestHeader(
         this HttpRequestMessage request, 
         string contactEmail, 
@@ -39,7 +44,13 @@ public static class HttpRequestMessageExtensions
         IAccountService accountService
       )
     {
+        if (request is null)
+        {
+            throw new GatewayException(StatusCodes.Status406NotAcceptable, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(request)));
+        }
+
         ArgumentNullException.ThrowIfNull(request);
+
         if (!string.IsNullOrWhiteSpace(contactId))
         {
             request.Headers.Add("CurrentUser", contactId);
@@ -55,14 +66,20 @@ public static class HttpRequestMessageExtensions
                 request.ModifyRequestUri("email", contactEmail!, HttpRequestMessageConstants.EmailUriFragment);
             }
         }
+
         // Pour les routes qui contiennent le fragment DownloadStreamUriFragment côte Api
         if (request.UriContainsFragment(HttpRequestMessageConstants.DownloadStreamUriFragment))
         {
             if (!int.TryParse(request.GetQueryParam("accountId"), out int accountId))
             {
-                throw new ArgumentException("Missing accountId in query params");
+                throw new GatewayException(StatusCodes.Status404NotFound, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(accountId)));
             }
-            ArgumentNullException.ThrowIfNull(accountService);
+
+            if(accountService is null)
+            {
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, nameof(accountService)));
+            }
+
             var relatedAccount = await accountService!.GetAccountAsync(accountId);
             var deductedAccountNumber = relatedAccount?.AccountNumber;
             request.ReplaceInRequestUri(HttpRequestMessageConstants.DownloadStreamUriFragment, deductedAccountNumber ?? String.Empty);
@@ -75,6 +92,7 @@ public static class HttpRequestMessageExtensions
         {
             return;
         }
+
         var uriBuilder = new UriBuilder(request.RequestUri!);
         var newPath = uriBuilder.Path.Replace(fragmentToReplace, newValue);
         uriBuilder.Path = newPath;

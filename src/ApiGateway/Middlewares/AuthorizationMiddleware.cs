@@ -17,54 +17,48 @@ public static class AuthorizationMiddleware
 {
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
-        try
+        var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
+        var cacheService = httpContext.RequestServices.GetService<ICacheService>();
+        var userEmail = ValidateUserIdentity(httpContext);
+        var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
+        var contactId = await contactService!.GetContactIdAsync(userEmail);
+        var requiredClaims = ValidateRequireClaim(httpContext);
+        int? accountId = ValidateAccountId(httpContext);
+        var identityService = httpContext.RequestServices.GetRequiredService<IIdentityService>();
+        var isValidIdentity = await httpContext.IdentityServiceValidations(userEmail, identityService);
+
+        string content = await PeekBody(httpContext.Request);
+
+        cacheService!.GetOrCreate(GlobalsConstants.cacheContactId, contactId);
+        cacheService.GetOrCreate(GlobalsConstants.cacheAccountId, accountId.ToString());
+        cacheService.GetOrCreate(GlobalsConstants.cacheContent, content);
+
+        if (!isValidIdentity)
         {
-            var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
-            var cacheService = httpContext.RequestServices.GetService<ICacheService>();
-            var userEmail = ValidateUserIdentity(httpContext);
-            var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
-            var contactId = await contactService!.GetContactIdAsync(userEmail);
-            var requiredClaims = ValidateRequireClaim(httpContext);
-            int? accountId = ValidateAccountId(httpContext);
-            var identityService = httpContext.RequestServices.GetRequiredService<IIdentityService>();
-            var isValidIdentity = await httpContext.IdentityServiceValidations(userEmail, identityService);
-
-            string content = await PeekBody(httpContext.Request);
-
-            cacheService.GetOrCreate(GlobalsConstants.cacheContactId, contactId);
-            cacheService.GetOrCreate(GlobalsConstants.cacheAccountId, accountId.ToString());
-            cacheService.GetOrCreate(GlobalsConstants.cacheContent, content);
-
-            if (!isValidIdentity)
-            {
-                return;
-            }
-
-            if (requiredClaims.Count == 0 && !accountId.HasValue)
-            {
-                await next.Invoke();
-                return;
-            }
-
-            if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext, logger))
-            {
-                return;
-            }
-
-            if (await SkipRoleCheck(accountId, contactId, httpContext))
-            {
-                await next.Invoke();
-                return;
-            }
-
-            if (!await CheckRoles(accountId, contactId, httpContext, logger))
-            {
-                return;
-            }
+            return;
         }
-        catch (Exception ex)
+
+        if (requiredClaims.Count == 0 && !accountId.HasValue)
         {
-            throw new GatewayException("There was an error while checking route settings.", ex);
+            await next.Invoke();
+            return;
+        }
+
+        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext, logger))
+        {
+            return;
+        }
+
+        if (await AuthorizationHelper.SkipRoleCheck(accountId, int.Parse(contactId!), httpContext))
+        {
+            await next.Invoke();
+            return;
+        }
+
+        var hasRoleOnAccount = await AuthorizationHelper.CheckRoles(accountId, int.Parse(contactId!), httpContext);
+        if (!hasRoleOnAccount)
+        {
+            throw new GatewayException(StatusCodes.Status403Forbidden, Errors.RoleRequiredCode, string.Format(Errors.RoleRequiredMessage, contactId, accountId));
         }
 
         await next.Invoke();
@@ -91,15 +85,11 @@ public static class AuthorizationMiddleware
         {
             if (string.IsNullOrWhiteSpace(userEmail))
             {
-                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: UserEmail is null or empty");
-                httpContext.ForbiddenRequest();
-                return false;
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(userEmail)));
             }
             if (string.IsNullOrWhiteSpace(contactId))
             {
-                logger.LogWarning("[Response]:403 - [Function]:CheckClaims - [Reason]: ContactId is null or empty");
-                httpContext.ForbiddenRequest();
-                return false;
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(contactId)));
             }
 
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
@@ -109,48 +99,7 @@ public static class AuthorizationMiddleware
             {
                 string permissionCodes = permissions == null ? "" : String.Join(",", permissions);
                 string requiredClaimsCodes = String.Join(",", requiredClaims);
-                string warningMessage = $"[Response]:403 - [Function]:CheckClaims - [Reason]: Required Claims not found for the User {contactId}/{accountId} requiredClaims: {requiredClaimsCodes} permissions: {permissionCodes}";
-                logger.LogWarning(warningMessage);
-                httpContext.ForbiddenRequest();
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static async Task<bool> SkipRoleCheck(int? accountId, string? contactId, HttpContext httpContext)
-    {
-        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
-        {
-            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), accountId);
-
-            if (permissions != null && permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static async Task<bool> CheckRoles(int? accountId, string? contactId, HttpContext httpContext, ILogger logger)
-    {
-        if (accountId.HasValue && !string.IsNullOrWhiteSpace(contactId))
-        {
-            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
-            var permissions = await userPermissionService!.GetContactAuthorizationAsync(int.Parse(contactId!), GlobalsConstants.CollaboratorAccountId);
-            if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
-            {
-                var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
-                var hasRoleOnAccount = await accountService!.CheckContactRoleAsync(int.Parse(contactId!), accountId, null);
-
-                if (!hasRoleOnAccount)
-                {
-                    logger.LogWarning($"[Response]:403 - [Function]:CheckRoles - [Reason]: ContactId:{contactId} has no roles with accountId:{accountId}");
-                    httpContext.ForbiddenAccount(accountId.Value);
-                    return false;
-                }
+                throw new GatewayException(StatusCodes.Status403Forbidden, Errors.PermissionRequiredCode, Errors.PermissionRequiredMessage);
             }
         }
 

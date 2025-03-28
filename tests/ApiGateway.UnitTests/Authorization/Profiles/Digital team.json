@@ -98,7 +98,7 @@
     "PATCH /gtw/wallet/api/favorites/currentuser/{everything}",
     "PATCH /gtw/wallet/api/permissions/256",
     "POST /gtw/account/api/customers/invite/{contactId}?accountNumber={relativeAccountNumber}",
-    "POST /gtw/account/api/roles",
+    "POST /gtw/account/api/roles?accountId={relativeAccountId}",
     "POST /gtw/authentication/api/{everything}",
     "POST /gtw/authentication/api/update-password",
     "POST /gtw/authorization/api/authorization/{everything}",

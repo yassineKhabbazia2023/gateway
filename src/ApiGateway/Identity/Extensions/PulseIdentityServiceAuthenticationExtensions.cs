@@ -11,6 +11,8 @@ using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Adapters;
 using ApiGateway.Identity.Handlers;
 using System.Diagnostics.CodeAnalysis;
+using ApiGateway.Exceptions;
+using IdentityModel;
 
 namespace ApiGateway.Identity.Extensions
 {
@@ -119,7 +121,7 @@ namespace ApiGateway.Identity.Extensions
         {
             if (context.Principal is null)
             {
-                throw new ArgumentNullException(nameof(AddRolesToPrincipal));
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(context.Principal)));
             }
 
             foreach (var issuer in authorityConfig.ValidIssuers)

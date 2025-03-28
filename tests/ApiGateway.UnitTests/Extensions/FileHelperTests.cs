@@ -11,10 +11,10 @@ namespace ApiGateway.UnitTests.Extensions
         {
             // Arrange
             var configMock = new Mock<IConfiguration>();
-            configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null!); 
+            configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null!);
 
             // Act & Assert
-            Assert.Throws<InvalidConfigException>(() => FileHelper.GetOcelotConfigFullPathName(configMock.Object));
+            Assert.Throws<GatewayException>(() => FileHelper.GetOcelotConfigFullPathName(configMock.Object));
         }
 
         [Fact]
@@ -59,8 +59,8 @@ namespace ApiGateway.UnitTests.Extensions
             configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null!);
 
             // Act & Assert
-            Assert.Throws<InvalidConfigException>(() => FileHelper.GetLiteDbDir(configMock.Object));
+            Assert.Throws<GatewayException>(() => FileHelper.GetLiteDbDir(configMock.Object));
         }
-        
+
     }
 }

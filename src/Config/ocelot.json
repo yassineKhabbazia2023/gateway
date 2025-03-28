@@ -592,7 +592,10 @@
       },
       "RouteClaimsRequirement": {
         "GET": "COUSER002, CLUSER001, CLADMI001"
-      }
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Contact",
@@ -616,7 +619,10 @@
       },
       "RouteClaimsRequirement": {
         "PATCH": "CLUSER004, COADMI003, CLADMI001"
-      }
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Contact",
@@ -1066,8 +1072,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/check/currentuser",
-      "DownstreamPathTemplate": "/api/roles/check/currentuser",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/check",
+      "DownstreamPathTemplate": "/api/roles/check",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1084,13 +1090,13 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "RouteClaimsRequirement": {
-        "GET": "CLUSER002"
-      }
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles",
+      "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}",
       "DownstreamPathTemplate": "/api/roles",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -1110,7 +1116,10 @@
       },
       "RouteClaimsRequirement": {
         "POST": "COUSER002, COUSER001, CLUSER002, CLADMI001"
-      }
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Account",

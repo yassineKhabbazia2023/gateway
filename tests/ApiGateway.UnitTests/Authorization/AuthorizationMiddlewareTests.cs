@@ -2,6 +2,7 @@
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Contact;
+using ApiGateway.Exceptions;
 using ApiGateway.Identity;
 using ApiGateway.Middlewares;
 using ApiGateway.Models;
@@ -67,11 +68,12 @@ public class AuthorizationMiddlewareTests
             .BuildServiceProvider();
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().BeEquivalentTo(Errors.NotValidCollaboratorCode);
+        result.Which.Message.Should().BeEquivalentTo(string.Format(Errors.NotValidCollaboratorMessage, contactEmail));
     }
 
     [Fact]
@@ -113,11 +115,12 @@ public class AuthorizationMiddlewareTests
             .BuildServiceProvider();
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().BeEquivalentTo(Errors.NotValidCollaboratorCode);
+        result.Which.Message.Should().BeEquivalentTo(string.Format(Errors.NotValidCollaboratorMessage, contactEmail));
     }
 
     [Fact]
@@ -310,11 +313,11 @@ public class AuthorizationMiddlewareTests
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().BeEquivalentTo(Errors.NullArgumentCode);
         _mockContactService.VerifyAll();
         _mockAuthorizationService.VerifyAll();
     }
@@ -356,11 +359,12 @@ public class AuthorizationMiddlewareTests
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
+        var result = await action.Should().ThrowAsync<GatewayException>();
         // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        result.Which.Code.Should().Be(Errors.NullArgumentCode);
+        result.Which.Message.Should().Be(string.Format(Errors.NullArgumentMessage, "contactId"));
         _mockContactService.VerifyAll();
         _mockAuthorizationService.VerifyAll();
     }
@@ -409,10 +413,13 @@ public class AuthorizationMiddlewareTests
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
 
         // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
+        var result = await action.Should().ThrowAsync<GatewayException>();
+
+        result.Which.Code.Should().BeEquivalentTo(Errors.PermissionRequiredCode);
+        result.Which.Message.Should().BeEquivalentTo(Errors.PermissionRequiredMessage);
         _mockContactService.VerifyAll();
         _mockAuthorizationService.VerifyAll();
     }
@@ -539,12 +546,15 @@ public class AuthorizationMiddlewareTests
         _mockIdentityService.Setup(x => x.ValidateCollaborator(httpContext)).Returns(true);
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var result = await action.Should().ThrowAsync<GatewayException>();
 
-        // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        result.Which.Code.Should().Be(Errors.RoleRequiredCode);
+        result.Which.Message.Should().Be(string.Format(Errors.RoleRequiredMessage, 90, 1));
+
     }
+
+
     [Fact]
     public async Task AuthorizationFilter_WhenNoRelatedAccounts_ShouldAllowRequest_GivenNoCheckPermissions()
     {
@@ -714,15 +724,12 @@ public class AuthorizationMiddlewareTests
             .BuildServiceProvider();
 
         // Act
-        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+        var result = await action.Should().ThrowAsync<GatewayException>();
 
-        // Assert
-        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
-        Assert.Contains(httpContext.Items, x => x.Key.Equals("Errors"));
+        result.Which.Code.Should().Be(Errors.NotValidCustomerCode);
+        result.Which.Message.Should().Be(string.Format(Errors.NotValidCustomerMessage, contactEmail));
         _mockContactService.VerifyAll();
         mockIdentityService.Verify(x => x.ValidateCustomerAsync(contactEmail), Times.Once);
     }
-
-
-
 }

@@ -9,6 +9,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text;
+using ApiGateway.Exceptions;
+using IdentityModel;
 
 namespace ApiGateway.Identity.Handlers
 {
@@ -23,7 +25,7 @@ namespace ApiGateway.Identity.Handlers
 
         protected new JwtBearerEvents Events
         {
-            get => base.Events as JwtBearerEvents ?? throw(new ArgumentNullException(nameof(JwtBearerEvents)));
+            get => base.Events as JwtBearerEvents ?? throw(new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(JwtBearerEvents))));
             set => base.Events = value;
         }
 
@@ -203,7 +205,7 @@ namespace ApiGateway.Identity.Handlers
             };
 
             await Events.AuthenticationFailed(authenticationFailedContext);
-            return authenticationFailedContext.Result ?? throw ex;
+            return authenticationFailedContext.Result ?? throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(authenticationFailedContext.Result)));
         }
 
         private void AppendChallengeResponse(JwtBearerChallengeContext eventContext)

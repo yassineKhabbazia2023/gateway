@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using YamlDotNet.Core.Tokens;
+using Pulse.ExceptionMiddleware;
+using Pulse.ExceptionMiddleware.Exceptions;
+using ApiGateway.Exceptions;
 
 namespace ApiGateway.Cache;
 
@@ -12,8 +15,8 @@ public class CacheService : ICacheService
 
     public CacheService(IDistributedCache cache, IMemoryCache memoryCache)
     {
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+        _cache = cache ?? throw new NullArgumentException(Errors.NullArgumentCode,string.Format(Errors.NullArgumentMessage,nameof(cache)));
+        _memoryCache = memoryCache ?? throw new NullArgumentException(Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(memoryCache)));
     }
 
     public async Task<Contact.Models.Contact?> GetAsync(string key)

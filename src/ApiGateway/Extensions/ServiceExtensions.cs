@@ -10,8 +10,6 @@ using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
-using ApiGateway.Identity.Adapters;
-using ApiGateway.Identity.Factories;
 using ApiGateway.Identity.Options;
 using LiteDB;
 using Microsoft.OpenApi.Models;
@@ -72,6 +70,8 @@ public static class ServiceExtensions
 
         services.AddOcelot()
             .AddDelegatingHandler<ContactHandler>(true)
+            .AddDelegatingHandler<DownstreamExceptionHandler>(true)
+            .AddDelegatingHandler<RoleHandler>()
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);

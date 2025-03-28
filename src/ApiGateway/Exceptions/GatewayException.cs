@@ -1,22 +1,16 @@
-﻿namespace ApiGateway.Exceptions;
+﻿using Pulse.Back.ExceptionMiddleware.BaseException;
 
-public class GatewayException : Exception
+namespace ApiGateway.Exceptions;
+
+public class GatewayException : BusinessException
 {
-    public static string DefaultMessage => "There was an error related to the gateway itself.";
 
-    public GatewayException()
-        : base(DefaultMessage)
+    public int StatusCode { get; private set; }
+    public GatewayException(int statusCode, string errorCode, string errorMessage)
+        : base(errorCode, errorMessage)
     {
-    }
-
-
-    public GatewayException(string message)
-        : base(message)
-    {
-    }
-
-    public GatewayException(string message, Exception inner)
-        : base(message, inner)
-    {
+        this.StatusCode = statusCode;
     }
 }
+
+

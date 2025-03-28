@@ -9,4 +9,6 @@ public interface IAccountService
     public Task<Models.Account?> GetAccountAsync(int accountId);
 
     Task<bool> CheckContactRoleAsync(int contactId, int? accountId, string? accountNumber);
+
+    Task<bool> CheckContactsCommonAccountRole(int contactId);
 }

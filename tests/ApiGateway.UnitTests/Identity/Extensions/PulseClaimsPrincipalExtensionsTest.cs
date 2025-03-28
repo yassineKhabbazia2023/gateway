@@ -1,4 +1,5 @@
-﻿using ApiGateway.Identity.Extensions;
+﻿using ApiGateway.Exceptions;
+using ApiGateway.Identity.Extensions;
 using System.Security.Claims;
 
 namespace ApiGateway.UnitTests.Identity.Extensions
@@ -13,7 +14,7 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             ClaimsPrincipal principal = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => principal.GetEmail());
+            Assert.Throws<GatewayException>(() => principal.GetEmail());
         }
 
         [Fact]
@@ -23,8 +24,8 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentException>(() => principal.GetEmail());
-            Assert.Equal("The principal does not contains an email claim (http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress) (Parameter 'principal')", exception.Message);
+            var exception = Assert.Throws<GatewayException>(() => principal.GetEmail());
+            Assert.Equal("Le paramètre emailClaim est null ou vide", exception.Message);
         }
 
         [Fact]
@@ -49,7 +50,7 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             ClaimsPrincipal principal = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => principal.IsCollaborator());
+            Assert.Throws<GatewayException>(() => principal.IsCollaborator());
         }
 
         [Fact]
@@ -87,7 +88,7 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             ClaimsPrincipal principal = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => principal.IsCustomer());
+            Assert.Throws<GatewayException>(() => principal.IsCustomer());
         }
 
         [Fact]
