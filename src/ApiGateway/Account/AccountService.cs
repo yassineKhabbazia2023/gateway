@@ -60,11 +60,14 @@ public class AccountService : IAccountService
         return false;
     }
 
-    public async Task<bool> CheckContactsCommonAccountRole(int contactId)
+    public async Task<bool> CheckContactsCommonAccountRole(int currentUserId, int contactId)
     {
         var url = $"api/roles/check?contactId={contactId}";
 
+        // Transmet le CurrentUser dans le header de l'appel
+        _httpClient.DefaultRequestHeaders.Add("CurrentUser", $"{currentUserId}");
         var response = await _httpClient.GetAsync(url);
+
         if (response.IsSuccessStatusCode)
         {
             var stream = await response.Content.ReadAsStreamAsync();
@@ -77,6 +80,7 @@ public class AccountService : IAccountService
                 return false;
             }
         }
+
         return false;
     }
 

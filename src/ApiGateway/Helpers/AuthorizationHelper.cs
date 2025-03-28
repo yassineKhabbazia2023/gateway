@@ -49,7 +49,7 @@ namespace ApiGateway.Helpers
                 if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
                 {
                     var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
-                    var hasCommonAccountRole = await accountService!.CheckContactsCommonAccountRole((int)contactId);
+                    var hasCommonAccountRole = await accountService!.CheckContactsCommonAccountRole(currentUserId, (int)contactId);
 
                     return hasCommonAccountRole;
                 }

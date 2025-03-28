@@ -1089,10 +1089,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-      "DelegatingHandlers": [
-        "RoleHandler"
-      ]
+      }
     },
     {
       "SwaggerKey": "Account",
