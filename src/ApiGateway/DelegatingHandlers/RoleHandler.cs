@@ -48,16 +48,17 @@ namespace ApiGateway.DelegatingHandlers
                 }
 
                 // Extract accountId and contactId from the query string
-                var queryParameters = HttpUtility.ParseQueryString(request.RequestUri?.Query);
+                var queryParameters = HttpUtility.ParseQueryString(request.RequestUri?.Query!);
                 int? accountId = AuthorizationHelper.ParseQueryParameter<int>("accountId", queryParameters);
                 int? contactId = AuthorizationHelper.ParseQueryParameter<int>("contactId", queryParameters);
+                string? accountNumber = queryParameters["accountNumber"];
 
                 // Extract contactId from route param if exists
                 // Si contactId est toujours null, tente d'extraire un entier de l'URL
                 // exp: /gtw/customer-wallet/api/contacts/188/accounts/602 (ContactId = 188)
                 if (contactId == null)
                 {
-                    var path = request.RequestUri.AbsolutePath;
+                    var path = request.RequestUri?.AbsolutePath!;
 
                     // Utilisation de Regex pour extraire le premier entier trouvé
                     var match = Regex.Match(path, @"\d+");
@@ -80,16 +81,26 @@ namespace ApiGateway.DelegatingHandlers
                 // Case 3: If accountId exists, check if the user has the role for the specified account.
                 if (accountId.HasValue)
                 {
-                    var hasRole = await AuthorizationHelper.CheckRoles(accountId, currentUserId, _httpContextAccessor.HttpContext!);
+                    var hasRole = await AuthorizationHelper.CheckRoles(accountId, null, currentUserId, _httpContextAccessor.HttpContext!);
                     if (!hasRole)
                     {
                         _logger.LogWarning($"[Response]: 403 - [Handler]: RoleHandler - [Function]: CheckRoles - [Reason]: No role for contactId: {currentUserId} on accountId: {accountId}");
                         return await ReturnError(new GatewayException(403, Errors.NoRoleOnAccountCode, string.Format(Errors.NoRoleOnAccountMessage, currentUserId, accountId)));
                     }
                 }
+                // Case 4: If accountNumber exists, check if the user has the role for the specified account.
+                else if (!string.IsNullOrEmpty(accountNumber))
+                {
+                    var hasRole = await AuthorizationHelper.CheckRoles(null, accountNumber, currentUserId, _httpContextAccessor.HttpContext!);
+                    if (!hasRole)
+                    {
+                        _logger.LogWarning($"[Response]: 403 - [Handler]: RoleHandler - [Function]: CheckRoles - [Reason]: No role for contactId: {currentUserId} on accountNumber: {accountNumber}");
+                        return await ReturnError(new GatewayException(403, Errors.NoRoleOnAccountCode, string.Format(Errors.NoRoleOnAccountMessage, currentUserId, accountNumber)));
+                    }
+                }
                 else
                 {
-                    // Case 4: If accountId does not exist, check if the user has a common role on a shared account with the upstream user.
+                    // Case 5: If accountId does not exist, check if the user has a common role on a shared account with the upstream user.
                     var hasCommonAccountRole = await AuthorizationHelper.CheckContactsCommonAccountRole(currentUserId, contactId, _httpContextAccessor.HttpContext!);
                     if (!hasCommonAccountRole)
                     {

@@ -90,11 +90,6 @@ var config = new OcelotPipelineConfiguration
 await app.UseOcelot(config);
 app.UseRouting();
 
-app.Use(async (context, next) => { 
-    await CustomerCreationMiddleWare.InvokeAsync(context, next);
-    await CustomerInvitationMiddleWare.InvokeAsync(context, next);
-});
-
 app.MapGet("/", async context =>
 {
     context.Response.ContentType = "text/html";

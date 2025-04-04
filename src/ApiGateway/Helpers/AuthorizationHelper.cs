@@ -22,16 +22,18 @@ namespace ApiGateway.Helpers
             return false;
         }
 
-        public static async Task<bool> CheckRoles(int? accountId, int? contactId, HttpContext httpContext)
+        public static async Task<bool> CheckRoles(int? accountId, string? accountNumber, int? contactId, HttpContext httpContext)
         {
-            if (accountId.HasValue && contactId.HasValue)
+            bool isAccountValid = accountId.HasValue || !string.IsNullOrEmpty(accountNumber);
+
+            if (isAccountValid && contactId.HasValue)
             {
                 var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
                 var permissions = await userPermissionService!.GetContactAuthorizationAsync((int)contactId, GlobalsConstants.CollaboratorAccountId);
                 if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
                 {
                     var accountService = httpContext.RequestServices.GetRequiredService<IAccountService>();
-                    var hasRoleOnAccount = await accountService!.CheckContactRoleAsync((int)contactId, accountId, null);
+                    var hasRoleOnAccount = await accountService!.CheckContactRoleAsync((int)contactId, accountId, accountNumber);
 
                     return hasRoleOnAccount;
                 }

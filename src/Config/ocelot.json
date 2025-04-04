@@ -1257,7 +1257,10 @@
       ],
       "RouteClaimsRequirement": {
         "POST": "CLUSER002"
-      }
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Contact",
@@ -1272,6 +1275,9 @@
       ],
       "UpstreamHttpMethod": [
         "POST"
+      ],
+      "DelegatingHandlers": [
+        "RoleHandler"
       ]
     },
     {

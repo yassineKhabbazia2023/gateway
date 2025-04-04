@@ -88,7 +88,7 @@ namespace ApiGateway.UnitTests.Helpers
       SetupAuthorizationServiceReturn(permissions);
 
       // Act
-      var result = await AuthorizationHelper.CheckRoles(1, 1, _httpContext);
+      var result = await AuthorizationHelper.CheckRoles(1, null, 1, _httpContext);
 
       // Assert
       Assert.True(result);
@@ -103,7 +103,7 @@ namespace ApiGateway.UnitTests.Helpers
       SetupAccountServiceReturn(true);
 
       // Act
-      var result = await AuthorizationHelper.CheckRoles(1, 1, _httpContext);
+      var result = await AuthorizationHelper.CheckRoles(1, null, 1, _httpContext);
 
       // Assert
       Assert.True(result);

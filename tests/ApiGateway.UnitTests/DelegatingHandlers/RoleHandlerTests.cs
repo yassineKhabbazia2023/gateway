@@ -150,6 +150,31 @@ public class RoleHandlerTests
     content.Should().BeEquivalentTo("{\"ErrorMessage\":\"Le contact avec l'identifiant 2 n'a pas de rôle dans l'entité 1\",\"ErrorCode\":\"GTW007\"}");
   }
 
+  // Test: User has no role on account
+  [Fact]
+  public async Task ShouldReturnForbidden_WhenUserHasNoRoleOnAccount_UsingAccountNumber()
+  {
+    var request = new HttpRequestMessage();
+    request.Headers.Add("CurrentUser", "2");
+    var queryString = "?accountNumber=1123425675";  // accountId present, but user has no role on this account
+    request.RequestUri = new Uri("http://test.com" + queryString);
+
+    // Mocking authorization and account service behavior
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+        .ReturnsAsync(false)
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    var content = await response.Content.ReadAsStringAsync();
+    content.Should().BeEquivalentTo("{\"ErrorMessage\":\"Le contact avec l'identifiant 2 n'a pas de rôle dans l'entité 1123425675\",\"ErrorCode\":\"GTW007\"}");
+  }
+
   // Test: User does not have a common account role when accountId is not provided
   [Fact]
   public async Task ShouldReturnForbidden_WhenUserHasNoCommonAccountRole()

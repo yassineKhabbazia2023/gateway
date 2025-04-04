@@ -55,7 +55,7 @@ public static class AuthorizationMiddleware
             return;
         }
 
-        var hasRoleOnAccount = await AuthorizationHelper.CheckRoles(accountId, int.Parse(contactId!), httpContext);
+        var hasRoleOnAccount = await AuthorizationHelper.CheckRoles(accountId, null, int.Parse(contactId!), httpContext);
         if (!hasRoleOnAccount)
         {
             throw new GatewayException(StatusCodes.Status403Forbidden, Errors.RoleRequiredCode, string.Format(Errors.RoleRequiredMessage, contactId, accountId));
