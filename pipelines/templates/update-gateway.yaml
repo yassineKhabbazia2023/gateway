@@ -37,10 +37,9 @@ stages:
   - stage: DEV
     ${{ if lt(parameters.devIndex, 10) }}:
       displayName: 'Development-dev0${{ parameters.devIndex }}'
-      pool: Pulse-dev
     ${{ else }}:
       displayName: 'Development-dev${{ parameters.devIndex }}'
-      pool: Pulse-dev
+    pool: Pulse-dev
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
@@ -63,6 +62,7 @@ stages:
   - stage: ITG01
     displayName: 'Integration'
     pool: Pulse-itg
+    dependsOn: Build
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
@@ -73,7 +73,6 @@ stages:
             steps:
             - download: current
               artifact: Module
-
             - template: update-config.yaml
               parameters:
                 environment: itg01

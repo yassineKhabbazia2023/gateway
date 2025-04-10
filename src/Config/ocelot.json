@@ -654,7 +654,7 @@
         "PATCH"
       ],
       "UpstreamPathTemplate": "/gtw/wallet/api/contacts/{contactId}",
-      "DownstreamPathTemplate": "/api/contact/{contactId}",
+      "DownstreamPathTemplate": "/api/contacts/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
