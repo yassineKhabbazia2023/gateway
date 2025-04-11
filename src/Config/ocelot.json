@@ -242,6 +242,30 @@
       }
     },
     {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/offer/api/referentials/offices",
+      "DownstreamPathTemplate": "/api/referentials/offices",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COOFF001, COINFO001, COOFF002, CLINFO001, CLADMI001"
+      }
+    },
+    {
       "SwaggerKey": "Offer",
       "UpstreamPathTemplate": "/gtw/offer/api/subscription?accountId={abc}",
       "DownstreamPathTemplate": "/api/subscription?accountId={abc}",

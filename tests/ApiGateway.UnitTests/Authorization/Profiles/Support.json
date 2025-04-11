@@ -61,6 +61,7 @@
     "GET /gtw/offer/api/offers/{everything}",
     "GET /gtw/offer/api/referentials/AccountReferentialInformation",
     "GET /gtw/offer/api/referentials/hubs",
+    "GET /gtw/offer/api/referentials/offices",
     "GET /gtw/offer/api/subscription",
     "GET /gtw/offer/api/subscription?accountId={abc}",
     "GET /gtw/offer/api/subscription/{subscriptionId}",
