@@ -4,6 +4,7 @@ using System.Net;
 using ApiGateway.Exceptions;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 
 namespace ApiGateway.DelegatingHandlers
 {
@@ -34,8 +35,34 @@ namespace ApiGateway.DelegatingHandlers
         {
             try
             {
+                // Extract accountId and contactId from the query string
+                var queryParameters = string.IsNullOrWhiteSpace(request.RequestUri?.Query)
+                    ? new NameValueCollection() // Retourne une collection vide si la chaîne de requête est null ou vide
+                    : HttpUtility.ParseQueryString(request.RequestUri.Query);
+                int? accountId = AuthorizationHelper.ParseQueryParameter<int>("accountId", queryParameters);
+                int? contactId = AuthorizationHelper.ParseQueryParameter<int>("contactId", queryParameters);
+                string? accountNumber = queryParameters["accountNumber"];
+
+                /// Attempt to extract contactId from the route path if not present in the query string
+                // Example route: /gtw/customer-wallet/api/contacts/188/accounts/602 => ContactId = 188
+                contactId ??= ExtractContactIdFromRoute(request);
+
+                // Special handling for /invite endpoints where the authenticated user may not be defined
+                // In this scenario, we only validate if the specified contact has the appropriate role
+                if (_httpContextAccessor.HttpContext is { } context && context.Request.Path.ToString().Contains("invite", StringComparison.OrdinalIgnoreCase))
+                {
+                    var hasRole = await AuthorizationHelper.CheckRoles(null, accountNumber, contactId, _httpContextAccessor.HttpContext!);
+                    if (!hasRole)
+                    {
+                        _logger.LogWarning($"[Response]: 403 - [Handler]: RoleHandler - [Function]: CheckRoles - [Reason]: No role for contactId: {contactId} on accountNumber: {accountNumber}");
+                        return await ReturnError(new GatewayException(403, Errors.NoRoleOnAccountCode, string.Format(Errors.NoRoleOnAccountMessage, contactId, accountNumber)));
+                    }
+
+                    return await base.SendAsync(request, cancellationToken);
+                }
+
                 // Extract the current user id from the 'CurrentUser' header
-                if (!request.Headers.TryGetValues("CurrentUser", out var contactIdFromHeader))
+                if (!request!.Headers.TryGetValues("CurrentUser", out var contactIdFromHeader))
                 {
                     _logger.LogWarning("[Response]: 403 - [Handler]: RoleHandler - [Reason]: 'CurrentUser' header is missing.");
                     return await ReturnError(new GatewayException(403, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, "CurrentUser")));
@@ -45,29 +72,6 @@ namespace ApiGateway.DelegatingHandlers
                 {
                     _logger.LogWarning("[Response]: 403 - [Handler]: RoleHandler - [Reason]: Invalid 'CurrentUser' contactId.");
                     return await ReturnError(new GatewayException(403, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, "CurrentUser")));
-                }
-
-                // Extract accountId and contactId from the query string
-                var queryParameters = HttpUtility.ParseQueryString(request.RequestUri?.Query!);
-                int? accountId = AuthorizationHelper.ParseQueryParameter<int>("accountId", queryParameters);
-                int? contactId = AuthorizationHelper.ParseQueryParameter<int>("contactId", queryParameters);
-                string? accountNumber = queryParameters["accountNumber"];
-
-                // Extract contactId from route param if exists
-                // Si contactId est toujours null, tente d'extraire un entier de l'URL
-                // exp: /gtw/customer-wallet/api/contacts/188/accounts/602 (ContactId = 188)
-                if (contactId == null)
-                {
-                    var path = request.RequestUri?.AbsolutePath!;
-
-                    // Utilisation de Regex pour extraire le premier entier trouvé
-                    var match = Regex.Match(path, @"\d+");
-
-                    // Si un entier est trouvé et c'est un match valide
-                    if (match.Success && int.TryParse(match.Value, out int parsedId))
-                    {
-                        contactId = parsedId;
-                    }
                 }
 
                 // Case 1: If the logged-in user is accessing their own info, skip the role check.
@@ -119,6 +123,23 @@ namespace ApiGateway.DelegatingHandlers
             return await base.SendAsync(request, cancellationToken);
         }
 
+        /// <summary>
+        /// Extracts the contactId from the route path if it is not present in the query parameters.
+        /// </summary>
+        /// <param name="request">The incoming HTTP request.</param>
+        /// <returns>The contactId found in the route or null if not found.</returns>
+        private static int? ExtractContactIdFromRoute(HttpRequestMessage request)
+        {
+            var path = request.RequestUri?.AbsolutePath;
+            var match = Regex.Match(path ?? string.Empty, @"\d+");
+
+            if (match.Success && int.TryParse(match.Value, out int parsedId))
+            {
+                return parsedId;
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Creates a standardized error response in the form of an HTTP response message.

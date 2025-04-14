@@ -175,6 +175,46 @@ public class RoleHandlerTests
     content.Should().BeEquivalentTo("{\"ErrorMessage\":\"Le contact avec l'identifiant 2 n'a pas de rôle dans l'entité 1123425675\",\"ErrorCode\":\"GTW007\"}");
   }
 
+  // Test: Role check should trigger on /invite endpoint
+  [Fact]
+  public async Task When_DownstreamUrl_Contains_Invite_Should_Check_Role_Only()
+  {
+    // Arrange
+    var queryString = "?accountNumber=1123425675";
+    var request = new HttpRequestMessage(HttpMethod.Get, $"http://test.com{queryString}");
+
+    var contextPath = "/gtw/account/api/invite/1200?accountNumber=232323232";
+    var contactEmail = "user@rydge.fr";
+    var requiredClaims = new Dictionary<string, string>();
+
+    var dummyClaims = new List<Claim>
+    {
+      new Claim(ClaimTypes.Role, "Collaborator")
+    };
+
+    var claimsIdentity = new ClaimsIdentity(dummyClaims, "TestAuthType");
+    var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+    _httpContextAccessorMock.HttpContext = Dummies.DummyHttpContext(contextPath, "GET", contactEmail, requiredClaims);
+    _httpContextAccessorMock.HttpContext.User = claimsPrincipal;
+
+    // Mocking authorization and account service behavior
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+        .ReturnsAsync(false)
+        .Verifiable();
+
+    // Act
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    // Assert
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+  }
+
+
   // Test: User does not have a common account role when accountId is not provided
   [Fact]
   public async Task ShouldReturnForbidden_WhenUserHasNoCommonAccountRole()
