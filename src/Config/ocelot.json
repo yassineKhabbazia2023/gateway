@@ -170,6 +170,57 @@
       }
     },
     {
+      "SwaggerKey": "Reporting",
+      "UpstreamPathTemplate": "/gtw/reporting/api/reports/available",
+      "DownstreamPathTemplate": "/api/reports/available",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI004, CORAP001, CORAPP001"
+      }
+    },
+    {
+      "SwaggerKey": "Reporting",
+      "UpstreamPathTemplate": "/gtw/reporting/api/reports/active?accountId={abc}&reportId={dce}",
+      "DownstreamPathTemplate": "/api/reports/active?accountId={abc}&reportId={dce}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "PATCH": "CORAP001"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Offer",
       "UpstreamPathTemplate": "/gtw/offer/api/offers/{everything}",
       "DownstreamPathTemplate": "/api/offers/{everything}",
