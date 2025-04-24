@@ -1999,6 +1999,25 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "notifications",
+      "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/messages",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/api/notifications/currentuser/messages",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsentf#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "Aggregates": [
