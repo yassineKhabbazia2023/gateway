@@ -190,13 +190,13 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004, CORAP001, CORAPP001"
+        "GET": "CORAP001"
       }
     },
     {
       "SwaggerKey": "Reporting",
-      "UpstreamPathTemplate": "/gtw/reporting/api/reports/active?accountId={abc}&reportId={dce}",
-      "DownstreamPathTemplate": "/api/reports/active?accountId={abc}&reportId={dce}",
+      "UpstreamPathTemplate": "/gtw/reporting/api/reports?accountId={abc}&reportId={def}",
+      "DownstreamPathTemplate": "/api/reports?accountId={abc}&reportId={def}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
