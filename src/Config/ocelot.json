@@ -2018,6 +2018,27 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "GedCore",
+      "UpstreamPathTemplate": "/gtw/gedcore/api/drop/documents",
+      "DownstreamPathTemplate": "/drop/documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseged#{env_id}#03.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "Aggregates": [
@@ -2178,6 +2199,17 @@
           "Name": "Pulse.Back.Ged.Social",
           "Version": "v1",
           "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "GedCore",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Ged.Core",
+          "Version": "v1",
+          "Url": "https://appcegpulseged#{env_id}#03.azurewebsites.net/api/api.json"
         }
       ]
     }
