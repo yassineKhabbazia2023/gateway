@@ -81,6 +81,7 @@
     "GET /gtw/reporting/api/reports/currentuser",
     "GET /gtw/reporting/api/reports/demoEmbedToken",
     "GET /gtw/reporting/api/reporttype",
+    "GET /gtw/reporting/api/report-errors",
     "GET /gtw/social/api/companies/currentuser",
     "GET /gtw/social/api/company/currentuser/{everything}",
     "GET /gtw/social/api/health",

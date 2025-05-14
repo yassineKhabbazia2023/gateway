@@ -221,6 +221,30 @@
       ]
     },
     {
+      "SwaggerKey": "Reporting",
+      "UpstreamPathTemplate": "/gtw/reporting/api/report-errors",
+      "DownstreamPathTemplate": "/api/report-errors",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserpt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CORAPP001"
+      }
+    },
+    {
       "SwaggerKey": "Offer",
       "UpstreamPathTemplate": "/gtw/offer/api/offers/{everything}",
       "DownstreamPathTemplate": "/api/offers/{everything}",

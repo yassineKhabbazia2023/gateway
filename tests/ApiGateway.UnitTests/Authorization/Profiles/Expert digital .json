@@ -61,6 +61,7 @@
     "GET /gtw/offer/api/subscription?accountId={abc}",
     "GET /gtw/offer/api/subscription/{subscriptionId}",
     "GET /gtw/registry/api/operations",
+    "GET /gtw/reporting/api/report-errors",
     "GET /gtw/reporting/api/reports/demoEmbedToken",
     "GET /gtw/social/api/companies/currentuser",
     "GET /gtw/social/api/company/currentuser/{everything}",
