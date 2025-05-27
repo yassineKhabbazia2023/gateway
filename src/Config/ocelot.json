@@ -1308,6 +1308,30 @@
       }
     },
     {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/customer-relation?accountId={relativeAccountId}&contactId={relativeContactId}&isCustomerRelation={isCustomerRelationNew}",
+      "DownstreamPathTemplate": "/api/roles/customer-relation?accountId={relativeAccountId}&contactId={relativeContactId}&isCustomerRelation={isCustomerRelationNew}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}",
       "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}",
