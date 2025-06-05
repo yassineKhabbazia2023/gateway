@@ -46,6 +46,7 @@ namespace ApiGateway.DelegatingHandlers
                 /// Attempt to extract contactId from the route path if not present in the query string
                 // Example route: /gtw/customer-wallet/api/contacts/188/accounts/602 => ContactId = 188
                 contactId ??= ExtractContactIdFromRoute(request);
+                accountId ??= ExtractAccountIdFromRoute(request);
 
                 // Special handling for /invite endpoints where the authenticated user may not be defined
                 // In this scenario, we only validate if the specified contact has the appropriate role
@@ -134,6 +135,24 @@ namespace ApiGateway.DelegatingHandlers
             var match = Regex.Match(path ?? string.Empty, @"\d+");
 
             if (match.Success && int.TryParse(match.Value, out int parsedId))
+            {
+                return parsedId;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the accountId from the route path if it is not present in the query parameters.
+        /// </summary>
+        /// <param name="request">The incoming HTTP request.</param>
+        /// <returns>The accountId found in the route or null if not found.</returns>
+        private static int? ExtractAccountIdFromRoute(HttpRequestMessage request)
+        {
+            var path = request.RequestUri?.AbsolutePath;
+            var match = Regex.Match(path ?? string.Empty, @"/accounts/(\d+)");
+
+            if (match.Success && int.TryParse(match.Groups[1].Value, out int parsedId))
             {
                 return parsedId;
             }

@@ -10,7 +10,7 @@
     "DELETE /gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
     "DELETE /gtw/hub/ged/{everything}",
     "DELETE /gtw/social/api/company/currentuser/{everything}",
-    "GET /gtw/account/api/accounts/currentuser/{everything}",
+    "GET /gtw/account/api/accounts/currentuser",
     "GET /gtw/authentication/api/{everything}",
     "GET /gtw/authorization/api/authorization/currentuser",
     "GET /gtw/contact/api/contacts/currentuser/terms",
