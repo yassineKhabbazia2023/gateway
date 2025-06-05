@@ -504,7 +504,7 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/summary",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/summary",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
