@@ -248,5 +248,34 @@ public class AuthorizationSeviceTests
         // Assert
         Assert.Empty(result);
     }
+
+    [Fact]
+    public async Task GetAllContactAuthorizationsAsync_WhenContactHasAuthorization_ReturnsContactAuthorizationList()
+    {
+        // Arrange
+        var expectedList = new List<string> { "CLADMI001", "COADMI001" };
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(expectedList)),
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+             .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+             {
+                 request.RequestUri.Should().Be("http://local.authorization/api/authorizations?contactId=1");
+             })
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _authorizationSevice.GetAllContactAuthorizationsAsync(1);
+
+        // Assert
+        Assert.Equal(expectedList, result);
+    }
 }
 

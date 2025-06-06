@@ -100,7 +100,7 @@ public static class HttpRequestMessageExtensions
         request.RequestUri = uriBuilder.Uri;
     }
 
-    static string? GetQueryParam(this HttpRequestMessage request, string queryParamName)
+    public static string? GetQueryParam(this HttpRequestMessage request, string queryParamName)
     {
         var query = request.RequestUri?.Query ?? string.Empty;
         return ExtractQueryParam(queryParamName, query) ?? String.Empty;

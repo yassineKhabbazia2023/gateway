@@ -1945,6 +1945,31 @@
       }
     },
     {
+      "SwaggerKey": "FeedCenter",
+      "UpstreamPathTemplate": "/gtw/feedcenter/api/settings/currentuser",
+      "DownstreamPathTemplate": "/api/feedcenter/settings/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "FeedCenterSettingsHandler"
+      ]
+    },
+    {
       "SwaggerKey": "ContactRegistry",
       "UpstreamPathTemplate": "/gtw/registry/api/operations",
       "UpstreamHttpMethod": [

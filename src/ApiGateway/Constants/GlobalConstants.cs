@@ -17,4 +17,5 @@ public static class GlobalsConstants
     {
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
+    public static readonly string UserPermissionsHeader = "User-Permissions";
 }

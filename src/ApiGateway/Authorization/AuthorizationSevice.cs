@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Identity.Client;
 using System.Text.Json;
 
 namespace ApiGateway.Authorization;
@@ -42,5 +43,25 @@ public class AuthorizationSevice : IAuthorizationSevice
         }
 
         return permissions;
+    }
+
+    public async Task<List<string>> GetAllContactAuthorizationsAsync(int contactId)
+    {
+        var url = string.Concat($"api/authorizations?contactId={contactId}");
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var jsonString = await response.Content.ReadAsStringAsync();
+            if (!string.IsNullOrEmpty(jsonString))
+            {
+                var contactResult = JsonSerializer.Deserialize<List<string>>(jsonString);
+                if (contactResult != null)
+                {
+                    return contactResult;
+                }
+            }
+        }
+
+        return [];
     }
 }
