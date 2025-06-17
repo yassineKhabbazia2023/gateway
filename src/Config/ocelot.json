@@ -290,8 +290,8 @@
     },
     {
       "SwaggerKey": "Offer",
-      "UpstreamPathTemplate": "/gtw/offer/api/catalog/offers/{catalogOfferId}",
-      "DownstreamPathTemplate": "/api/catalog/offers/{catalogOfferId}",
+      "UpstreamPathTemplate": "/gtw/offer/api/catalog/offers/{offerId}",
+      "DownstreamPathTemplate": "/api/catalog/offers/{offerId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
