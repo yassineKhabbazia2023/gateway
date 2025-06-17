@@ -284,8 +284,27 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
+          "AAD"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Offer",
+      "UpstreamPathTemplate": "/gtw/offer/api/catalog/offers/{catalogOfferId}",
+      "DownstreamPathTemplate": "/api/catalog/offers/{catalogOfferId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseoff#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
         ]
       }
     },
