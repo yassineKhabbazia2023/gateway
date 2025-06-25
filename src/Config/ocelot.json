@@ -1295,7 +1295,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "POST": "COUSER002, COUSER001, CLUSER002, CLADMI001"
+        "POST": "COUSER002, COUSER001, COADMI006, CLUSER002, CLADMI001"
       },
       "DelegatingHandlers": [
         "RoleHandler"
@@ -1463,7 +1463,7 @@
         "POST"
       ],
       "RouteClaimsRequirement": {
-        "POST": "CLUSER002"
+        "POST": "CLUSER002, COADMI006"
       },
       "DelegatingHandlers": [
         "RoleHandler"
