@@ -477,6 +477,29 @@
       }
     },
     {
+      "SwaggerKey": "Offer",
+      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{subscriptionId}",
+      "DownstreamPathTemplate": "/api/subscription/{subscriptionId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseoff#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "DELETE": "COOFF002"
+      }
+    },
+    {
       "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser",
       "DownstreamPathTemplate": "/api/accounts/currentuser",
