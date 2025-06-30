@@ -9,7 +9,7 @@ using Ocelot.Multiplexer;
 using System.Net;
 using System.Net.Http.Headers;
 
-namespace ApiGateway.Aggregrator
+namespace ApiGateway.Aggregator
 {
     public class ConfigurationAggregator : IDefinedAggregator
     {
@@ -22,11 +22,11 @@ namespace ApiGateway.Aggregrator
                 return new DownstreamResponse(null, HttpStatusCode.Forbidden, responsesDownstream.SelectMany(x => x.Headers).ToList(), "reason");
             }
 
-            var result = new List<Aggregator.Models.Configuration>();
+            var result = new List<Models.Configuration>();
             foreach (var response in responsesDownstream)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var configurations = JsonConvert.DeserializeObject<List<Aggregator.Models.Configuration>>(content);
+                var configurations = JsonConvert.DeserializeObject<List<Models.Configuration>>(content);
                 Merge(configurations!, result);
             }
 
@@ -37,7 +37,7 @@ namespace ApiGateway.Aggregrator
                 "reason");
         }
 
-        private void Merge(List<Aggregator.Models.Configuration> src, List<Aggregator.Models.Configuration> destination)
+        private void Merge(List<Models.Configuration> src, List<Models.Configuration> destination)
         {
             foreach (var s in src)
             {

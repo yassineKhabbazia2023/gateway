@@ -8,7 +8,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using ApiGateway.Constants;
 
-namespace ApiGateway.Aggregrator
+namespace ApiGateway.Aggregator
 {
     public class PermissionAggregator : IDefinedAggregator
     {

@@ -1,5 +1,6 @@
 ﻿
 using ApiGateway.Authorization;
+using ApiGateway.DelegatingHandlers;
 
 namespace ApiGateway.UnitTests.DelegatingHandlers
 {

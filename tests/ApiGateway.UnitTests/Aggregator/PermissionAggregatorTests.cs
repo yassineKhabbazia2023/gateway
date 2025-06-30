@@ -1,5 +1,5 @@
-﻿using ApiGateway.Aggregator.Models;
-using ApiGateway.Aggregrator;
+﻿using ApiGateway.Aggregator;
+using ApiGateway.Aggregator.Models;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Ocelot.Middleware;

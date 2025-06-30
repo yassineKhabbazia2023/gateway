@@ -2,7 +2,7 @@
 using ApiGateway.Constants;
 using ApiGateway.Extensions;
 
-namespace ApiGateway.UnitTests.DelegatingHandlers
+namespace ApiGateway.DelegatingHandlers
 {
     public class FeedCenterSettingsHandler : DelegatingHandler
     {

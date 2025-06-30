@@ -1,7 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ApiGateway.Account;
-using ApiGateway.Aggregrator;
+using ApiGateway.Aggregator;
+using ApiGateway.Aggregator.NotificationSettings;
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
@@ -11,7 +12,6 @@ using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
-using ApiGateway.UnitTests.DelegatingHandlers;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
@@ -76,6 +76,7 @@ public static class ServiceExtensions
             .AddDelegatingHandler<FeedCenterSettingsHandler>()  
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
+            .AddTransientDefinedAggregator<NotificationSettingsAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddGigyaConfiguration(configuration);

@@ -2,7 +2,7 @@
 
 using Ocelot.Middleware;
 
-namespace ApiGateway.Aggregrator.Interface
+namespace ApiGateway.Aggregator.Interface
 {
     public interface IDefinedAggregator
     {
