@@ -93,7 +93,7 @@ namespace ApiGateway.UnitTests.Extensions
 
             Assert.Equal(StatusCodes.Status406NotAcceptable, result.StatusCode);
             Assert.Equal("GTW001", result.Code);
-            Assert.Equal("Le paramètre request est null ou vide", result.Message);
+            Assert.Equal("Le paramÃ¨tre request est null ou vide", result.Message);
         }
 
         [Fact]
@@ -130,7 +130,7 @@ namespace ApiGateway.UnitTests.Extensions
 
             Assert.Equal(StatusCodes.Status404NotFound, result.StatusCode);
             Assert.Equal("GTW001", result.Code);
-            Assert.Equal("Le paramètre accountId est null ou vide", result.Message);
+            Assert.Equal("Le paramÃ¨tre accountId est null ou vide", result.Message);
         }
 
         [Fact]
