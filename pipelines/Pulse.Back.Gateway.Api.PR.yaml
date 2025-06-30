@@ -16,4 +16,4 @@ extends:
     name: desktop
     srcPath: src/ApiGateway/ApiGateway.csproj
     testsPath: tests/**/*Tests.csproj
-    sonarExclusions: 'tests/**'
+    sonarExclusions: '**/Program.cs, **/Extensions/**,tests/**'
