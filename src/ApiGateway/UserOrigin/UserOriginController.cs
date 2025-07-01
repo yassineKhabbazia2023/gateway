@@ -15,13 +15,13 @@ public class UserOriginController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<string>> Index(CancellationToken cancellationToken = default)
+    public ActionResult<string> Index(CancellationToken cancellationToken = default)
     {
-        var kpmgIp = _configuration.GetValue<string>("KPMG_IP");
+        var rydgeIp = _configuration.GetValue<string>("RYDGE_IP");
 
         var callerIp = Request.Headers["X-REAL-IP"];
 
-        if (kpmgIp.Equals(callerIp))
+        if (!string.IsNullOrEmpty(rydgeIp) && rydgeIp == callerIp)
         {
             return Ok("COLLAB");
         }

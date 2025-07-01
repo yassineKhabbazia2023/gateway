@@ -9,12 +9,12 @@ namespace ApiGateway.UnitTests.UserOrigin;
 public class UserOriginControllerTest
 {
     [Fact]
-    public async Task Index_WhenRemoteIsKPMG_ShouldReturnCollab()
+    public void Index_WhenRemoteIsKPMG_ShouldReturnCollab()
     {
         // Arrange
         var values = new Dictionary<string, string>
         {
-            {"KPMG_IP", "199.199.199.199" }
+            {"RYDGE_IP", "199.199.199.199" }
         };
         var confBuilder = new ConfigurationBuilder().AddInMemoryCollection(values);
         var configuration = confBuilder.Build();
@@ -28,20 +28,20 @@ public class UserOriginControllerTest
         };
 
         // Act
-        var result = await controller.Index();
+        var result = controller.Index();
 
         // Assert
         result.Result.Should().BeAssignableTo<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        okResult.Value.Should().BeSameAs("COLLAB");
+        okResult?.Value.Should().BeSameAs("COLLAB");
     }
     [Fact]
-    public async Task Index_WhenRemoteIsNotKPMG_ShouldReturnClient()
+    public void Index_WhenRemoteIsNotKPMG_ShouldReturnClient()
     {
         // Arrange
         var values = new Dictionary<string, string>
         {
-            {"KPMG_IP", "199.199.199.199" }
+            {"RYDGE_IP", "199.199.199.199" }
         };
         var confBuilder = new ConfigurationBuilder().AddInMemoryCollection(values);
         var configuration = confBuilder.Build();
@@ -56,12 +56,11 @@ public class UserOriginControllerTest
 
 
         // Act
-        var result = await controller.Index();
+        var result = controller.Index();
 
         // Assert
         result.Result.Should().BeAssignableTo<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        okResult.Value.Should().BeSameAs("CLIENT");
-
+        okResult?.Value.Should().BeSameAs("CLIENT");
     }
 }
