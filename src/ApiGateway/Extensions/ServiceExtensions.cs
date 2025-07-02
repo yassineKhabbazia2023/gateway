@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ApiGateway.Account;
 using ApiGateway.Aggregator;
-using ApiGateway.Aggregator.NotificationSettings;
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
@@ -76,7 +75,6 @@ public static class ServiceExtensions
             .AddDelegatingHandler<FeedCenterSettingsHandler>()  
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
-            .AddTransientDefinedAggregator<NotificationSettingsAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddGigyaConfiguration(configuration);

@@ -1988,56 +1988,6 @@
     },
     {
       "SwaggerKey": "FeedCenter",
-      "UpstreamPathTemplate": "/gtw/feedcenter/api/settings/providers/inapp/currentuser",
-      "DownstreamPathTemplate": "/api/feedcenter/settings/currentuser",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "DelegatingHandlers": [
-        "FeedCenterSettingsHandler"
-      ],
-      "Key": "Feedcenter"
-    },
-    {
-      "SwaggerKey": "notifications",
-      "UpstreamPathTemplate": "/gtw/notifications/api/settings/providers/email/currentuser",
-      "DownstreamPathTemplate": "/api/notifications/settings/currentuser",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulsefdc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "DelegatingHandlers": [
-        "FeedCenterSettingsHandler"
-      ],
-      "Key": "Email"
-    },
-    {
-      "SwaggerKey": "FeedCenter",
       "UpstreamPathTemplate": "/gtw/feedcenter/api/settings/currentuser",
       "DownstreamPathTemplate": "/api/feedcenter/settings/currentuser",
       "DownstreamScheme": "https",
@@ -2048,6 +1998,7 @@
         }
       ],
       "UpstreamHttpMethod": [
+        "GET",
         "POST"
       ],
       "AuthenticationOptions": {
@@ -2285,14 +2236,6 @@
         "CollabConfiguration"
       ],
       "Aggregator": "ConfigurationAggregator"
-    },
-    {
-      "UpstreamPathTemplate": "/gtw/feedcenter/api/settings/currentuser",
-      "RouteKeys": [
-        "Feedcenter",
-        "Email"
-      ],
-      "Aggregator": "NotificationSettingsAggregator"
     }
   ],
   "SwaggerEndPoints": [
