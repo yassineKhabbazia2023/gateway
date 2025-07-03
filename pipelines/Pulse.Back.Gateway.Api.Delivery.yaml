@@ -39,7 +39,7 @@ extends:
     deployToPrd: ${{ parameters.deployToPrd }}
     srcPath: src/ApiGateway/ApiGateway.csproj
     testsPath: tests/**/*Tests.csproj
-    sonarExclusions: '**/Program.cs, **/Extensions/**,tests/**'
+    sonarExclusions: '**/Program.cs, **/Extensions/**,tests/**,**/SampleOcelotDemoApi/**'
     domain: gtw
     name: desktop
     appType: webApp
