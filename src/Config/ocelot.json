@@ -2273,8 +2273,8 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/role?contactId={abc}&accountId={dce}",
-      "DownstreamPathTemplate": "/api/pennylane/role?contactId={abc}&accountId={dce}",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/role/accounts/{accountId}/contacts/{contactId}",
+      "DownstreamPathTemplate": "/api/pennylane/role/accounts/{accountId}/contacts/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
