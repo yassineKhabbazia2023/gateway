@@ -2320,6 +2320,21 @@
         "RoleHandler"
       ]
     },
+    {
+      "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/webhooks/pennylane/events",
+      "DownstreamPathTemplate": "/webhooks/pennylane/events",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
+    }
   ],
   "Aggregates": [
     {
