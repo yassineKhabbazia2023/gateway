@@ -2273,6 +2273,30 @@
     },
     {
       "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/roles",
+      "DownstreamPathTemplate": "/api/pennylane/roles",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
+    },
+    {
+      "SwaggerKey": "Pennylane",
       "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/role/accounts/{accountId}/contacts/{contactId}",
       "DownstreamPathTemplate": "/api/pennylane/role/accounts/{accountId}/contacts/{contactId}",
       "DownstreamScheme": "https",
