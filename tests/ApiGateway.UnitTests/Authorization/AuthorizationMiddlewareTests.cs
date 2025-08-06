@@ -15,14 +15,14 @@ namespace ApiGateway.UnitTests.Authorization;
 public class AuthorizationMiddlewareTests
 {
     private readonly Mock<IContactService> _mockContactService;
-    private readonly Mock<IAuthorizationSevice> _mockAuthorizationService;
+    private readonly Mock<IAuthorizationService> _mockAuthorizationService;
     private readonly Mock<IAccountService> _mockAccountService;
     private readonly Mock<IIdentityService> _mockIdentityService;
 
     public AuthorizationMiddlewareTests()
     {
         _mockContactService = new Mock<IContactService>(MockBehavior.Strict);
-        _mockAuthorizationService = new Mock<IAuthorizationSevice>(MockBehavior.Strict);
+        _mockAuthorizationService = new Mock<IAuthorizationService>(MockBehavior.Strict);
         _mockAccountService = new Mock<IAccountService>();
         _mockIdentityService = new Mock<IIdentityService>();
     }

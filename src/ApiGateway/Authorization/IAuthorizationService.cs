@@ -1,6 +1,6 @@
 ﻿namespace ApiGateway.Authorization;
 
-public interface IAuthorizationSevice
+public interface IAuthorizationService
 {
     Task<List<string>> GetContactAuthorizationAsync(int contactId, int? accountId);
 

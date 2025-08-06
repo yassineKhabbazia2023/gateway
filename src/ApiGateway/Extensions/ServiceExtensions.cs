@@ -8,6 +8,7 @@ using ApiGateway.Configuration;
 using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
+using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
@@ -27,8 +28,9 @@ public static class ServiceExtensions
         // Add services to the container.
         services.AddMemoryCache();
         services.AddScoped<IContactService, ContactService>();
-        services.AddScoped<IAuthorizationSevice, AuthorizationSevice>();
+        services.AddScoped<IAuthorizationService, AuthorizationService>();
         services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<IConnectServices, ConnectServices>();
         services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.RegisterApplicationInsights(configuration);
@@ -47,7 +49,7 @@ public static class ServiceExtensions
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy());
 
-        services.AddHttpClient<IAuthorizationSevice, AuthorizationSevice>(client =>
+        services.AddHttpClient<IAuthorizationService, AuthorizationService>(client =>
         {
             client.BaseAddress = new Uri(configuration["AuthorizationApiUri"]!);
         })

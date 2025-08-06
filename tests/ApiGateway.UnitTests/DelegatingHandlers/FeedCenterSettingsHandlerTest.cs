@@ -9,7 +9,7 @@ namespace ApiGateway.UnitTests.DelegatingHandlers
     {
         private readonly FakeFeedCenterSettingsHandler _fakeFeedCenterSettingsHandler;
         private readonly MockHttpMessageHandler _mockHttpMessageHandler;
-        private readonly Mock<IAuthorizationSevice> mockAuthorizationService = new Mock<IAuthorizationSevice>();
+        private readonly Mock<IAuthorizationService> mockAuthorizationService = new Mock<IAuthorizationService>();
 
         public FeedCenterSettingsHandlerTest()
         {

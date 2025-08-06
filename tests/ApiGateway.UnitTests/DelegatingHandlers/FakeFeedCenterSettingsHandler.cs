@@ -8,8 +8,8 @@ namespace ApiGateway.UnitTests.DelegatingHandlers
     {
         private readonly HttpMessageHandler _httpMessageHandler;
 
-        public FakeFeedCenterSettingsHandler(HttpMessageHandler httpMessageHandler, IAuthorizationSevice authorizationSevice)
-            :base(authorizationSevice)
+        public FakeFeedCenterSettingsHandler(HttpMessageHandler httpMessageHandler, IAuthorizationService authorizationService)
+            :base(authorizationService)
         {
             _httpMessageHandler = httpMessageHandler;
         }

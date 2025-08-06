@@ -1,14 +1,12 @@
-﻿
-using Microsoft.Identity.Client;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace ApiGateway.Authorization;
 
-public class AuthorizationSevice : IAuthorizationSevice
+public class AuthorizationService : IAuthorizationService
 {
     private readonly HttpClient _httpClient;
 
-    public AuthorizationSevice(HttpClient httpClient)
+    public AuthorizationService(HttpClient httpClient)
     {
         _httpClient = httpClient;
     }
@@ -22,14 +20,14 @@ public class AuthorizationSevice : IAuthorizationSevice
             var jsonString = await response.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(jsonString))
             {
-                return new List<string>();
+                return [];
             }
 
             var contactResult = JsonSerializer.Deserialize<List<string>>(jsonString!);
-            return contactResult ?? new List<string>();
+            return contactResult ?? [];
         }
 
-        return new List<string>();
+        return [];
     }
 
     public async Task<List<string>> GetAllContactAuthorizationAsync(int contactId, int? accountId)

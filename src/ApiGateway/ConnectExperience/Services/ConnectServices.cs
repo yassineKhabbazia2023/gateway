@@ -1,0 +1,43 @@
+﻿using ApiGateway.Account;
+using ApiGateway.Authorization;
+using ApiGateway.Contact;
+using ApiGateway.Exceptions;
+using ApiGateway.ConnectExperience.Models;
+using Pulse.ExceptionMiddleware.Exceptions;
+
+namespace ApiGateway.ConnectExperience.Services
+{
+    public class ConnectServices(
+        IContactService contactService,
+        IAuthorizationService authorizationService,
+        IAccountService accountService) : IConnectServices
+    {
+        public async Task<UserInformation> GetUserInformation(string userEmail)
+        {
+            // Get contact's information
+            var contact = await contactService.GetContactAsync(userEmail) ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
+
+            // Get contact's authorization global
+            var authorizationGlobal = await authorizationService.GetContactAuthorizationAsync(contact.Id, null);
+
+            // Get contact's favorite account
+            var favoriteAccounts = await accountService.GetFavoriteAccountsByContactIdAsync(contact.Id);
+
+            return new UserInformation
+            {
+                Contact = new(
+                    contact.Id, 
+                    contact.FirstName, 
+                    contact.LastName, 
+                    contact.Email, 
+                    contact.LandPhone, 
+                    contact.MobilePhone, 
+                    contact.OldId, 
+                    contact.Type, 
+                    contact.Persona),
+                Permissions = authorizationGlobal,
+                FavoriteEntities = favoriteAccounts == null ?[] : [.. favoriteAccounts]
+            };
+        }
+    }
+}

@@ -9,7 +9,7 @@ namespace ApiGateway.UnitTests.Helpers
 {
   public class AuthorizationHelperTests
   {
-    private readonly Mock<IAuthorizationSevice> _mockAuthorizationService;
+    private readonly Mock<IAuthorizationService> _mockAuthorizationService;
     private readonly Mock<IAccountService> _mockAccountService;
     private readonly Mock<IServiceProvider> _mockServiceProvider;
     private readonly HttpContext _httpContext;
@@ -17,7 +17,7 @@ namespace ApiGateway.UnitTests.Helpers
     public AuthorizationHelperTests()
     {
       // Initialize mocks
-      _mockAuthorizationService = new Mock<IAuthorizationSevice>();
+      _mockAuthorizationService = new Mock<IAuthorizationService>();
       _mockAccountService = new Mock<IAccountService>();
       _mockServiceProvider = new Mock<IServiceProvider>();
 
@@ -36,7 +36,7 @@ namespace ApiGateway.UnitTests.Helpers
           .ReturnsAsync(permissions);
 
       _mockServiceProvider
-          .Setup(x => x.GetService(typeof(IAuthorizationSevice)))
+          .Setup(x => x.GetService(typeof(IAuthorizationService)))
           .Returns(_mockAuthorizationService.Object);
     }
 

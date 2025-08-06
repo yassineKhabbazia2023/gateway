@@ -1,6 +1,6 @@
+using ApiGateway.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using ApiGateway.Models;
 
 namespace ApiGateway.Account;
 
@@ -94,5 +94,17 @@ public class AccountService : IAccountService
             return await JsonSerializer.DeserializeAsync<Models.Account>(stream, _jsonSerializerOptions);
         }
         throw new HttpRequestException($"GET {url} returned {response.StatusCode}");
+    }
+
+    public async Task<IReadOnlyCollection<FavoriteAccount>?> GetFavoriteAccountsByContactIdAsync(int contactId)
+    {
+        var url = $"api/favorites?contactId={contactId}";
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync();
+            return await JsonSerializer.DeserializeAsync<IReadOnlyCollection<FavoriteAccount>>(stream, _jsonSerializerOptions) ?? [];
+        }
+        return [];
     }
 }

@@ -11,7 +11,7 @@ namespace ApiGateway.Helpers
         {
             if (accountId.HasValue && contactId.HasValue)
             {
-                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                 var permissions = await userPermissionService!.GetContactAuthorizationAsync((int)contactId, accountId);
 
                 if (permissions != null && permissions.Any(x => GlobalsConstants.NoRoleCheckPermissions.Contains(x)))
@@ -28,7 +28,7 @@ namespace ApiGateway.Helpers
 
             if (isAccountValid && contactId.HasValue)
             {
-                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                 var permissions = await userPermissionService!.GetContactAuthorizationAsync((int)contactId, GlobalsConstants.CollaboratorAccountId);
                 if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
                 {
@@ -46,7 +46,7 @@ namespace ApiGateway.Helpers
         {
             if (contactId.HasValue)
             {
-                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+                var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                 var permissions = await userPermissionService!.GetContactAuthorizationAsync(currentUserId, GlobalsConstants.CollaboratorAccountId);
                 if (permissions == null || !permissions.Any(x => GlobalsConstants.NoAccountCheckPermissions.Contains(x)))
                 {

@@ -14,7 +14,7 @@ public class RoleHandlerTests
 {
   private readonly Mock<ILogger<RoleHandler>> _loggerMock;
   private readonly IHttpContextAccessor _httpContextAccessorMock;
-  private readonly Mock<IAuthorizationSevice> _authorizationServiceMock;
+  private readonly Mock<IAuthorizationService> _authorizationServiceMock;
   private readonly Mock<IAccountService> _accountServiceMock;
   private readonly TestableRoleHandler _roleHandler;
 
@@ -41,7 +41,7 @@ public class RoleHandlerTests
     _httpContextAccessorMock.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Collaborator") }, "TestAuthType"));
 
     // Mock Authorization and Account services
-    _authorizationServiceMock = new Mock<IAuthorizationSevice>(MockBehavior.Strict);
+    _authorizationServiceMock = new Mock<IAuthorizationService>(MockBehavior.Strict);
     _accountServiceMock = new Mock<IAccountService>();
 
     // Initialize the RoleHandler middleware with mocked dependencies

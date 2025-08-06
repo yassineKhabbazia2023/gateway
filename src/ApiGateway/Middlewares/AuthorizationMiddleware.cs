@@ -92,7 +92,7 @@ public static class AuthorizationMiddleware
                 throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(contactId)));
             }
 
-            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationSevice>();
+            var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
             var permissions = await userPermissionService!.GetAllContactAuthorizationAsync(int.Parse(contactId!), accountId) ?? [];
 
             if (!permissions.Any(x => requiredClaims.Contains(x)))
