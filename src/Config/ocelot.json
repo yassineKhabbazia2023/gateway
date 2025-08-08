@@ -2297,6 +2297,60 @@
     },
     {
       "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/documents",
+      "DownstreamPathTemplate": "/api/documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COGED0002,COPEN001,CLGED0002,CLPEN001"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/documents/{id}/content",
+      "DownstreamPathTemplate": "/api/documents/{id}/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COGED0002,COPEN001,CLGED0002,CLPEN001"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Pennylane",
       "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/roles",
       "DownstreamPathTemplate": "/api/pennylane/roles",
       "DownstreamScheme": "https",
