@@ -2339,7 +2339,7 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/documents",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/accounts/{accountId}/documents/currentuser",
       "DownstreamPathTemplate": "/api/documents",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2366,7 +2366,7 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/documents/{id}/content",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/accounts/{accountId}/documents/{id}/content/currentuser",
       "DownstreamPathTemplate": "/api/documents/{id}/content",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
