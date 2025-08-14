@@ -2313,7 +2313,7 @@
     {
       "SwaggerKey": "History",
       "UpstreamPathTemplate": "/gtw/history/api/activities",
-      "DownstreamPathTemplate": "/api/history/activities",
+      "DownstreamPathTemplate": "/api/activities",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
