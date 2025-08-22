@@ -86,7 +86,6 @@
     "POST /gtw/social/api/onboarding/{everything}",
     "POST /gtw/social/api/silae/{everything}",
     "POST /gtw/social/desktop-client/currentuser/generate-sso-link",
-    "POST /gtw/wallet/api/delegations/{everything}",
     "PUT /gtw/feedcenter/api/notifications/read/currentuser",
     "PUT /gtw/hub/ged/{everything}",
     "PUT /gtw/social/api/company/currentuser/{everything}"
