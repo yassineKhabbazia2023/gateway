@@ -74,6 +74,7 @@ public static class ServiceExtensions
             .AddDelegatingHandler<ContactHandler>(true)
             .AddDelegatingHandler<DownstreamExceptionHandler>(true)
             .AddDelegatingHandler<RoleHandler>()
+            .AddDelegatingHandler<ExposePrivilegedEndpointsHandler>()
             .AddDelegatingHandler<FeedCenterSettingsHandler>()  
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()

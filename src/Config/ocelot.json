@@ -2534,6 +2534,29 @@
     },
     {
       "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/documents/purge/{accountNumber}",
+      "DownstreamPathTemplate": "/api/documents/purge?accountNumber={accountNumber}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [ "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "RoleHandler",
+        "QaHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Pennylane",
       "UpstreamPathTemplate": "/gtw/pennylane/webhooks/pennylane/events",
       "DownstreamPathTemplate": "/webhooks/pennylane/events",
       "DownstreamScheme": "https",

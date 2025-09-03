@@ -45,5 +45,8 @@
 
         public static readonly string NoCommonAccountRoleCode = "GTW015";
         public static readonly string NoCommonAccountRoleMessage = "Les Contacts: [{0}] , [{1}] n'ont pas de rôle commun au niveau des entités.";
+
+        public static readonly string UnauthorizedExposePrivilegedEndpointsCode = "GTW016";
+        public static readonly string UnauthorizedExposePrivilegedEndpointsMessage = "Access Forbidden to privileged endpoints.";
     }
 }
