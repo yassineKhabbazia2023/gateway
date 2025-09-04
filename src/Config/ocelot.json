@@ -2450,7 +2450,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COGED0002,COPEN001,CLGED0002,CLPEN001"
+        "GET": "COGED0002,COPEN001,CLGEDPEN01"
       },
       "DelegatingHandlers": [
         "RoleHandler"
@@ -2477,7 +2477,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COGED0002,COPEN001,CLGED0002,CLPEN001"
+        "GET": "COGED0002,COPEN001,CLGEDPEN01"
       },
       "DelegatingHandlers": [
         "RoleHandler"
