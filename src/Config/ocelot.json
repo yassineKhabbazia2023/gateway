@@ -378,6 +378,30 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/activate-offer/currentuser?accountId={abc}",
+      "DownstreamPathTemplate": "/api/activate-offer/{abc}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/offer/api/referentials/AccountReferentialInformation",
       "DownstreamPathTemplate": "/api/referentials/AccountReferentialInformation",
       "DownstreamScheme": "https",
