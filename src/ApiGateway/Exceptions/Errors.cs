@@ -48,5 +48,9 @@
 
         public static readonly string UnauthorizedExposePrivilegedEndpointsCode = "GTW016";
         public static readonly string UnauthorizedExposePrivilegedEndpointsMessage = "Access Forbidden to privileged endpoints.";
+
+        public static readonly string NotFoundAccountCode = "GTW017";
+        public static readonly string NotFoundAccountMessage = "L'account avec l'identifiant {0} est introuvable";
+
     }
 }

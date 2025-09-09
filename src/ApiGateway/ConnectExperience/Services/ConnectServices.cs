@@ -1,43 +1,59 @@
 ﻿using ApiGateway.Account;
 using ApiGateway.Authorization;
+using ApiGateway.ConnectExperience.Models;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
-using ApiGateway.ConnectExperience.Models;
+using ApiGateway.Models;
+using ApiGateway.Offer;
 using Pulse.ExceptionMiddleware.Exceptions;
 
-namespace ApiGateway.ConnectExperience.Services
+namespace ApiGateway.ConnectExperience.Services;
+
+public class ConnectServices(
+    IContactService contactService,
+    IAuthorizationService authorizationService,
+    IOfferService offerService,
+    IAccountService accountService) : IConnectServices
 {
-    public class ConnectServices(
-        IContactService contactService,
-        IAuthorizationService authorizationService,
-        IAccountService accountService) : IConnectServices
+    public async Task<UserInformation> GetUserInformation(string userEmail)
     {
-        public async Task<UserInformation> GetUserInformation(string userEmail)
+        // Get contact's information
+        var contact = await contactService.GetContactAsync(userEmail) ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
+
+        // Get contact's authorization global
+        var authorizationGlobal = await authorizationService.GetContactAuthorizationAsync(contact.Id, null);
+
+        // Get contact's favorite account
+        var favoriteAccounts = await accountService.GetFavoriteAccountsByContactIdAsync(contact.Id);
+
+        return new UserInformation
         {
-            // Get contact's information
-            var contact = await contactService.GetContactAsync(userEmail) ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
+            Contact = new(
+                contact.Id, 
+                contact.FirstName, 
+                contact.LastName, 
+                contact.Email, 
+                contact.LandPhone, 
+                contact.MobilePhone, 
+                contact.OldId, 
+                contact.Type, 
+                contact.Persona),
+            Permissions = authorizationGlobal,
+            FavoriteEntities = favoriteAccounts == null ?[] : [.. favoriteAccounts]
+        };
+    }
 
-            // Get contact's authorization global
-            var authorizationGlobal = await authorizationService.GetContactAuthorizationAsync(contact.Id, null);
+    public async Task<Summary?> GetSummaryAsync(int accountId)
+    {
+        var summary = await accountService.GetSummaryAsync(accountId);
+        
+        if (summary is null) throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+        
+        var subscriptions = await offerService.GetSubscriptionsAsync(accountId);
+        
+        if (subscriptions is null) throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
 
-            // Get contact's favorite account
-            var favoriteAccounts = await accountService.GetFavoriteAccountsByContactIdAsync(contact.Id);
-
-            return new UserInformation
-            {
-                Contact = new(
-                    contact.Id, 
-                    contact.FirstName, 
-                    contact.LastName, 
-                    contact.Email, 
-                    contact.LandPhone, 
-                    contact.MobilePhone, 
-                    contact.OldId, 
-                    contact.Type, 
-                    contact.Persona),
-                Permissions = authorizationGlobal,
-                FavoriteEntities = favoriteAccounts == null ?[] : [.. favoriteAccounts]
-            };
-        }
+        summary.Subscriptions = subscriptions;
+        return summary;
     }
 }

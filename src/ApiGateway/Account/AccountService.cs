@@ -107,4 +107,16 @@ public class AccountService : IAccountService
         }
         return [];
     }
+
+    public async Task<Summary?> GetSummaryAsync(int accountId)
+    {
+        var url = $"api/accounts/{accountId}/summary";
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<Summary>();
+        }
+
+        return null;
+    }
 }

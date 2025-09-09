@@ -1,22 +1,25 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using ApiGateway.Account;
 using ApiGateway.Aggregator;
 using ApiGateway.Authorization;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
+using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
-using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
+using ApiGateway.Offer;
 using LiteDB;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Ocelot.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace ApiGateway.Extensions;
 
@@ -29,6 +32,7 @@ public static class ServiceExtensions
         services.AddMemoryCache();
         services.AddScoped<IContactService, ContactService>();
         services.AddScoped<IAuthorizationService, AuthorizationService>();
+        services.AddScoped<IOfferService, OfferService>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IConnectServices, ConnectServices>();
         services.AddScoped<ICacheService, CacheService>();
@@ -62,6 +66,13 @@ public static class ServiceExtensions
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
+
+        services.AddHttpClient<IOfferService, OfferService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["OfferApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+.       AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IIdentityService, IdentityService>(client =>
         {

@@ -1,32 +1,66 @@
-﻿using ApiGateway.ConnectExperience.Services;
+﻿using ApiGateway.Account;
+using ApiGateway.ConnectExperience.Services;
+using ApiGateway.Contact;
+using ApiGateway.Exceptions;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
+using Newtonsoft.Json;
 using Pulse.ExceptionMiddleware.Exceptions;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
 
-namespace ApiGateway.ConnectExperience.Controller
+namespace ApiGateway.ConnectExperience.Controller;
+
+[Route("gtw/connect/api")]
+[ApiController]
+[Authorize]
+public class ConnectController(IUserContext userContext, IConnectServices experienceServices, IAccountService accountService, IContactService contactService) : ControllerBase
 {
-    [Route("gtw/connect/api")]
-    [ApiController]
-    [Authorize]
-    public class ConnectController(IUserContext userContext, IConnectServices experienceServices) : ControllerBase
+    [HttpGet("get-user-information")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> GetUserInformation()
     {
-        [HttpGet("get-user-information")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> GetUserInformation()
+        var userEmail = userContext.User.GetEmail();
+
+        try
+        {
+            var userInformation = await experienceServices.GetUserInformation(userEmail);
+            return Ok(userInformation);
+        }
+        catch (BadRequestException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("accounts/{accountId}/summary")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> GetSummary([Required(AllowEmptyStrings = false)] int accountId)
+    {
+        try
         {
             var userEmail = userContext.User.GetEmail();
-            try
+            var contact = await contactService.GetContactAsync(userEmail) ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
+            var contactId = contact.Id;
+
+            var hasRoleOnAccount = await accountService.CheckContactRoleAsync(contactId, accountId, null);
+            if (!hasRoleOnAccount)
             {
-                var userInformation = await experienceServices.GetUserInformation(userEmail);
-                return Ok(userInformation);
+                return new BadRequestObjectResult(new { ErrorMessage = Errors.NoRoleOnAccountCode, ErrorCode = string.Format(Errors.NoRoleOnAccountMessage, contactId, accountId) });
             }
-            catch (BadRequestException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            var result = await experienceServices.GetSummaryAsync(accountId);
+            return Ok(result);
+        }
+        catch (BadRequestException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

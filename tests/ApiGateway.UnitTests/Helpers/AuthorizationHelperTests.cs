@@ -125,7 +125,7 @@ namespace ApiGateway.UnitTests.Helpers
     }
 
     [Fact]
-    public async Task ParseQueryParameter_ShouldReturnParsedValue_WhenValidParameterPassed()
+    public void ParseQueryParameter_ShouldReturnParsedValue_WhenValidParameterPassed()
     {
       // Arrange
       var queryParameters = new NameValueCollection { { "param", "123" } };
@@ -138,7 +138,7 @@ namespace ApiGateway.UnitTests.Helpers
     }
 
     [Fact]
-    public async Task ParseQueryParameter_ShouldReturnNull_WhenInvalidParameterPassed()
+    public void ParseQueryParameter_ShouldReturnNull_WhenInvalidParameterPassed()
     {
       // Arrange
       var queryParameters = new NameValueCollection { { "param", "invalid" } };
@@ -151,7 +151,7 @@ namespace ApiGateway.UnitTests.Helpers
     }
 
     [Fact]
-    public async Task ParseQueryParameter_ShouldReturnNull_WhenParameterNotPresent()
+    public void ParseQueryParameter_ShouldReturnNull_WhenParameterNotPresent()
     {
       // Arrange
       var queryParameters = new NameValueCollection();

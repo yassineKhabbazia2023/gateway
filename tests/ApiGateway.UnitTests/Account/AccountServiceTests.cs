@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.Account;
 using ApiGateway.Authorization;
@@ -185,6 +186,54 @@ public class AccountServiceTests
         // Act
         var action = async () => await _accountService.GetAccountAsync(1);
         await action.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_WhenResponseUnsuccessful_ReturnsNull()
+    {
+        var accountId = 193216;
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NotFound,
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetSummaryAsync(accountId);
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_WhenAccountExists_ReturnsSummary()
+    {
+        var accountId = 193216;
+        var account = new Fixture().Create<Summary>();
+        account.Signatory!.ContactId = 0;
+
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(account)
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetSummaryAsync(accountId);
+        result.Should().BeEquivalentTo(account);
     }
 }
 

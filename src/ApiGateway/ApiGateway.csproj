@@ -10,19 +10,15 @@
 	<ItemGroup>
 		<Compile Remove="Ged\**" />
 		<Compile Remove="Mandat\**" />
-		<Compile Remove="Offer\**" />
 		<Compile Remove="Security\**" />
 		<Content Remove="Ged\**" />
 		<Content Remove="Mandat\**" />
-		<Content Remove="Offer\**" />
 		<Content Remove="Security\**" />
 		<EmbeddedResource Remove="Ged\**" />
 		<EmbeddedResource Remove="Mandat\**" />
-		<EmbeddedResource Remove="Offer\**" />
 		<EmbeddedResource Remove="Security\**" />
 		<None Remove="Ged\**" />
 		<None Remove="Mandat\**" />
-		<None Remove="Offer\**" />
 		<None Remove="Security\**" />
 	</ItemGroup>
 

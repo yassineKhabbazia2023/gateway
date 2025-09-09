@@ -6,6 +6,7 @@ using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Models;
 using Pulse.ExceptionMiddleware.Exceptions;
 using ContactModel = ApiGateway.Contact.Models.Contact;
+using ApiGateway.Offer;
 
 namespace ApiGateway.UnitTests.ConnectExperience;
 
@@ -14,9 +15,9 @@ public class ExperienceServicesTests
     private readonly Mock<IContactService> _contactMock = new();
     private readonly Mock<IAuthorizationService> _authMock = new();
     private readonly Mock<IAccountService> _accountMock = new();
-
+    private readonly Mock<IOfferService> _offerMock = new();
     private ConnectServices CreateService() =>
-        new(_contactMock.Object, _authMock.Object, _accountMock.Object);
+        new(_contactMock.Object, _authMock.Object, _offerMock.Object, _accountMock.Object);
 
     [Fact]
     public async Task GetUserInformation_ShouldReturnUserInfo_WhenContactExists()
@@ -72,5 +73,44 @@ public class ExperienceServicesTests
 
         Assert.Equal(Errors.NotFoundContactCode, ex.Code);
         Assert.Equal(Errors.NotFoundContactMessage, ex.Message);
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_ShouldThrowBadRequest_WhenContactIsNotFoundOnAccount()
+    {
+        var accountNumber = 324;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync((Summary?)null);
+        var service = CreateService();
+
+        var result = async () => await service.GetSummaryAsync(accountNumber);
+
+        await result.Should().ThrowAsync<BadRequestException>();
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_ShouldThrowBadRequest_WhenContactIsNotFoundOnOffer()
+    {
+        var accountNumber = 876;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync(new Summary());
+        _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync((SubscriptionStatus[]?)null);
+        var service = CreateService();
+
+        var result = async () => await service.GetSummaryAsync(accountNumber);
+
+        await result.Should().ThrowAsync<BadRequestException>();
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_ShouldNotReturnNull_ToConfirm()
+    {
+        var account = new Fixture().Create<Summary>();
+        var accountNumber = 876;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync(account);
+        _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync([]);
+        var service = CreateService();
+
+        var result = await service.GetSummaryAsync(accountNumber);
+
+        result.Should().BeEquivalentTo(account);
     }
 }
