@@ -2,6 +2,7 @@
 using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
+using ApiGateway.Helpers;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -49,8 +50,9 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
             var contact = await contactService.GetContactAsync(userEmail) ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
             var contactId = contact.Id;
 
-            var hasRoleOnAccount = await accountService.CheckContactRoleAsync(contactId, accountId, null);
-            if (!hasRoleOnAccount)
+            var shouldSkipRoleCheck = await AuthorizationHelper.SkipRoleCheck(accountId, contactId, HttpContext);
+            var hasTheNeededRoles = await AuthorizationHelper.CheckRoles(accountId, null, contactId, HttpContext);
+            if(!shouldSkipRoleCheck && !hasTheNeededRoles)
             {
                 return new BadRequestObjectResult(new { ErrorMessage = Errors.NoRoleOnAccountCode, ErrorCode = string.Format(Errors.NoRoleOnAccountMessage, contactId, accountId) });
             }
