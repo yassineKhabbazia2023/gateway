@@ -47,7 +47,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004, CORAP001, CORAPP001"
+        "GET": "CORAPP001"
       }
     },
     {
@@ -71,7 +71,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004, CORAP001, CORAPP001, CLRAPP001, CLRAPP002"
+        "GET": "CORAPP001, CLRAPP001"
       }
     },
     {
@@ -117,7 +117,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COADMI004, CORAP001, CORAPP001, CLRAPP001, CLRAPP002",
+        "GET": "CORAPP001, CLRAPP001",
         "POST": "COADMI004, CORAP001, CORAPP001"
       }
     },
