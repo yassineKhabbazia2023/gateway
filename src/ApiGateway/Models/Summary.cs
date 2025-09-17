@@ -18,6 +18,10 @@ public class Summary
 
     public int? OfficeId { get; set; }
 
+    public bool IsClarityVisible { get; set; }
+
+    public bool IsSignatory { get; set; }
+
     public Office? Office { get; set; }
 
     public Address? Address { get; set; }
