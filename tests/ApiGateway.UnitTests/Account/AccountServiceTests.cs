@@ -192,6 +192,7 @@ public class AccountServiceTests
     public async Task GetSummaryAsync_WhenResponseUnsuccessful_ReturnsNull()
     {
         var accountId = 193216;
+        var contactId = 123;
         // Arrange
         var httpResponse = new HttpResponseMessage
         {
@@ -206,7 +207,7 @@ public class AccountServiceTests
             .ReturnsAsync(httpResponse);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId);
         result.Should().BeNull();
     }
 
@@ -214,8 +215,9 @@ public class AccountServiceTests
     public async Task GetSummaryAsync_WhenAccountExists_ReturnsSummary()
     {
         var accountId = 193216;
+        var contactId = 0;
         var account = new Fixture().Create<Summary>();
-        account.Signatory!.ContactId = 0;
+        account.Signatory!.ContactId = contactId;
 
         // Arrange
         var httpResponse = new HttpResponseMessage
@@ -232,7 +234,7 @@ public class AccountServiceTests
             .ReturnsAsync(httpResponse);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId);
         result.Should().BeEquivalentTo(account);
     }
 }

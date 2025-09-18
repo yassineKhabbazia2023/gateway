@@ -43,9 +43,9 @@ public class ConnectServices(
         };
     }
 
-    public async Task<Summary?> GetSummaryAsync(int accountId)
+    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId)
     {
-        var summary = await accountService.GetSummaryAsync(accountId);
+        var summary = await accountService.GetSummaryAsync(accountId, currentUserId);
         
         if (summary is null) throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
         

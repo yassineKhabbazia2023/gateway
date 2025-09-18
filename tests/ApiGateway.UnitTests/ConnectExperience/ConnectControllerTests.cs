@@ -90,7 +90,7 @@ public class ConnectControllerTests
             .ReturnsAsync(true);
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act
@@ -124,7 +124,7 @@ public class ConnectControllerTests
             .ReturnsAsync(false);
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act

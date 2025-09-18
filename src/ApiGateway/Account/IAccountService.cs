@@ -13,5 +13,6 @@ public interface IAccountService
     Task<bool> CheckContactsCommonAccountRole(int currentUserId, int contactId);
 
     Task<IReadOnlyCollection<FavoriteAccount>?> GetFavoriteAccountsByContactIdAsync(int contactId);
-    Task<Summary?> GetSummaryAsync(int accountId);
+
+    Task<Summary?> GetSummaryAsync(int accountId, int currentUserId);
 }

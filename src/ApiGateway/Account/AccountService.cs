@@ -108,9 +108,10 @@ public class AccountService : IAccountService
         return [];
     }
 
-    public async Task<Summary?> GetSummaryAsync(int accountId)
+    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId)
     {
         var url = $"api/accounts/{accountId}/summary";
+        _httpClient.DefaultRequestHeaders.Add("CurrentUser", $"{currentUserId}");
         var response = await _httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {

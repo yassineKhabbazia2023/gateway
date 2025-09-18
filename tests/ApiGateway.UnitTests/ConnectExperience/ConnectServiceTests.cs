@@ -79,10 +79,11 @@ public class ExperienceServicesTests
     public async Task GetSummaryAsync_ShouldThrowBadRequest_WhenContactIsNotFoundOnAccount()
     {
         var accountNumber = 324;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync((Summary?)null);
+        var contactId = 123;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync((Summary?)null);
         var service = CreateService();
 
-        var result = async () => await service.GetSummaryAsync(accountNumber);
+        var result = async () => await service.GetSummaryAsync(accountNumber, contactId);
 
         await result.Should().ThrowAsync<BadRequestException>();
     }
@@ -91,11 +92,12 @@ public class ExperienceServicesTests
     public async Task GetSummaryAsync_ShouldThrowBadRequest_WhenContactIsNotFoundOnOffer()
     {
         var accountNumber = 876;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync(new Summary());
+        var contactId = 123;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync(new Summary());
         _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync((SubscriptionStatus[]?)null);
         var service = CreateService();
 
-        var result = async () => await service.GetSummaryAsync(accountNumber);
+        var result = async () => await service.GetSummaryAsync(accountNumber, contactId);
 
         await result.Should().ThrowAsync<BadRequestException>();
     }
@@ -105,11 +107,12 @@ public class ExperienceServicesTests
     {
         var account = new Fixture().Create<Summary>();
         var accountNumber = 876;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber)).ReturnsAsync(account);
+        var contactId = 123;
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync(account);
         _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync([]);
         var service = CreateService();
 
-        var result = await service.GetSummaryAsync(accountNumber);
+        var result = await service.GetSummaryAsync(accountNumber, contactId);
 
         result.Should().BeEquivalentTo(account);
     }

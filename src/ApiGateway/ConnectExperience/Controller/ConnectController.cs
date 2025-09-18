@@ -57,7 +57,7 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
                 return new BadRequestObjectResult(new { ErrorMessage = Errors.NoRoleOnAccountCode, ErrorCode = string.Format(Errors.NoRoleOnAccountMessage, contactId, accountId) });
             }
 
-            var result = await experienceServices.GetSummaryAsync(accountId);
+            var result = await experienceServices.GetSummaryAsync(accountId, contactId);
             return Ok(result);
         }
         catch (BadRequestException ex)
