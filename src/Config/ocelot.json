@@ -2593,6 +2593,29 @@
       "UpstreamHttpMethod": [
         "POST"
       ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking-link/currentuser",
+      "DownstreamPathTemplate": "/api/booking-link",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
     }
   ],
   "Aggregates": [
@@ -2613,6 +2636,17 @@
     }
   ],
   "SwaggerEndPoints": [
+    {
+      "Key": "Booking",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Bookings",
+          "Version": "v1",
+          "Url": "https://appcegpulserdv#{env_id}#01.azurewebsites.net/api/v1/api.json"
+        }
+      ]
+    },
     {
       "Key": "Account",
       "TransformByOcelotConfig": true,
