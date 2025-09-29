@@ -2596,6 +2596,27 @@
     },
     {
       "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/accounts/{accountId}/booking-link/currentuser/experts?page={page}&pageSize={pageSize}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/booking-link/experts?page={page}&pageSize={pageSize}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Booking",
       "UpstreamPathTemplate": "/gtw/booking/api/booking-link/currentuser",
       "DownstreamPathTemplate": "/api/booking-link",
       "DownstreamScheme": "https",
