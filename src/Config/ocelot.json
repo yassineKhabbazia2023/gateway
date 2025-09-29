@@ -2642,7 +2642,7 @@
         {
           "Name": "Pulse.Back.Bookings",
           "Version": "v1",
-          "Url": "https://appcegpulserdv#{env_id}#01.azurewebsites.net/api/v1/api.json"
+          "Url": "https://appcegpulserdv#{env_id}#01.azurewebsites.net/bookings/api/v1/api.json"
         }
       ]
     },
