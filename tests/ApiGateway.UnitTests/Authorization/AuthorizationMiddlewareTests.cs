@@ -337,7 +337,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new(), false);
         var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
@@ -698,7 +698,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(relatedAccounts)
             .Verifiable();
 
-        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims,new(),false);
 
         // Add the "Customer" role to the ClaimsPrincipal
         httpContext.User = new ClaimsPrincipal(
@@ -731,5 +731,38 @@ public class AuthorizationMiddlewareTests
         result.Which.Message.Should().Be(string.Format(Errors.NotValidCustomerMessage, contactEmail));
         _mockContactService.VerifyAll();
         mockIdentityService.Verify(x => x.ValidateCustomerAsync(contactEmail), Times.Once);
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenRouteIsAnonymous_ShouldBypassAllValidations()
+    {
+        // Arrange
+        var path = "/gtw/public/api/health";
+        var method = "GET";
+        var contactEmail = string.Empty;
+        var requiredClaims = new Dictionary<string, string>();
+
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new(), true);
+        var cacheService = new Mock<ICacheService>();
+
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .BuildServiceProvider();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+
+        // Verify that no services were called (bypassed all validations)
+        _mockContactService.Verify(x => x.GetContactIdAsync(It.IsAny<string>()), Times.Never);
+        _mockAuthorizationService.Verify(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
+        _mockAuthorizationService.Verify(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
+        _mockAccountService.Verify(x => x.GetContactRolesAsync(It.IsAny<int>()), Times.Never);
     }
 }

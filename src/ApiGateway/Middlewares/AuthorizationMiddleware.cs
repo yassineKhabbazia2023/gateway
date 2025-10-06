@@ -17,6 +17,11 @@ public static class AuthorizationMiddleware
 {
     public static Func<HttpContext, Func<Task>, Task> AuthorizationFilter => async (httpContext, next) =>
     {
+        if (IsAnonymousRoute(httpContext))
+        {
+            await next.Invoke();
+            return;
+        }
         var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
         var cacheService = httpContext.RequestServices.GetService<ICacheService>();
         var userEmail = ValidateUserIdentity(httpContext);
@@ -63,6 +68,13 @@ public static class AuthorizationMiddleware
 
         await next.Invoke();
     };
+
+    private static bool IsAnonymousRoute(HttpContext httpContext)
+    {
+        var downstreamRoutes = httpContext.Items.DownstreamRoute();
+        return !downstreamRoutes.IsAuthenticated;
+    }
+
     public static async Task<string> PeekBody(HttpRequest request)
     {
         try

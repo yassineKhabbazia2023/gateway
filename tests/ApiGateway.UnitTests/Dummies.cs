@@ -18,6 +18,7 @@ namespace ApiGateway.UnitTests
         string contactEmail,
         Dictionary<string, string> requiredClaims,
         Dictionary<string, string> headers = default,
+        bool isAnonymous = false,
         Dictionary<string, string> routeValues = null,
         Dictionary<string, string> queryParameters = null
         )
@@ -49,7 +50,7 @@ namespace ApiGateway.UnitTests
                 httpContext.Request.Headers.Add(kv.Key, kv.Value);
             }
 
-            var downstreamRoute = GenerateDownStream(requiredClaims);
+            var downstreamRoute = GenerateDownStream(requiredClaims, isAnonymous);
 
             httpContext.Items["DownstreamRoute"] = downstreamRoute;
 
@@ -57,7 +58,7 @@ namespace ApiGateway.UnitTests
         }
 
 
-        public static DownstreamRoute GenerateDownStream(Dictionary<string, string> requiredClaims)
+        public static DownstreamRoute GenerateDownStream(Dictionary<string, string> requiredClaims, bool isAnonymous)
         {
             var downstreamRoute = new DownstreamRoute(
                 key: "key",
@@ -82,7 +83,7 @@ namespace ApiGateway.UnitTests
                 claimsToHeaders: null,
                 claimsToClaims: null,
                 claimsToPath: null,
-                isAuthenticated: false,
+                isAuthenticated: !isAnonymous,
                 isAuthorized: false,
                 authenticationOptions: null,
                 downstreamPathTemplate: null,
