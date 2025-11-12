@@ -37,6 +37,7 @@ public static class ServiceExtensions
         services.AddScoped<IConnectServices, ConnectServices>();
         services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IPermissionValidationService, PermissionValidationService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -180,6 +181,8 @@ public static class ServiceExtensions
         services.AddApplicationInsightsTelemetry(options =>
         {
             options.ConnectionString = applicationInsightsConexionString;
+            // Désactiver explicitement tous les types de sampling
+            options.EnableAdaptiveSampling = false;
         });
     }
 

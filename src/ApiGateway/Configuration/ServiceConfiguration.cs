@@ -23,6 +23,8 @@ public static class ServiceConfiguration
         services.AddApplicationInsightsTelemetry(options =>
         {
             options.ConnectionString = applicationInsightsConnectionString;
+            // Désactiver explicitement tous les types de sampling
+            options.EnableAdaptiveSampling = false;
         });
     }
 }
