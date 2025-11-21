@@ -18,11 +18,10 @@ namespace ApiGateway.Offer.Model
 
         public string? Applicant { get; set; }
 
-        [JsonIgnore]
-        public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }
+        public string? Status { get; set; }
 
         [JsonIgnore]
-        public string? Status { get; set; }
+        public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }
 
         [JsonIgnore]
         public DateTime? CreationDate { get; set; }

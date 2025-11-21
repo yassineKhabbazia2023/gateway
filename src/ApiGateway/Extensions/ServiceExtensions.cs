@@ -11,6 +11,7 @@ using ApiGateway.Helpers;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
 using ApiGateway.Offer;
+using ApiGateway.Pennylane;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -38,6 +39,7 @@ public static class ServiceExtensions
         services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IPermissionValidationService, PermissionValidationService>();
+        services.AddScoped<IPennylaneService, PennylaneService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -73,7 +75,17 @@ public static class ServiceExtensions
             client.BaseAddress = new Uri(configuration["OfferApiUri"]!);
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-.       AddPolicyHandler(GetRetryPolicy());
+        .AddPolicyHandler(GetRetryPolicy());
+
+        // Add Pennylane HttpClient for company creation
+        services.AddHttpClient("PennylaneClient", client =>
+        {
+            client.BaseAddress = new Uri(configuration["PennylaneApiUri"]!);
+            client.Timeout = TimeSpan.FromSeconds(30); // Add explicit timeout
+
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IIdentityService, IdentityService>(client =>
         {

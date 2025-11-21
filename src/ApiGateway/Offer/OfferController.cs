@@ -1,5 +1,6 @@
 ﻿using ApiGateway.Attributes;
 using ApiGateway.Offer.Model;
+using ApiGateway.Pennylane;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +15,16 @@ namespace ApiGateway.Offer
     {
         private readonly ILogger<OfferController> _logger;
         private readonly IOfferService _offerService;
+        private readonly IPennylaneService _pennylaneService;
 
-        public OfferController(ILogger<OfferController> logger, IOfferService offerService)
+        public OfferController(
+            ILogger<OfferController> logger,
+            IOfferService offerService,
+            IPennylaneService pennylaneService)
         {
             _logger = logger;
             _offerService = offerService;
+            _pennylaneService = pennylaneService;
         }
 
         /// <summary>
@@ -37,6 +43,36 @@ namespace ApiGateway.Offer
             _logger.LogInformation("Creating subscription for AccountId: {AccountId}, OfferId: {OfferId}", subscriptionRequest.AccountId, subscriptionRequest.OfferId);
             _logger.LogDebug("Full request: {Request}", JsonSerializer.Serialize(subscriptionRequest));
 
+            // Step 1: Check if we should create company in Pennylane for this OfferId
+            if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
+            {
+                try
+                {
+                    var companyCreateRequest = new CreateCompanyRequest
+                    {
+                        AccountId = subscriptionRequest.AccountId,
+                        Contacts = subscriptionRequest.Contacts
+                    };
+
+                    var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
+                    _logger.LogInformation("Pennylane company creation result: Status={Status}, CompanyId={CompanyId}",
+                        companyResult.Status, companyResult.Company.Id);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, "Pennylane API request failed for AccountId: {AccountId}. Proceeding with subscription creation.",
+                    subscriptionRequest.AccountId);
+                }
+
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogError(ex, "Failed to deserialize Pennylane response for AccountId: {AccountId}. Proceeding with subscription creation.",
+                    subscriptionRequest.AccountId);
+                }
+                // Continue with subscription creation even if company creation fails
+            }
+
+            // Step 2: Create subscription (continues even if company creation failed/skipped)
             var subscriptionId = await _offerService.CreateSubscriptionAsync(subscriptionRequest);
 
             return Ok(subscriptionId);

@@ -1,10 +1,11 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.Account;
 using ApiGateway.Authorization;
 using ApiGateway.Models;
 using ApiGateway.Offer;
+using ApiGateway.Offer.Model;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.Authorization;
@@ -20,6 +21,7 @@ public class OfferServiceTests
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         _httpClient.BaseAddress = new Uri("http://local.account/api");
+
         _offerService = new OfferService(_httpClient);
     }
 
@@ -241,4 +243,3 @@ public class OfferServiceTests
 
     #endregion
 }
-

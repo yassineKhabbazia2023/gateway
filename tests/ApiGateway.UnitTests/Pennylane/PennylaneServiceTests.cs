@@ -1,0 +1,357 @@
+using System.Net;
+using System.Net.Http.Json;
+using ApiGateway.Offer.Model;
+using ApiGateway.Pennylane;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq.Protected;
+
+namespace ApiGateway.UnitTests.Pennylane;
+
+public class PennylaneServiceTests
+{
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
+    private readonly Mock<HttpMessageHandler> _mockPennylaneHttpMessageHandler;
+    private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<ILogger<PennylaneService>> _mockLogger;
+    private readonly PennylaneService _pennylaneService;
+
+    public PennylaneServiceTests()
+    {
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        _mockPennylaneHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        _mockConfiguration = new Mock<IConfiguration>();
+        _mockLogger = new Mock<ILogger<PennylaneService>>();
+
+        var pennylaneHttpClient = new HttpClient(_mockPennylaneHttpMessageHandler.Object);
+        pennylaneHttpClient.BaseAddress = new Uri("http://local.pennylane/");
+
+        _mockHttpClientFactory
+            .Setup(factory => factory.CreateClient("PennylaneClient"))
+            .Returns(pennylaneHttpClient);
+
+        _pennylaneService = new PennylaneService(
+            _mockHttpClientFactory.Object,
+            _mockConfiguration.Object,
+            _mockLogger.Object);
+    }
+
+    #region ShouldCreateCompanyForOffer Tests
+
+    [Fact]
+    public void ShouldCreateCompanyForOffer_WhenOfferIdMatches_ShouldReturnTrue()
+    {
+        // Arrange
+        var offerId = 999;
+        _mockConfiguration.Setup(c => c["PennylaneOfferId"]).Returns("999");
+
+        // Act
+        var result = _pennylaneService.ShouldCreateCompanyForOffer(offerId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldCreateCompanyForOffer_WhenOfferIdDoesNotMatch_ShouldReturnFalse()
+    {
+        // Arrange
+        var offerId = 888;
+        _mockConfiguration.Setup(c => c["PennylaneOfferId"]).Returns("999");
+
+        // Act
+        var result = _pennylaneService.ShouldCreateCompanyForOffer(offerId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ShouldCreateCompanyForOffer_WhenConfigNotSet_ShouldReturnFalse()
+    {
+        // Arrange
+        var offerId = 999;
+        _mockConfiguration.Setup(c => c["PennylaneOfferId"]).Returns((string?)null);
+
+        // Act
+        var result = _pennylaneService.ShouldCreateCompanyForOffer(offerId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ShouldCreateCompanyForOffer_WhenConfigIsEmpty_ShouldReturnFalse()
+    {
+        // Arrange
+        var offerId = 999;
+        _mockConfiguration.Setup(c => c["PennylaneOfferId"]).Returns("");
+
+        // Act
+        var result = _pennylaneService.ShouldCreateCompanyForOffer(offerId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ShouldCreateCompanyForOffer_WhenConfigIsInvalidNumber_ShouldReturnFalse()
+    {
+        // Arrange
+        var offerId = 999;
+        _mockConfiguration.Setup(c => c["PennylaneOfferId"]).Returns("invalid");
+
+        // Act
+        var result = _pennylaneService.ShouldCreateCompanyForOffer(offerId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region CreateCompanyAsync Tests
+
+    [Fact]
+    public async Task CreateCompanyAsync_WithValidRequest_ShouldReturnCompanyResult()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var expectedResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany
+            {
+                Id = "ACC123",
+                FirmId = "FIRM001",
+                Name = "Test Company"
+            },
+            Status = "created"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.Created,
+            Content = JsonContent.Create(expectedResult)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Post &&
+                    req.RequestUri != null &&
+                    req.RequestUri.ToString().Contains("/api/pennylane/companies/onboarding")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Company.Id.Should().Be("ACC123");
+        result.Company.Name.Should().Be("Test Company");
+        result.Status.Should().Be("created");
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_ShouldCallCorrectEndpoint()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany
+            {
+                Id = "ACC123",
+                FirmId = "FIRM001",
+                Name = "Test Company"
+            },
+            Status = "created"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(companyResult)
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Method.Should().Be(HttpMethod.Post);
+        capturedRequest!.RequestUri!.ToString().Should().Contain("/api/pennylane/companies/onboarding");
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_ShouldSerializeRequestCorrectly()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20, 30 }
+        };
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany
+            {
+                Id = "ACC123",
+                FirmId = "FIRM001",
+                Name = "Test Company"
+            },
+            Status = "created"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(companyResult)
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Content.Should().NotBeNull();
+
+        var content = await capturedRequest!.Content!.ReadAsStringAsync();
+        content.Should().Contain("\"accountId\":123");
+        content.Should().Contain("\"contacts\":[10,20,30]");
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_WhenHttpError_ShouldThrowException()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("Bad request error")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*BadRequest*");
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_When500Error_ShouldThrowException()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.InternalServerError,
+            Content = new StringContent("Internal server error")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*InternalServerError*");
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_WhenResponseIsNull_ShouldThrowException()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create<CreateCompanyResult?>(null)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*deserialize*");
+    }
+
+    #endregion
+}
