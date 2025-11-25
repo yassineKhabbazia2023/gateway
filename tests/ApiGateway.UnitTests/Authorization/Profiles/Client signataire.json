@@ -69,7 +69,7 @@
     "PATCH /gtw/ged/api/93012CC8-77B9-4161-8DBD-61915D935E21/{everything}",
     "PATCH /gtw/wallet/api/favorites/currentuser/{everything}",
     "PATCH /gtw/wallet/api/permissions/256",
-    "POST /gtw/account/api/customers?accountId={relativeAccountId}",
+    "POST /gtw/account/api/customers?accountNumber={accountNumber}",
     "POST /gtw/account/api/customers/invite/{contactId}?accountNumber={relativeAccountNumber}",
     "POST /gtw/authentication/api/{everything}",
     "POST /gtw/authentication/api/update-password",

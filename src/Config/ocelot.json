@@ -1631,8 +1631,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/account/api/customers?accountId={relativeAccountId}",
-      "DownstreamPathTemplate": "/api/customers",
+      "UpstreamPathTemplate": "/gtw/account/api/customers?accountNumber={accountNumber}",
+      "DownstreamPathTemplate": "/api/customers?accountNumber={accountNumber}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
