@@ -1,4 +1,7 @@
+using ApiGateway.Account;
+using ApiGateway.Account.Constants;
 using ApiGateway.Attributes;
+using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
@@ -16,6 +19,7 @@ public class OfferControllerTests
     private readonly Mock<IOfferService> _mockOfferService;
     private readonly Mock<IPennylaneService> _mockPennylaneService;
     private readonly Mock<ILogger<OfferController>> _mockLogger;
+    private readonly Mock<IAccountService> _mockAccountService;
     private readonly OfferController _controller;
 
     public OfferControllerTests()
@@ -23,12 +27,13 @@ public class OfferControllerTests
         _mockOfferService = new Mock<IOfferService>(MockBehavior.Strict);
         _mockPennylaneService = new Mock<IPennylaneService>(MockBehavior.Loose);
         _mockLogger = new Mock<ILogger<OfferController>>(MockBehavior.Loose);
+        _mockAccountService = new Mock<IAccountService>(MockBehavior.Strict);
 
         // Default behavior: don't create company for any OfferId
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(It.IsAny<int>()))
             .Returns(false);
 
-        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object);
+        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object);
     }
 
     #region CreateSubscription Tests
@@ -131,6 +136,23 @@ public class OfferControllerTests
     }
 
     [Fact]
+    public async Task CreateSubscription_WhenServiceThrowsBadRequestException_ShouldPropagate()
+    {
+        // Arrange
+        var request = new Fixture().Create<CreateSubscriptionOffer>();
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ThrowsAsync(new BadHttpRequestException("Service error"));
+
+        // Act
+        var action = async () => await _controller.CreateSubscription(request);
+
+        // Assert
+        await action.Should().ThrowAsync<BadHttpRequestException>()
+            .WithMessage("Service error");
+    }
+
+    [Fact]
     public async Task CreateSubscription_ShouldReturnSubscriptionId()
     {
         // Arrange
@@ -153,6 +175,20 @@ public class OfferControllerTests
     public async Task CreateSubscription_WhenPennylaneShouldCreateCompany_ShouldCallCreateCompanyAsync()
     {
         // Arrange
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting()
+            {
+                AccountingType = "type"
+            },
+            Legal = new Models.Legal()
+            {
+                Siren = "SIREN01"
+            }
+        };
+
         var request = new CreateSubscriptionOffer
         {
             AccountId = 123,
@@ -173,6 +209,9 @@ public class OfferControllerTests
 
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
             .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
 
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.Is<CreateCompanyRequest>(
             req => req.AccountId == 123 && req.Contacts.Count == 2)))
@@ -219,6 +258,31 @@ public class OfferControllerTests
     public async Task CreateSubscription_WhenCompanyCreationSucceeds_ShouldLogSuccess()
     {
         // Arrange
+        var address1 = new Fixture().Build<Address>()
+            .With(c => c.Country, "FR")
+            .Create();
+        var address2 = new Fixture().Build<Address>()
+            .With(c => c.Country, "EN")
+            .Create();
+
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting()
+            {
+                AccountingType = AccountConstants.Treasury
+            },
+            Legal = new Models.Legal()
+            {
+                Siren = "SIREN01"
+            },
+            Address = new List<Address>()
+            {
+                address1,address2
+            }
+        };
+
         var request = new CreateSubscriptionOffer
         {
             AccountId = 123,
@@ -246,6 +310,9 @@ public class OfferControllerTests
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
             .ReturnsAsync(456);
 
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
         // Act
         await _controller.CreateSubscription(request);
 
@@ -264,6 +331,20 @@ public class OfferControllerTests
     public async Task CreateSubscription_WhenCompanyCreationFails_ShouldLogErrorAndContinue()
     {
         // Arrange
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting()
+            {
+                AccountingType = "type"
+            },
+            Legal = new Models.Legal()
+            {
+                Siren = "SIREN01"
+            }
+        };
+
         var request = new CreateSubscriptionOffer
         {
             AccountId = 123,
@@ -279,6 +360,9 @@ public class OfferControllerTests
 
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
             .ReturnsAsync(456);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
 
         // Act
         var result = await _controller.CreateSubscription(request);
@@ -306,6 +390,20 @@ public class OfferControllerTests
     public async Task CreateSubscription_WhenCompanyCreationFails_ShouldStillCreateSubscription()
     {
         // Arrange
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting()
+            {
+                AccountingType = "type"
+            },
+            Legal = new Models.Legal()
+            {
+                Siren = "SIREN01"
+            }
+        };
+
         var request = new CreateSubscriptionOffer
         {
             AccountId = 123,
@@ -323,6 +421,9 @@ public class OfferControllerTests
 
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
             .ReturnsAsync(expectedSubscriptionId);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
 
         // Act
         var result = await _controller.CreateSubscription(request);
@@ -365,6 +466,20 @@ public class OfferControllerTests
     public async Task CreateSubscription_WithPennylaneEnabled_ShouldPassCorrectDataToCreateCompany()
     {
         // Arrange
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting()
+            {
+                AccountingType = "type"
+            },
+            Legal = new Models.Legal()
+            {
+                Siren = "SIREN01"
+            }
+        };
+
         var request = new CreateSubscriptionOffer
         {
             AccountId = 555,
@@ -388,6 +503,9 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
             .Returns(true);
 
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
@@ -402,6 +520,123 @@ public class OfferControllerTests
         capturedRequest.Should().NotBeNull();
         capturedRequest!.AccountId.Should().Be(555);
         capturedRequest.Contacts.Should().BeEquivalentTo(new List<int> { 100, 200, 300 });
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneEnabled_ShouldCallAccountService()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Legal = new Models.Legal
+            {
+                Siren = "SIREN01"
+            },
+            Accounting = new Models.Accounting
+            {
+                AccountingType = "type"
+            },
+            Address = new List<Models.Address>
+            {
+                new Models.Address { Country = "FR" }
+            }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult
+            {
+                Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+                Status = "created"
+            });
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        _mockAccountService.Verify(x => x.GetAccountAsync(request.AccountId), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithPennylaneEnabled_ShouldSetSirenNotYetRegisteredAndCountryCodeCorrectly()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting
+            {
+                AccountingType = "type"
+            },
+            Legal = new Models.Legal
+            {
+                Siren = "SIREN01"
+            },
+            Address = new List<Models.Address>
+            {
+                new Models.Address { Country = "France" }
+            }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20, 30 }
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany
+            {
+                Id = "ACC123",
+                FirmId = "FIRM001",
+                Name = "Test Company"
+            },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.RegistrationNumber.Should().Be("SIREN01");
+        capturedRequest.NotYetRegistered.Should().BeFalse();         // Siren is present -> false
+        capturedRequest.CountryCode.Should().Be("FR");               // From first address
+        capturedRequest.Contacts.Should().BeEquivalentTo(new List<int> { 10, 20, 30 });
     }
 
     #endregion
@@ -438,7 +673,6 @@ public class OfferControllerTests
     #endregion
 
     #region CreateSubscription Method Attributes Tests
-
     [Fact]
     public void CreateSubscription_ShouldHaveHttpPostAttribute()
     {

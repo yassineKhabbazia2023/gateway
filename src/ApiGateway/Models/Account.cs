@@ -1,4 +1,3 @@
-
 namespace ApiGateway.Models;
 
 public class Account
@@ -8,4 +7,10 @@ public class Account
     public Guid? AccountGlobalUniqueId { get; set; }
 
     public string? AccountNumber { get; set; }
+
+    public  Legal? Legal { get; set; }
+
+    public Accounting? Accounting { get; set; }
+
+    public IEnumerable<Address>? Address { get; set; }
 }

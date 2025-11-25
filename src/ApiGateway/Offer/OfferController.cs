@@ -1,9 +1,10 @@
-﻿using ApiGateway.Attributes;
+﻿using ApiGateway.Account;
+using ApiGateway.Attributes;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
+using ApiGateway.Pennylane.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 using Pulse.ExceptionMiddleware.Model;
 using System.Text.Json;
 
@@ -16,15 +17,18 @@ namespace ApiGateway.Offer
         private readonly ILogger<OfferController> _logger;
         private readonly IOfferService _offerService;
         private readonly IPennylaneService _pennylaneService;
+        private readonly IAccountService _accountService;
 
         public OfferController(
             ILogger<OfferController> logger,
             IOfferService offerService,
-            IPennylaneService pennylaneService)
+            IPennylaneService pennylaneService,
+            IAccountService accountService)
         {
             _logger = logger;
             _offerService = offerService;
             _pennylaneService = pennylaneService;
+            _accountService = accountService;
         }
 
         /// <summary>
@@ -48,27 +52,37 @@ namespace ApiGateway.Offer
             {
                 try
                 {
+                    var account = await _accountService.GetAccountAsync(subscriptionRequest.AccountId);
+
+                    var accountingType = account?.Accounting?.AccountingType ?? string.Empty;
+                    var siren = account?.Legal?.Siren ?? string.Empty;
+                    var countryCode = account?.Address?.FirstOrDefault()?.Country ?? string.Empty;
+
                     var companyCreateRequest = new CreateCompanyRequest
                     {
                         AccountId = subscriptionRequest.AccountId,
-                        Contacts = subscriptionRequest.Contacts
+                        Contacts = subscriptionRequest.Contacts,
+                        RegistrationNumber = siren,
+                        NotYetRegistered = string.IsNullOrWhiteSpace(siren),
+                        AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),
+                        CountryCode = CountryCodeMapper.CountryToPennylaneCountryCode(countryCode),
                     };
-
+            
                     var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
                     _logger.LogInformation("Pennylane company creation result: Status={Status}, CompanyId={CompanyId}",
                         companyResult.Status, companyResult.Company.Id);
                 }
-                catch (HttpRequestException ex)
+                catch (Exception ex) when (ex is HttpRequestException || ex is BadHttpRequestException)
                 {
                     _logger.LogError(ex, "Pennylane API request failed for AccountId: {AccountId}. Proceeding with subscription creation.",
                     subscriptionRequest.AccountId);
                 }
-
                 catch (InvalidOperationException ex)
                 {
                     _logger.LogError(ex, "Failed to deserialize Pennylane response for AccountId: {AccountId}. Proceeding with subscription creation.",
                     subscriptionRequest.AccountId);
                 }
+
                 // Continue with subscription creation even if company creation fails
             }
 

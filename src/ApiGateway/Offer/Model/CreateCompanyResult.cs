@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ApiGateway.Offer.Model;
 
 public class CreateCompanyResult
@@ -22,39 +24,60 @@ public class UserAdditionResult
 
 public class PennylaneCompany
 {
-    public required string Id { get; set; }
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = default!;
 
-    public required string FirmId { get; set; }
+    [JsonPropertyName("firm_id")]
+    public string FirmId { get; set; } = default!;
 
-    public string? RegNo { get; set; }
+    [JsonPropertyName("reg_no")]
+    public string RegNo { get; set; } = default!;
 
-    public required string Name { get; set; }
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = default!;
 
-    public string? TradeName { get; set; }
+    [JsonPropertyName("trade_name")]
+    public string TradeName { get; set; } = default!;
 
-    public string? Address { get; set; }
+    [JsonPropertyName("address")]
+    public string Address { get; set; } = default!;
 
-    public string? City { get; set; }
+    [JsonPropertyName("city")]
+    public string City { get; set; } = default!;
 
-    public string? PostalCode { get; set; }
+    [JsonPropertyName("postal_code")]
+    public string PostalCode { get; set; } = default!;
 
-    public string? CountryAlpha2 { get; set; }
+    [JsonPropertyName("country_alpha2")]
+    public string CountryAlpha2 { get; set; } = default!;
 
-    public string? SaasPlan { get; set; }
+    [JsonPropertyName("saas_plan")]
+    public string SaasPlan { get; set; } = default!;
 
-    public string? FiscalCategory { get; set; }
+    [JsonPropertyName("fiscal_category")]
+    public string FiscalCategory { get; set; } = default!;
 
-    public string? FiscalRegime { get; set; }
+    [JsonPropertyName("fiscal_regime")]
+    public string FiscalRegime { get; set; } = default!;
 
-    public string? LegalFormCode { get; set; }
+    [JsonPropertyName("legal_form_code")]
+    public string LegalFormCode { get; set; } = default!;
 
-    public string? VatFrequency { get; set; }
+    [JsonPropertyName("vat_frequency")]
+    public string VatFrequency { get; set; } = default!;
 
+    [JsonPropertyName("vat_day_of_month")]
     public int? VatDayOfMonth { get; set; }
 
+    [JsonPropertyName("tos_accepted_at")]
     public DateTime? TosAcceptedAt { get; set; }
 
+    [JsonPropertyName("supplier_invoice_transmission_emails")]
     public string[]? SupplierInvoiceTransmissionEmails { get; set; }
 
+    [JsonPropertyName("customer_invoice_transmission_emails")]
     public string[]? CustomerInvoiceTransmissionEmails { get; set; }
+
+    [JsonPropertyName("not_yet_registered")]
+    public bool NotYetRegistered { get; set; }
 }

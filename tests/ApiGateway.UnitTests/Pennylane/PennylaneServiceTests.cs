@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using ApiGateway.Account.Constants;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
 using Microsoft.Extensions.Configuration;
@@ -119,7 +120,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var expectedResult = new CreateCompanyResult
@@ -167,7 +172,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var companyResult = new CreateCompanyResult
@@ -214,7 +223,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20, 30 }
+            Contacts = new List<int> { 10, 20, 30 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var companyResult = new CreateCompanyResult
@@ -264,7 +277,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var httpResponse = new HttpResponseMessage
@@ -296,7 +313,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var httpResponse = new HttpResponseMessage
@@ -328,7 +349,11 @@ public class PennylaneServiceTests
         var request = new CreateCompanyRequest
         {
             AccountId = 123,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
         };
 
         var httpResponse = new HttpResponseMessage
