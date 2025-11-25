@@ -804,4 +804,206 @@ public class OfferControllerTests
     }
 
     #endregion
+
+    #region ContactFunctions Tests
+
+    [Fact]
+    public async Task CreateSubscription_WithContactFunctions_ShouldPassContactFunctionsToCreateCompanyRequest()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var contactFunctions = new List<ContactFunctions>
+        {
+            new ContactFunctions { ContactId = 10, FunctionId = 1 },
+            new ContactFunctions { ContactId = 20, FunctionId = 2 }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 },
+            ContactFunctions = contactFunctions
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.ContactFunctions.Should().NotBeNull();
+        capturedRequest.ContactFunctions.Should().HaveCount(2);
+        capturedRequest.ContactFunctions.Should().BeEquivalentTo(contactFunctions);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithNullContactFunctions_ShouldPassNullToCreateCompanyRequest()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 },
+            ContactFunctions = null
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.ContactFunctions.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithEmptyContactFunctions_ShouldPassEmptyListToCreateCompanyRequest()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 },
+            ContactFunctions = new List<ContactFunctions>()
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.ContactFunctions.Should().NotBeNull();
+        capturedRequest.ContactFunctions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithContactFunctions_ShouldPreserveContactIdAndFunctionId()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var contactFunctions = new List<ContactFunctions>
+        {
+            new ContactFunctions { ContactId = 100, FunctionId = 5 },
+            new ContactFunctions { ContactId = 200, FunctionId = 10 },
+            new ContactFunctions { ContactId = 300, FunctionId = 15 }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 100, 200, 300 },
+            ContactFunctions = contactFunctions
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.ContactFunctions.Should().HaveCount(3);
+        capturedRequest.ContactFunctions![0].ContactId.Should().Be(100);
+        capturedRequest.ContactFunctions[0].FunctionId.Should().Be(5);
+        capturedRequest.ContactFunctions[1].ContactId.Should().Be(200);
+        capturedRequest.ContactFunctions[1].FunctionId.Should().Be(10);
+        capturedRequest.ContactFunctions[2].ContactId.Should().Be(300);
+        capturedRequest.ContactFunctions[2].FunctionId.Should().Be(15);
+    }
+
+    #endregion
 }

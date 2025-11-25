@@ -20,7 +20,6 @@ namespace ApiGateway.Offer.Model
 
         public string? Status { get; set; }
 
-        [JsonIgnore]
         public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }
 
         [JsonIgnore]

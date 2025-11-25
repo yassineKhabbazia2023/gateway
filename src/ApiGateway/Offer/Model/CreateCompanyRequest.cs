@@ -12,6 +12,8 @@ public class CreateCompanyRequest
     [MaxLength(100)]
     public IReadOnlyList<int> Contacts { get; set; } = [];
 
+    public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }
+
     /// <summary>
     /// Company registration number (SIREN).
     /// Maps to: <c>reg_no</c>.
