@@ -5,6 +5,7 @@ using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
+using ApiGateway.Pennylane.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -637,6 +638,251 @@ public class OfferControllerTests
         capturedRequest.NotYetRegistered.Should().BeFalse();         // Siren is present -> false
         capturedRequest.CountryCode.Should().Be("FR");               // From first address
         capturedRequest.Contacts.Should().BeEquivalentTo(new List<int> { 10, 20, 30 });
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyCreatedSuccessfully_ShouldSetStatusToPennylaneCreated()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(companyResult);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneCreated);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyCreationFails_ShouldSetStatusToPennylaneToCreate()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ThrowsAsync(new HttpRequestException("Pennylane service error"));
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToCreate);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyCreationThrowsInvalidOperationException_ShouldSetStatusToPennylaneToCreate()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ThrowsAsync(new InvalidOperationException("Deserialization error"));
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToCreate);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenNotPennylaneOffer_ShouldNotSetStatus()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 888,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(888))
+            .Returns(false);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyCreationThrowsBadHttpRequestException_ShouldSetStatusToPennylaneToCreate()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ThrowsAsync(new BadHttpRequestException("Bad request"));
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToCreate);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyStatusIsNotCreated_ShouldSetStatusToPennylaneToCreate()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "existing" // Status is NOT "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(companyResult);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToCreate);
     }
 
     #endregion

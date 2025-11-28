@@ -2,6 +2,7 @@
 using ApiGateway.Attributes;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
+using ApiGateway.Pennylane.Constants;
 using ApiGateway.Pennylane.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -50,6 +51,7 @@ namespace ApiGateway.Offer
             // Step 1: Check if we should create company in Pennylane for this OfferId
             if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
             {
+                bool companyCreated = false;
                 try
                 {
                     var account = await _accountService.GetAccountAsync(subscriptionRequest.AccountId);
@@ -68,10 +70,11 @@ namespace ApiGateway.Offer
                         AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),
                         CountryCode = CountryCodeMapper.CountryToPennylaneCountryCode(countryCode),
                     };
-            
+
                     var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
                     _logger.LogInformation("Pennylane company creation result: Status={Status}, CompanyId={CompanyId}",
                         companyResult.Status, companyResult.Company.Id);
+                    companyCreated = companyResult.Status == "created";
                 }
                 catch (Exception ex) when (ex is HttpRequestException || ex is BadHttpRequestException)
                 {
@@ -84,7 +87,10 @@ namespace ApiGateway.Offer
                     subscriptionRequest.AccountId);
                 }
 
-                // Continue with subscription creation even if company creation fails
+                // Set status based on whether company was created
+                subscriptionRequest.Status = companyCreated
+                    ? PennylaneConstants.PennylaneCreated
+                    : PennylaneConstants.PennylaneToCreate;
             }
 
             // Step 2: Create subscription (continues even if company creation failed/skipped)
