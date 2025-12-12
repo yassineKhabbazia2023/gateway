@@ -64,7 +64,7 @@
     "PATCH /gtw/contact/api/contacts/currentuser",
     "PATCH /gtw/contact/api/contacts/currentuser/{everything}",
     "PATCH /gtw/contact/api/contacts/currentuser/terms",
-    "PATCH /gtw/customer-wallet/api/contacts/{contactId}",
+    "PATCH /gtw/customer-wallet/api/contacts/{contactId}?accountId={abc}",
     "PATCH /gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
     "PATCH /gtw/ged/api/93012CC8-77B9-4161-8DBD-61915D935E21/{everything}",
     "PATCH /gtw/wallet/api/favorites/currentuser/{everything}",

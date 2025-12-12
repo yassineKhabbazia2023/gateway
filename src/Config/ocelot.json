@@ -877,7 +877,7 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{contactId}",
+      "UpstreamPathTemplate": "/gtw/customer-wallet/api/contacts/{contactId}?accountId={abc}",
       "DownstreamPathTemplate": "/api/contacts/{contactId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -1226,7 +1226,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "POST": "COUSER001, COADMI004, CLUSER004"
+        "POST": "COUSER001, COADMI004"
       }
     },
     {
@@ -1410,7 +1410,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "COOFF001, CLUSER001, COUSER001, CLUSER004, CLADMI001"
+        "GET": "COOFF001, CLUSER001, COUSER001, CLADMI001"
       }
     },
     {
@@ -2428,7 +2428,7 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/role",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/role?accountId={relativeAccountId}&contactId={relativeContactId}",
       "DownstreamPathTemplate": "/api/pennylane/role",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2509,8 +2509,8 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/roles",
-      "DownstreamPathTemplate": "/api/pennylane/roles",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/roles?companyId={relativeCompanyId}&accountId={relativeAccountId}&contactId={relativeContactId}",
+      "DownstreamPathTemplate": "/api/pennylane/roles?companyId={relativeCompanyId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
