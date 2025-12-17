@@ -52,5 +52,8 @@
         public static readonly string NotFoundAccountCode = "GTW017";
         public static readonly string NotFoundAccountMessage = "L'account avec l'identifiant {0} est introuvable";
 
+        public static readonly string PennylaneHttpRequestFailedCode = "GTW018";
+        public static readonly string PennylaneHttpRequestFailedMessage = "L'appelle vers pennylane a échoué {0} {1}";
+
     }
 }

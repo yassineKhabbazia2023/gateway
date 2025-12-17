@@ -1,6 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using ApiGateway.Authorization;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.Authorization;
@@ -16,7 +17,7 @@ public class AuthorizationServiceTests
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         _httpClient.BaseAddress = new Uri("http://local.authorization/api");
-        _authorizationService = new AuthorizationService(_httpClient);
+        _authorizationService = new AuthorizationService(_httpClient, NullLogger<AuthorizationService>.Instance);
     }
 
     [Fact]
@@ -277,5 +278,49 @@ public class AuthorizationServiceTests
         // Assert
         Assert.Equal(expectedList, result);
     }
-}
 
+    [Fact]
+    public async Task CreateOrUpdateContactAccountAuthorizationAsync_WhenResponseIsUnsuccessful_ReturnsFalse()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("bad request"),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _authorizationService.CreateOrUpdateContactAccountAuthorizationAsync(1, 1, new List<string> { "CODE" });
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateContactAccountAuthorizationAsync_WhenRequestTimesOut_ShouldThrowHttpRequestException()
+    {
+        // Arrange
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new TaskCanceledException("Authorization API request timed out"));
+
+        // Act
+        var action = async () => await _authorizationService.CreateOrUpdateContactAccountAuthorizationAsync(1, 1, new List<string> { "CODE" });
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("Authorization API request timed out");
+    }
+}

@@ -1,6 +1,9 @@
 using ApiGateway.Offer.Model;
+using ApiGateway.Pennylane.Models;
+using IdentityModel.OidcClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace ApiGateway.Pennylane;
 
@@ -45,9 +48,64 @@ public class PennylaneService(
 
         if (result == null)
         {
+            logger.LogError("Failed to deserialize CreateCompanyResult for AccountId: {AccountId}", request.AccountId);
             throw new InvalidOperationException("Failed to deserialize CreateCompanyResult from Pennylane API");
         }
 
         return result;
+    }
+
+    public async Task<GrantPennylaneAccessResult> GrantPennylaneAccessAsync(PennylaneAuthorizationRequest request)
+    {
+        var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
+        var url = "/api/pennylane/role/create";
+
+        try
+        {
+            logger.LogInformation("Calling Pennylane API: POST {Url} for ContactId: {ContactId}, AccountId: {AccountId}, Role: {Role}",
+                url, request.ContactId, request.AccountId, request.Role);
+
+            var response = await pennylaneClient.PostAsJsonAsync(url, request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                logger.LogError("Pennylane access grant failed. Status: {StatusCode}, Response: {Response}",
+                    response.StatusCode, errorContent);
+                throw new HttpRequestException(
+                    $"POST {url} returned {response.StatusCode}. Response: {errorContent}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            logger.LogInformation("Pennylane access grant {content}", content);
+            try
+            {
+                var result = await response.Content.ReadFromJsonAsync<GrantPennylaneAccessResult>();
+
+                if (result == null)
+                {
+                    logger.LogError("Failed to deserialize GrantPennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
+                        request.ContactId, request.AccountId, content);
+                    throw new InvalidOperationException("Failed to deserialize GrantPennylaneAccessResult from Pennylane API");
+                }
+
+                logger.LogInformation("Pennylane access grant response status {Status} for ContactId: {ContactId}, AccountId: {AccountId}",
+                    result.Status, request.ContactId, request.AccountId);
+
+                return result;
+            }
+            catch (JsonException ex)
+            {
+                logger.LogInformation(ex, "Failed to deserialize GrantPennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
+                    request.ContactId, request.AccountId, content);
+                throw new InvalidOperationException("Failed to deserialize GrantPennylaneAccessResult from Pennylane API", ex);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Pennylane access grant HTTP request failed for ContactId: {ContactId}, AccountId: {AccountId}",
+                request.ContactId, request.AccountId);
+            throw;
+        }
     }
 }

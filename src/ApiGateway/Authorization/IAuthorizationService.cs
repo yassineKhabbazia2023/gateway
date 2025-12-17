@@ -8,4 +8,6 @@ public interface IAuthorizationService
 
     Task<List<string>> GetAllContactAuthorizationsAsync(int contactId);
 
+    Task<bool> CreateOrUpdateContactAccountAuthorizationAsync(int contactId, int accountId, IList<string> codes);
+
 }

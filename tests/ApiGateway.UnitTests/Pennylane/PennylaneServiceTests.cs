@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using ApiGateway.Account.Constants;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
+using ApiGateway.Pennylane.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
@@ -372,6 +373,118 @@ public class PennylaneServiceTests
 
         // Act
         var action = async () => await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*deserialize*");
+    }
+
+    #endregion
+
+    #region GrantPennylaneAccessAsync Tests
+
+    [Fact]
+    public async Task GrantPennylaneAccessAsync_WithValidRequest_ShouldReturnResult()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var accessResult = new GrantPennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Created,
+            Message = "ok",
+            ContactId = request.ContactId,
+            AccountId = request.AccountId
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(accessResult)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.GrantPennylaneAccessAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(PennylaneAccessStatuses.Created);
+        result.AccountId.Should().Be(request.AccountId);
+    }
+
+    [Fact]
+    public async Task GrantPennylaneAccessAsync_WhenHttpError_ShouldThrow()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("bad")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.GrantPennylaneAccessAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*BadRequest*");
+    }
+
+    [Fact]
+    public async Task GrantPennylaneAccessAsync_WhenResponseNull_ShouldThrow()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create<GrantPennylaneAccessResult?>(null)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.GrantPennylaneAccessAsync(request);
 
         // Assert
         await action.Should().ThrowAsync<InvalidOperationException>()
