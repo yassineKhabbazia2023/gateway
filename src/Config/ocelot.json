@@ -1371,8 +1371,23 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/authentication/api/refreshToken",
-      "DownstreamPathTemplate": "/api/authentication/refreshToken",
+      "UpstreamPathTemplate": "/gtw/authentication/api/login",
+      "DownstreamPathTemplate": "/api/authentication/login",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
+    },
+    {
+      "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/authentication/api/logout",
+      "DownstreamPathTemplate": "/api/authentication/logout",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1385,9 +1400,29 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
+          "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "DownstreamHeaderTransform": {
+        "X-Revoked-Jti": "X-Revoked-Jti",
+        "X-Revoked-Exp": "X-Revoked-Exp"
       }
+    },
+    {
+      "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/authentication/api/refreshToken",
+      "DownstreamPathTemplate": "/api/authentication/refreshToken",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
     },
     {
       "SwaggerKey": "Account",

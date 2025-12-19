@@ -55,5 +55,7 @@
         public static readonly string PennylaneHttpRequestFailedCode = "GTW018";
         public static readonly string PennylaneHttpRequestFailedMessage = "L'appelle vers pennylane a échoué {0} {1}";
 
+        public static readonly string UnauthorizedCode = "GTW019";
+        public static readonly string UnauthorizedMessage = "Accès non autorisé. Veuillez vous reconnecter.";
     }
 }

@@ -63,6 +63,9 @@ else
     });
 }
 
+// Token revocation check - must be before authentication
+app.UseMiddleware<TokenRevocationMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text;
 using ApiGateway.Exceptions;
+using ApiGateway.Helpers;
 using IdentityModel;
 
 namespace ApiGateway.Identity.Handlers
@@ -90,12 +91,12 @@ namespace ApiGateway.Identity.Handlers
             }
 
             string authorization = Request.Headers[HeaderNames.Authorization];
-            if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith(JwtHelper.BearerPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
 
-            return authorization.Substring("Bearer ".Length).Trim();
+            return authorization.Substring(JwtHelper.BearerPrefix.Length).Trim();
         }
 
         private async Task EnsureConfigurationAsync()

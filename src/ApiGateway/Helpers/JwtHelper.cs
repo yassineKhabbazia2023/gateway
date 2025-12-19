@@ -1,10 +1,11 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace ApiGateway.Helpers
 {
     public static class JwtHelper
     {
+        public const string BearerPrefix = "Bearer ";
+
         public static string ExtractBearerToken(HttpRequest request)
         {
             if (request == null || request.Headers == null)
@@ -14,7 +15,11 @@ namespace ApiGateway.Helpers
 
             if (request.Headers.TryGetValue("Authorization", out var extractedToken))
             {
-                return extractedToken.ToString().Substring("Bearer ".Length).Trim();
+                string authorizationHeader = extractedToken.ToString();
+                if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return authorizationHeader.Substring(BearerPrefix.Length).Trim();
+                }
             }
 
             return string.Empty;
@@ -30,9 +35,9 @@ namespace ApiGateway.Helpers
             if (request.Headers.TryGetValues("Authorization", out var headerValues))
             {
                 string? authorizationHeader = headerValues?.FirstOrDefault();
-                if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    return authorizationHeader.Substring("Bearer ".Length).Trim();
+                    return authorizationHeader.Substring(BearerPrefix.Length).Trim();
                 }
             }
 

@@ -12,6 +12,7 @@ using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
 using ApiGateway.Offer;
 using ApiGateway.Pennylane;
+using ApiGateway.TokenRevocation;
 using LiteDB;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -40,6 +41,10 @@ public static class ServiceExtensions
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IPermissionValidationService, PermissionValidationService>();
         services.AddScoped<IPennylaneService, PennylaneService>();
+
+        // Token Revocation Cache
+        services.AddSingleton<ITokenRevocationCache, TokenRevocationCache>();
+
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -97,9 +102,10 @@ public static class ServiceExtensions
         services.AddOcelot()
             .AddDelegatingHandler<ContactHandler>(true)
             .AddDelegatingHandler<DownstreamExceptionHandler>(true)
+            .AddDelegatingHandler<LogoutRevocationHandler>(true)
             .AddDelegatingHandler<RoleHandler>()
             .AddDelegatingHandler<ExposePrivilegedEndpointsHandler>()
-            .AddDelegatingHandler<FeedCenterSettingsHandler>()  
+            .AddDelegatingHandler<FeedCenterSettingsHandler>()
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
