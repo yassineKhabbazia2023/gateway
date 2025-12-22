@@ -10,4 +10,6 @@ public interface IPennylaneService
     Task<CreateCompanyResult> CreateCompanyAsync(CreateCompanyRequest request);
 
     Task<GrantPennylaneAccessResult> GrantPennylaneAccessAsync(PennylaneAuthorizationRequest request);
+
+    Task<GrantPennylaneAccessResult> UpdatePennylaneRoleAsync(PennylaneAuthorizationRequest request);
 }

@@ -1,29 +1,41 @@
+using System.Net;
 using ApiGateway.Authorization;
+using ApiGateway.Authorization.Consts;
 using ApiGateway.Authorization.Models;
+using ApiGateway.Authorization.Validators;
+using ApiGateway.Exceptions;
 using ApiGateway.Pennylane;
 using ApiGateway.Pennylane.Models;
+using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Moq;
+using Pulse.ExceptionMiddleware.Model;
 
 namespace ApiGateway.UnitTests.Authorization;
 
 public class AuthorizationControllerTests
 {
-    private readonly Mock<IAuthorizationService> _authorizationServiceMock;
-    private readonly Mock<IPennylaneService> _pennylaneServiceMock;
+    private readonly Mock<IPennylaneAuthorizationService> _pennylaneAuthServiceMock;
+    private readonly Mock<IAuthorizationWorkflowService> _authorizationWorkflowServiceMock;
+    private readonly IAuthorizationRequestValidator _validator;
     private readonly Mock<ILogger<AuthorizationController>> _loggerMock;
     private readonly AuthorizationController _controller;
 
     public AuthorizationControllerTests()
     {
-        _authorizationServiceMock = new Mock<IAuthorizationService>(MockBehavior.Strict);
-        _pennylaneServiceMock = new Mock<IPennylaneService>(MockBehavior.Strict);
+        _pennylaneAuthServiceMock = new Mock<IPennylaneAuthorizationService>(MockBehavior.Strict);
+        _authorizationWorkflowServiceMock = new Mock<IAuthorizationWorkflowService>(MockBehavior.Strict);
         _loggerMock = new Mock<ILogger<AuthorizationController>>();
 
+        var validatorLogger = new Mock<ILogger<AuthorizationRequestValidator>>();
+        _validator = new AuthorizationRequestValidator(validatorLogger.Object);
+
         _controller = new AuthorizationController(
-            _authorizationServiceMock.Object,
-            _pennylaneServiceMock.Object,
+            _validator,
+            _pennylaneAuthServiceMock.Object,
+            _authorizationWorkflowServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -32,36 +44,27 @@ public class AuthorizationControllerTests
     {
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
-        var pennylaneResult = new GrantPennylaneAccessResult
-        {
-            Status = PennylaneAccessStatuses.Created,
-            Message = "created",
-            ContactId = request.Authorization.ContactId,
-            AccountId = request.Authorization.AccountId,
-        };
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string>());
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(false);
 
-        _pennylaneServiceMock
-            .Setup(x => x.GrantPennylaneAccessAsync(It.Is<PennylaneAuthorizationRequest>(r =>
-                r.AccountId == request.Authorization.AccountId &&
-                r.ContactId == request.Authorization.ContactId &&
-                r.Role == request.Authorization.Role)))
-            .ReturnsAsync(pennylaneResult);
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .Callback<AuthorizationUpdateRequest, AuthorizationUpdateResponse>((_, response) =>
+            {
+                response.ProvisioningResult = new AccessProvisioningResult { Status = PennylaneAccessStatuses.Created, Message = "ok" };
+                response.ProvisioningStepCompleted = true;
+            })
+            .ReturnsAsync(OperationResult.Ok());
 
-        _authorizationServiceMock
-            .Setup(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId,
-                request.PermissionsCodes))
-            .ReturnsAsync(true);
+        _authorizationWorkflowServiceMock
+            .Setup(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .Callback<AuthorizationUpdateRequest, AuthorizationUpdateResponse>((_, response) => response.AuthorizationUpdated = true)
+            .ReturnsAsync(OperationResult.Ok());
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         var okResult = result.Result as OkObjectResult;
@@ -70,15 +73,14 @@ public class AuthorizationControllerTests
         var payload = okResult!.Value as AuthorizationUpdateResponse;
         payload.Should().NotBeNull();
         payload!.ProvisioningResult.Should().NotBeNull();
-        payload!.ProvisioningResult!.Status.Should().Be(pennylaneResult.Status);
+        payload.ProvisioningResult!.Status.Should().Be(PennylaneAccessStatuses.Created);
         payload.AuthorizationUpdated.Should().BeTrue();
         payload.ProvisioningStepCompleted.Should().BeTrue();
 
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Once);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            request.Authorization.ContactId,
-            request.Authorization.AccountId,
-            request.PermissionsCodes), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.HasPennylaneAccessAsync(request), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.TryUpdatePennylaneRoleAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()), Times.Once);
     }
 
     [Fact]
@@ -86,35 +88,23 @@ public class AuthorizationControllerTests
     {
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
-        var pennylaneResult = new GrantPennylaneAccessResult
-        {
-            Status = PennylaneAccessStatuses.Failed,
-            Message = "failed",
-            ContactId = request.Authorization.ContactId,
-            AccountId = request.Authorization.AccountId,
-        };
+        var badRequest = OperationResult.Fail(new BadRequestObjectResult(new ErrorResponse()));
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string>());
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(false);
 
-        _pennylaneServiceMock
-            .Setup(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()))
-            .ReturnsAsync(pennylaneResult);
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badRequest);
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
 
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Once);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
-            It.IsAny<IList<string>>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
     }
 
     [Fact]
@@ -123,24 +113,20 @@ public class AuthorizationControllerTests
         // Arrange
         var request = BuildRequest(["OTHER_CODE"]);
 
-        _authorizationServiceMock
-            .Setup(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId,
-                request.PermissionsCodes))
-            .ReturnsAsync(true);
+        _authorizationWorkflowServiceMock
+            .Setup(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .Callback<AuthorizationUpdateRequest, AuthorizationUpdateResponse>((_, response) => response.AuthorizationUpdated = true)
+            .ReturnsAsync(OperationResult.Ok());
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
 
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Never);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            request.Authorization.ContactId,
-            request.Authorization.AccountId,
-            request.PermissionsCodes), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.HasPennylaneAccessAsync(It.IsAny<AuthorizationUpdateRequest>()), Times.Never);
+        _pennylaneAuthServiceMock.Verify(x => x.TryHandlePennylaneProvisioningAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()), Times.Once);
     }
 
     [Fact]
@@ -148,42 +134,25 @@ public class AuthorizationControllerTests
     {
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
-        var pennylaneResult = new GrantPennylaneAccessResult
-        {
-            Status = PennylaneAccessStatuses.Created,
-            Message = "ok",
-            ContactId = request.Authorization.ContactId,
-            AccountId = request.Authorization.AccountId,
-        };
+        var badRequest = OperationResult.Fail(new BadRequestObjectResult(new ErrorResponse()));
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string>());
-
-        _pennylaneServiceMock
-            .Setup(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()))
-            .ReturnsAsync(pennylaneResult);
-
-        _authorizationServiceMock
-            .Setup(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId,
-                request.PermissionsCodes))
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
             .ReturnsAsync(false);
 
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(OperationResult.Ok());
+
+        _authorizationWorkflowServiceMock
+            .Setup(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badRequest);
+
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
-
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Once);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            request.Authorization.ContactId,
-            request.Authorization.AccountId,
-            request.PermissionsCodes), Times.Once);
     }
 
     [Fact]
@@ -191,25 +160,19 @@ public class AuthorizationControllerTests
     {
         // Arrange
         var request = BuildRequest(["OTHER_CODE"]);
+        var badRequest = OperationResult.Fail(new BadRequestObjectResult(new ErrorResponse()));
 
-        _authorizationServiceMock
-            .Setup(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId,
-                request.PermissionsCodes))
-            .ReturnsAsync(false);
+        _authorizationWorkflowServiceMock
+            .Setup(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badRequest);
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
 
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Never);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            request.Authorization.ContactId,
-            request.Authorization.AccountId,
-            request.PermissionsCodes), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.TryHandlePennylaneProvisioningAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
     }
 
     [Fact]
@@ -223,10 +186,43 @@ public class AuthorizationControllerTests
         };
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task CreateAuthorizationsAsync_WithPennylanePermissionAndEmptyRole_ShouldReturnBadRequestBeforeProvisioning()
+    {
+        // Arrange
+        var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        request.Authorization!.Role = string.Empty;
+
+        // Act
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+
+        _pennylaneAuthServiceMock.Verify(x => x.TryHandlePennylaneProvisioningAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAuthorizationsAsync_WithExistingAccessAndEmptyRole_ShouldReturnBadRequestBeforeRoleUpdate()
+    {
+        // Arrange
+        var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        request.Authorization!.Role = "   ";
+
+        // Act
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+
+        _pennylaneAuthServiceMock.Verify(x => x.TryUpdatePennylaneRoleAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
     }
 
     [Fact]
@@ -235,14 +231,22 @@ public class AuthorizationControllerTests
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string> { PermissionCodes.PennylaneAccess });
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(true);
+
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryUpdatePennylaneRoleAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .Callback<AuthorizationUpdateRequest, AuthorizationUpdateResponse>((_, response) =>
+            {
+                response.ProvisioningResult = new AccessProvisioningResult { Status = PennylaneAccessStatuses.ExistingUserAccessGranted, Message = "ok" };
+                response.ProvisioningStepCompleted = true;
+                response.AuthorizationUpdated = true;
+            })
+            .ReturnsAsync(OperationResult.Ok());
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         var okResult = result.Result as OkObjectResult;
@@ -251,73 +255,126 @@ public class AuthorizationControllerTests
         var payload = okResult!.Value as AuthorizationUpdateResponse;
         payload.Should().NotBeNull();
         payload!.ProvisioningResult.Should().NotBeNull();
-        payload.ProvisioningResult!.Status.Should().Be(PennylaneAccessStatuses.AlreadyHasAccess);
+        payload.ProvisioningResult!.Status.Should().Be(PennylaneAccessStatuses.ExistingUserAccessGranted);
         payload.AuthorizationUpdated.Should().BeTrue();
-        payload.ProvisioningStepCompleted.Should().BeNull();
+        payload.ProvisioningStepCompleted.Should().BeTrue();
 
-        _pennylaneServiceMock.Verify(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()), Times.Never);
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
-            It.IsAny<IList<string>>()), Times.Never);
+        _pennylaneAuthServiceMock.Verify(x => x.TryUpdatePennylaneRoleAsync(request, It.IsAny<AuthorizationUpdateResponse>()), Times.Once);
+        _pennylaneAuthServiceMock.Verify(x => x.TryHandlePennylaneProvisioningAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
     }
 
     [Fact]
-    public async Task CreateAuthorizationsAsync_WhenPennylaneCallThrowsHttpRequestException_ShouldReturnBadGateway()
+    public async Task CreateAuthorizationsAsync_WhenPennylaneProvisioningReturnsBadGateway_ShouldReturnBadGateway()
     {
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        var badGateway = OperationResult.Fail(new ObjectResult(new ErrorResponse { ErrorCode = Errors.BadRequestDownstreamCode }) { StatusCode = StatusCodes.Status502BadGateway });
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string>());
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(false);
 
-        _pennylaneServiceMock
-            .Setup(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()))
-            .ThrowsAsync(new HttpRequestException("downstream"));
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badGateway);
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>()
             .Which.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
 
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
-            It.IsAny<IList<string>>()), Times.Never);
+        _authorizationWorkflowServiceMock.Verify(x => x.TryUpdateAuthorizationsAsync(It.IsAny<AuthorizationUpdateRequest>(), It.IsAny<AuthorizationUpdateResponse>()), Times.Never);
     }
 
     [Fact]
-    public async Task CreateAuthorizationsAsync_WhenPennylaneCallThrowsInvalidOperationException_ShouldReturnInternalServerError()
+    public async Task CreateAuthorizationsAsync_WithExistingAccess_WhenPennylaneRoleUpdateReturnsBadGateway_ShouldReturnBadGateway()
     {
         // Arrange
         var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        var badGateway = OperationResult.Fail(new ObjectResult(new ErrorResponse { ErrorCode = Errors.BadRequestDownstreamCode }) { StatusCode = StatusCodes.Status502BadGateway });
 
-        _authorizationServiceMock
-            .Setup(x => x.GetContactAuthorizationAsync(
-                request.Authorization.ContactId,
-                request.Authorization.AccountId))
-            .ReturnsAsync(new List<string>());
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(true);
 
-        _pennylaneServiceMock
-            .Setup(x => x.GrantPennylaneAccessAsync(It.IsAny<PennylaneAuthorizationRequest>()))
-            .ThrowsAsync(new InvalidOperationException("deserialize"));
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryUpdatePennylaneRoleAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badGateway);
 
         // Act
-        var result = await _controller.CreateAuthorizationsAsync(request);
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+            .Which.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
+    }
 
-        _authorizationServiceMock.Verify(x => x.CreateOrUpdateContactAccountAuthorizationAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
-            It.IsAny<IList<string>>()), Times.Never);
+    [Fact]
+    public async Task CreateAuthorizationsAsync_WhenAuthorizationServiceThrowsHttpRequestException_ShouldReturnBadGateway()
+    {
+        // Arrange
+        var request = BuildRequest(["OTHER_CODE"]);
+        var badGateway = OperationResult.Fail(new ObjectResult(new ErrorResponse { ErrorCode = Errors.BadRequestDownstreamCode }) { StatusCode = StatusCodes.Status502BadGateway });
+
+        _authorizationWorkflowServiceMock
+            .Setup(x => x.TryUpdateAuthorizationsAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(badGateway);
+
+        // Act
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
+    }
+
+    [Fact]
+    public async Task CreateAuthorizationsAsync_WhenPennylaneProvisioningThrowsApiError_ShouldReturnDownstreamStatus()
+    {
+        // Arrange
+        var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        var downstream = OperationResult.Fail(new ObjectResult(new ErrorResponse { ErrorCode = Errors.BadRequestDownstreamCode }) { StatusCode = (int)HttpStatusCode.BadRequest });
+
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(false);
+
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryHandlePennylaneProvisioningAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(downstream);
+
+        // Act
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>()
+            .Which.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateAuthorizationsAsync_WithExistingAccess_WhenRoleUpdateThrowsApiError_ShouldReturnDownstreamStatus()
+    {
+        // Arrange
+        var request = BuildRequest([PermissionCodes.PennylaneAccess]);
+        var downstream = OperationResult.Fail(new ObjectResult(new ErrorResponse { ErrorCode = Errors.BadRequestDownstreamCode }) { StatusCode = (int)HttpStatusCode.BadRequest });
+
+        _pennylaneAuthServiceMock
+            .Setup(x => x.HasPennylaneAccessAsync(request))
+            .ReturnsAsync(true);
+
+        _pennylaneAuthServiceMock
+            .Setup(x => x.TryUpdatePennylaneRoleAsync(request, It.IsAny<AuthorizationUpdateResponse>()))
+            .ReturnsAsync(downstream);
+
+        // Act
+        var result = await _controller.CreateOrUpdateAuthorizationsAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>()
+            .Which.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
     }
 
     private static AuthorizationUpdateRequest BuildRequest(IList<string> permissions)
@@ -325,7 +382,7 @@ public class AuthorizationControllerTests
         return new AuthorizationUpdateRequest
         {
             PermissionsCodes = permissions,
-            Authorization = new AuthorizationTarget
+            Authorization = new PennylaneAuthorizationDetails
             {
                 AccountId = 123,
                 ContactId = 456,

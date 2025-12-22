@@ -492,4 +492,115 @@ public class PennylaneServiceTests
     }
 
     #endregion
+
+    #region UpdatePennylaneRoleAsync Tests
+
+    [Fact]
+    public async Task UpdatePennylaneRoleAsync_WithValidRequest_ShouldReturnResult()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var roleUpdateResponse = $"Role assigned to contact {request.ContactId} on account {request.AccountId}.";
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(roleUpdateResponse)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.UpdatePennylaneRoleAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(PennylaneAccessStatuses.ExistingUserAccessGranted);
+        result.AccountId.Should().Be(request.AccountId);
+        result.Message.Should().Be(roleUpdateResponse);
+        result.Role.Should().Be(request.Role);
+    }
+
+    [Fact]
+    public async Task UpdatePennylaneRoleAsync_WhenHttpError_ShouldThrow()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("bad")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.UpdatePennylaneRoleAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<PennylaneApiException>()
+            .Where(ex => ex.StatusCode == HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdatePennylaneRoleAsync_WithEmptyResponse_ShouldReturnDefaultMessage()
+    {
+        // Arrange
+        var request = new PennylaneAuthorizationRequest
+        {
+            AccountId = 123,
+            ContactId = 456,
+            Role = "role"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(string.Empty)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.UpdatePennylaneRoleAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(PennylaneAccessStatuses.ExistingUserAccessGranted);
+        result.Message.Should().Be("Role updated");
+        result.ContactId.Should().Be(request.ContactId);
+        result.AccountId.Should().Be(request.AccountId);
+    }
+
+    #endregion
 }

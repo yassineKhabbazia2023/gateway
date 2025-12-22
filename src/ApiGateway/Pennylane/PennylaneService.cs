@@ -77,7 +77,6 @@ public class PennylaneService(
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            logger.LogInformation("Pennylane access grant {content}", content);
             try
             {
                 var result = await response.Content.ReadFromJsonAsync<GrantPennylaneAccessResult>();
@@ -96,7 +95,7 @@ public class PennylaneService(
             }
             catch (JsonException ex)
             {
-                logger.LogInformation(ex, "Failed to deserialize GrantPennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
+                logger.LogError(ex, "Failed to deserialize GrantPennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
                     request.ContactId, request.AccountId, content);
                 throw new InvalidOperationException("Failed to deserialize GrantPennylaneAccessResult from Pennylane API", ex);
             }
@@ -107,5 +106,39 @@ public class PennylaneService(
                 request.ContactId, request.AccountId);
             throw;
         }
+    }
+
+    public async Task<GrantPennylaneAccessResult> UpdatePennylaneRoleAsync(PennylaneAuthorizationRequest request)
+    {
+        var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
+        var url = "/api/pennylane/role";
+
+
+        logger.LogInformation("Updating Pennylane role via POST {Url} for ContactId: {ContactId}, AccountId: {AccountId}, Role: {Role}",
+            url, request.ContactId, request.AccountId, request.Role);
+
+        var response = await pennylaneClient.PostAsJsonAsync(url, request);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogError("Pennylane role update failed. Status: {StatusCode}, Response: {Response}",
+                response.StatusCode, content);
+            throw new PennylaneApiException(response.StatusCode, content, url);
+        }
+
+        logger.LogInformation("Pennylane role update returned status {StatusCode} for ContactId: {ContactId}, AccountId: {AccountId}. Response: {Response}",
+            response.StatusCode, request.ContactId, request.AccountId, content);
+
+        return new GrantPennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.ExistingUserAccessGranted,
+            Message = string.IsNullOrWhiteSpace(content) ? "Role updated" : content,
+            ContactId = request.ContactId,
+            AccountId = request.AccountId,
+            Role = request.Role
+        };
+
     }
 }

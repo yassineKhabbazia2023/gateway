@@ -1,6 +1,6 @@
-namespace ApiGateway.Authorization.Models;
+namespace ApiGateway.Pennylane.Models;
 
-public class AuthorizationTarget
+public class PennylaneAuthorizationDetails
 {
     public required int ContactId { get; set; }
     public required int AccountId { get; set; }

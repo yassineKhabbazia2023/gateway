@@ -1,6 +1,7 @@
 using ApiGateway.Account;
 using ApiGateway.Aggregator;
 using ApiGateway.Authorization;
+using ApiGateway.Authorization.Validators;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
 using ApiGateway.ConnectExperience.Services;
@@ -45,6 +46,9 @@ public static class ServiceExtensions
         // Token Revocation Cache
         services.AddSingleton<ITokenRevocationCache, TokenRevocationCache>();
 
+        services.AddScoped<IAuthorizationRequestValidator, AuthorizationRequestValidator>();
+        services.AddScoped<IPennylaneAuthorizationService, PennylaneAuthorizationService>();
+        services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
         services.RegisterApplicationInsights(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
