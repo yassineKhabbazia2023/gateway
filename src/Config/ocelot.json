@@ -2631,8 +2631,8 @@
     },
     {
       "SwaggerKey": "Pennylane",
-      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/signatories/{accountNumber}/access/currentuser",
-      "DownstreamPathTemplate": "/api/pennylane/signatories/{accountNumber}/access",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/accounts/{accountId}/access/currentuser",
+      "DownstreamPathTemplate": "/api/pennylane/accounts/{accountId}/access",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
