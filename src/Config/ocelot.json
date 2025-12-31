@@ -2657,6 +2657,33 @@
       ]
     },
     {
+      "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/accounts/{accountId}/validation/currentuser",
+      "DownstreamPathTemplate": "/api/pennylane/validation",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "CLPEN001"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Booking",
       "UpstreamPathTemplate": "/gtw/booking/api/accounts/{accountId}/booking-link/currentuser/experts?page={page}&pageSize={pageSize}",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/booking-link/experts?page={page}&pageSize={pageSize}",

@@ -7,11 +7,11 @@ parameters:
 - name: deployToDev
   displayName: 'Déployer sur DEV'
   type: boolean
-  default: true
+  default: false
 - name: deployToItg
   displayName: 'Déployer sur ITG'
   type: boolean
-  default: false
+  default: true
 
 
 resources:
