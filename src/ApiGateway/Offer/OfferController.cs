@@ -65,6 +65,7 @@ namespace ApiGateway.Offer
                         AccountId = subscriptionRequest.AccountId,
                         Contacts = subscriptionRequest.Contacts,
                         ContactFunctions = subscriptionRequest.ContactFunctions,
+                        HubName = subscriptionRequest.HubName,
                         RegistrationNumber = siren,
                         NotYetRegistered = string.IsNullOrWhiteSpace(siren),
                         AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),

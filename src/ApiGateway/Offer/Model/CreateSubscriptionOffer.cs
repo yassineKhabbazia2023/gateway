@@ -18,6 +18,8 @@ namespace ApiGateway.Offer.Model
 
         public string? Applicant { get; set; }
 
+        public string? HubName { get; set; }
+
         public string? Status { get; set; }
 
         public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }

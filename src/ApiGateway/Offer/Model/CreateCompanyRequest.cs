@@ -14,6 +14,8 @@ public class CreateCompanyRequest
 
     public IReadOnlyList<ContactFunctions>? ContactFunctions { get; set; }
 
+    public string? HubName { get; set; }
+
     /// <summary>
     /// Company registration number (SIREN).
     /// Maps to: <c>reg_no</c>.

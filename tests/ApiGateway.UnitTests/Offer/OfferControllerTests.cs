@@ -1252,4 +1252,93 @@ public class OfferControllerTests
     }
 
     #endregion
+
+    #region HubName Tests
+
+    [Fact]
+    public async Task CreateSubscription_WithHubName_ShouldPassHubNameToCreateCompanyRequest()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 },
+            HubName = "North Hub"
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.HubName.Should().Be("North Hub");
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithoutHubName_ShouldPassNullToCreateCompanyRequest()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" },
+            Address = new List<Models.Address> { new Models.Address { Country = "France" } }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateCompanyRequest? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = "created"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.HubName.Should().BeNull();
+    }
+
+    #endregion
 }
