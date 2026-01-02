@@ -435,6 +435,9 @@
           "Port": 443
         }
       ],
+      "AddQueriesToRequest": {
+        "sort": "{Query.sort}"
+      },
       "UpstreamHttpMethod": [
         "GET"
       ],
