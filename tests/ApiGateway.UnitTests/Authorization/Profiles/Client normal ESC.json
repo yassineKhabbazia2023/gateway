@@ -51,7 +51,7 @@
     "PATCH /gtw/wallet/api/permissions/256",
     "POST /gtw/account/api/customers/invite/{contactId}?accountNumber={relativeAccountNumber}",
     "POST /gtw/authentication/api/{everything}",
-    "POST /gtw/authentication/api/update-password",
+    "POST /gtw/authentication/api/update-password/currentuser",
     "POST /gtw/authorization/api/authorization/{everything}",
     "POST /gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
     "POST /gtw/hub/ged/{everything}",

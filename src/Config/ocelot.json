@@ -1333,8 +1333,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/authentication/api/update-password",
-      "DownstreamPathTemplate": "/api/authentication/update-password",
+      "UpstreamPathTemplate": "/gtw/authentication/api/update-password/currentuser",
+      "DownstreamPathTemplate": "/api/authentication/update-password/currentUSer",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
