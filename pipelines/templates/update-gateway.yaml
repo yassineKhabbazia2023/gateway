@@ -123,7 +123,7 @@ stages:
   #               environment: $(hubEnvironment)
   #               subscription: ceg-corp-pulse-ppr
   #               serviceConnection: Rydge-ppr
-  - ${{ parameters.deployToPrd }}:
+  - ${{ if parameters.deployToPrd }}:
     - stage: PRD01
       displayName: Production-prd01
       pool: Pulse-prd
