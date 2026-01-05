@@ -1,29 +1,31 @@
 parameters:
-- name: devIndex
-  type: number
-  default: 0
-- name: deployType
-  type: string
-  default: 'standard'
-  values:
-    - standard
-    - onlyDev
-# REC Iteration
-- name: recIterations
-  type: object
-  default:
-  - 1
-# PRD Iteration
-- name: prdIterations
-  type: object
-  default:
-  - 1
-# Main branch to apply github flow
-- name: githubFlowBranch
-  type: string
-  default: 'main'
+- name: deployToDev
+  displayName: 'Déployer sur DEV'
+  type: boolean
+  default: false
+- name: deployToItg
+  displayName: 'Déployer sur ITG'
+  type: boolean
+  default: true
+- name: deployToRec
+  displayName: 'Déployer sur REC'
+  type: boolean
+  default: true
+- name: deployToPrd
+  displayName: 'Déployer sur PROD'
+  type: boolean
+  default: true
 
 stages:
+- ${{ if eq(parameters.deployToDev, true) }}:
+  - 'Deployment to DEV environment is no longer supported.': error
+  
+- ${{ if and(parameters.deployToPrd, not(parameters.deployToRec)) }}:
+  - 'Deploying to REC is mandatory before deploying to PROD.': error
+
+- ${{ if and(not(parameters.deployToItg), not(parameters.deployToRec), not(parameters.deployToPrd)) }}:
+  - 'At least one environment must be chosen.': error
+  
 - stage: build
   displayName: 'Build'
   jobs:
@@ -33,32 +35,26 @@ stages:
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
-- ${{ if ne(parameters.devIndex, 0) }}:
-  - stage: DEV
-    ${{ if lt(parameters.devIndex, 10) }}:
-      displayName: 'Development-dev0${{ parameters.devIndex }}'
-    ${{ else }}:
-      displayName: 'Development-dev${{ parameters.devIndex }}'
-    pool: Pulse-dev
-    jobs:
-    - deployment: deploy
-      displayName: 'Updating config'
-      environment: DEV
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: Module
-            - template: update-config.yaml
-              parameters:
-                ${{ if lt(parameters.devIndex, 10) }}:
-                  environment: dev0${{ parameters.devIndex }}
-                ${{ else }}:
-                  environment: dev${{ parameters.devIndex }}
-                subscription: ceg-corp-pulse-dev
-                serviceConnection: Rydge-dev
-- ${{ if and(eq(parameters.deployType, 'standard'), or(eq(variables['Build.Reason'], 'Manual'), and(eq(variables['Build.Reason'], 'IndividualCI'), contains(variables['Build.SourceBranch'], parameters.githubFlowBranch)))) }}:
+# - ${{ if parameters.deployToDev }}:
+#   - stage: DEV
+#       displayName: 'Development-dev01'
+#     pool: Pulse-dev
+#     jobs:
+#     - deployment: deploy
+#       displayName: 'Updating config'
+#       environment: DEV
+#       strategy:
+#         runOnce:
+#           deploy:
+#             steps:
+#             - download: current
+#               artifact: Module
+#             - template: update-config.yaml
+#               parameters:
+#                 environment: dev01
+#                 subscription: ceg-corp-pulse-dev
+#                 serviceConnection: Rydge-dev
+- ${{ if parameters.deployToItg }}:
   - stage: ITG01
     displayName: 'Integration'
     pool: Pulse-itg
@@ -78,22 +74,19 @@ stages:
                 environment: itg01
                 subscription: ceg-corp-pulse-itg
                 serviceConnection: Rydge-itg
-- ${{ if or(and(eq(variables['Build.Reason'], 'IndividualCI'), contains(variables['Build.SourceBranch'], parameters.githubFlowBranch), not(or(contains(variables['Build.SourceBranch'], 'bugfix'), contains(variables['Build.SourceBranch'], 'feature')))), and(eq(variables['Build.Reason'], 'Manual'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), not(contains(variables['Build.SourceBranch'], '-rc.')))) }}:
-  - ${{ each index in parameters.recIterations }}:
-    - stage: REC0${{ index }}
-      displayName: Recette-rec0${{ index }}
+- ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+  - ${{ if parameters.deployToRec }}:
+    - stage: REC01
+      displayName: Recette-rec01
       pool: Pulse-rec
-      ${{ if eq(parameters.devIndex, 0) }}:
-        dependsOn: Build
-      ${{ else }}:
-        dependsOn: DEV
+      dependsOn: 'PreviousStage'
       jobs:
       - deployment: deploy
-        displayName: 'Updating REC0${{ index }} config'
-        environment: REC0${{ index }}
+        displayName: 'Updating REC01 config'
+        environment: REC01
         variables:
         - name: hubEnvironment
-          value: rec0${{ index }}
+          value: rec01
         strategy:
           runOnce:
             deploy:
@@ -130,19 +123,19 @@ stages:
   #               environment: $(hubEnvironment)
   #               subscription: ceg-corp-pulse-ppr
   #               serviceConnection: Rydge-ppr
-  - ${{ each index in parameters.prdIterations }}:
-    - stage: PRD0${{ index }}
-      displayName: Production-prd0${{ index }}
+  - ${{ parameters.deployToPrd }}:
+    - stage: PRD01
+      displayName: Production-prd01
       pool: Pulse-prd
       dependsOn:
       - REC01
       jobs:
       - deployment: deploy
-        displayName: 'Updating PRD0${{ index }} config'
-        environment: PRD0${{ index }}
+        displayName: 'Updating PRD01 config'
+        environment: PRD01
         variables:
         - name: hubEnvironment
-          value: prd0${{ index }}
+          value: prd01
         strategy:
           runOnce:
             deploy:
