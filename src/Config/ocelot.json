@@ -2675,7 +2675,6 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
           "GIGYA MyPulse v2"
         ]
       },
@@ -2685,6 +2684,29 @@
       "DelegatingHandlers": [
         "RoleHandler"
       ]
+    },
+    {
+      "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/terms/content",
+      "DownstreamPathTemplate": "/api/pennylane/terms/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLPEN001"
+      }
     },
     {
       "SwaggerKey": "Booking",
