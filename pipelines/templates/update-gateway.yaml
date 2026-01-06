@@ -79,7 +79,7 @@ stages:
     - stage: REC01
       displayName: Recette-rec01
       pool: Pulse-rec
-      dependsOn: 'PreviousStage'
+      dependsOn: Build
       jobs:
       - deployment: deploy
         displayName: 'Updating REC01 config'
