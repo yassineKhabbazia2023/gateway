@@ -79,7 +79,7 @@ public class PennylaneService(
             var content = await response.Content.ReadAsStringAsync();
             try
             {
-                var result = await response.Content.ReadFromJsonAsync<GrantPennylaneAccessResult>();
+                var result = JsonSerializer.Deserialize<GrantPennylaneAccessResult>(content);
 
                 if (result == null)
                 {
@@ -140,5 +140,49 @@ public class PennylaneService(
             Role = request.Role
         };
 
+    }
+
+    public async Task<RevokePennylaneAccessResult> RevokePennylaneAccessAsync(RevokeAccessRequest request)
+    {
+        var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
+        var url = "/api/pennylane/role/revoke";
+
+        logger.LogInformation("Revoking Pennylane access via POST {Url} for ContactId: {ContactId}, AccountId: {AccountId}",
+            url, request.ContactId, request.AccountId);
+
+        var response = await pennylaneClient.PostAsJsonAsync(url, request);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogError("Pennylane access revoke failed. Status: {StatusCode}, Response: {Response}",
+                response.StatusCode, content);
+            throw new HttpRequestException(
+                $"POST {url} returned {response.StatusCode}. Response: {content}");
+        }
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<RevokePennylaneAccessResult>(content);
+
+            if (result == null)
+            {
+                logger.LogError("Failed to deserialize RevokePennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
+                    request.ContactId, request.AccountId, content);
+                throw new InvalidOperationException("Failed to deserialize RevokePennylaneAccessResult from Pennylane API");
+            }
+
+            logger.LogInformation("Pennylane access revoke response status {Status} for ContactId: {ContactId}, AccountId: {AccountId}",
+                result.Status, request.ContactId, request.AccountId);
+
+            return result;
+        }
+        catch (JsonException ex)
+        {
+            logger.LogError(ex, "Failed to deserialize RevokePennylaneAccessResult for ContactId: {ContactId}, AccountId: {AccountId}. Raw response: {Response}",
+                request.ContactId, request.AccountId, content);
+            throw new InvalidOperationException("Failed to deserialize RevokePennylaneAccessResult from Pennylane API", ex);
+        }
     }
 }

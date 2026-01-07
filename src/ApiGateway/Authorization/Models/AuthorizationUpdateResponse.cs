@@ -7,4 +7,6 @@ public class AuthorizationUpdateResponse
     public bool AuthorizationUpdated { get; set; }
     public bool? ProvisioningStepCompleted { get; set; }
     public AccessProvisioningResult? ProvisioningResult { get; set; }
+    public bool? RevocationStepCompleted { get; set; }
+    public AccessRevocationResult? RevocationResult { get; set; }
 }

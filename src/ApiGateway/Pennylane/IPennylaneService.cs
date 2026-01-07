@@ -12,4 +12,6 @@ public interface IPennylaneService
     Task<GrantPennylaneAccessResult> GrantPennylaneAccessAsync(PennylaneAuthorizationRequest request);
 
     Task<GrantPennylaneAccessResult> UpdatePennylaneRoleAsync(PennylaneAuthorizationRequest request);
+
+    Task<RevokePennylaneAccessResult> RevokePennylaneAccessAsync(RevokeAccessRequest request);
 }

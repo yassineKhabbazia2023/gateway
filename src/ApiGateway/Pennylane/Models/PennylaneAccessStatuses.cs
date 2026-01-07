@@ -12,6 +12,8 @@ namespace ApiGateway.Pennylane.Models
         public const string Created = "created";
         public const string ExistingUserAccessGranted = "existing_user_access_granted";
         public const string AlreadyHasAccess = "already_has_access";
+        public const string Revoked = "revoked";
+        public const string UserNotFound = "user_not_found";
         public const string Failed = "failed";
     }
 }

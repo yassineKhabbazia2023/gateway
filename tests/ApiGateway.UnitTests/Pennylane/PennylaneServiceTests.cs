@@ -603,4 +603,232 @@ public class PennylaneServiceTests
     }
 
     #endregion
+
+    #region RevokePennylaneAccessAsync Tests
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_WithValidRequest_ShouldReturnResult()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Revoked,
+            Message = "Access revoked",
+            ContactId = request.ContactId,
+            AccountId = request.AccountId,
+            PennylaneUserId = "pl-user-123",
+            PennylaneCompanyId = "pl-company-456"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(revokeResult)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(PennylaneAccessStatuses.Revoked);
+        result.AccountId.Should().Be(request.AccountId);
+        result.ContactId.Should().Be(request.ContactId);
+    }
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_ShouldCallCorrectEndpoint()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Revoked,
+            Message = "Access revoked",
+            ContactId = request.ContactId,
+            AccountId = request.AccountId
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(revokeResult)
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Method.Should().Be(HttpMethod.Post);
+        capturedRequest!.RequestUri!.ToString().Should().Contain("/api/pennylane/role/revoke");
+    }
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_WhenUserNotFound_ShouldReturnUserNotFoundStatus()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.UserNotFound,
+            Message = "User not found in company",
+            ContactId = request.ContactId,
+            AccountId = request.AccountId
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(revokeResult)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(PennylaneAccessStatuses.UserNotFound);
+    }
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_WhenHttpError_ShouldThrow()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("bad request")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*BadRequest*");
+    }
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_WhenResponseNull_ShouldThrow()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create<RevokePennylaneAccessResult?>(null)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*deserialize*");
+    }
+
+    [Fact]
+    public async Task RevokePennylaneAccessAsync_When500Error_ShouldThrowException()
+    {
+        // Arrange
+        var request = new RevokeAccessRequest
+        {
+            AccountId = 123,
+            ContactId = 456
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.InternalServerError,
+            Content = new StringContent("Internal server error")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.RevokePennylaneAccessAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*InternalServerError*");
+    }
+
+    #endregion
 }

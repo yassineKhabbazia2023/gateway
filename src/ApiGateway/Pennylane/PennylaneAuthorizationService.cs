@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using ApiGateway.Authorization;
 using ApiGateway.Authorization.Consts;
 using ApiGateway.Authorization.Mappers;
@@ -38,11 +36,46 @@ namespace ApiGateway.Pennylane
             return existingAuthorizations.Contains(PermissionCodes.PennylaneAccess);
         }
 
-        public async Task<OperationResult> TryUpdatePennylaneRoleAsync(
+        private async Task<OperationResult> ExecuteWithExceptionHandlingAsync(
+            Func<Task<OperationResult>> operation,
+            AuthorizationUpdateRequest request,
+            string operationName)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (PennylaneApiException ex)
+            {
+                return OperationResult.Fail(AuthorizationErrorMapper.MapPennylaneApiException(
+                    _logger,
+                    ex,
+                    request,
+                    $"Downstream request failed while {operationName} for ContactId: {{ContactId}}, AccountId: {{AccountId}}"));
+            }
+            catch (HttpRequestException ex)
+            {
+                return OperationResult.Fail(AuthorizationErrorMapper.MapHttpRequestException(
+                    _logger,
+                    ex,
+                    request,
+                    $"Downstream request failed while {operationName} for ContactId: {{ContactId}}, AccountId: {{AccountId}}"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return OperationResult.Fail(AuthorizationErrorMapper.MapInvalidOperationException(
+                    _logger,
+                    ex,
+                    request,
+                    $"Unexpected error while {operationName} for ContactId: {{ContactId}}, AccountId: {{AccountId}}"));
+            }
+        }
+
+        public Task<OperationResult> TryUpdatePennylaneRoleAsync(
             AuthorizationUpdateRequest request,
             AuthorizationUpdateResponse response)
         {
-            try
+            return ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var pennylaneRequest = new PennylaneAuthorizationRequest
                 {
@@ -57,38 +90,14 @@ namespace ApiGateway.Pennylane
                 response.AuthorizationUpdated = true;
 
                 return OperationResult.Ok();
-            }
-            catch (PennylaneApiException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapPennylaneApiException(
-                    _logger,
-                    ex,
-                    request,
-                    "Downstream request failed while updating Pennylane role for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
-            catch (HttpRequestException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapHttpRequestException(
-                    _logger,
-                    ex,
-                    request,
-                    "Downstream request failed while updating Pennylane role for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapInvalidOperationException(
-                    _logger,
-                    ex,
-                    request,
-                    "Unexpected error while updating Pennylane role for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
+            }, request, "updating Pennylane role");
         }
 
-        public async Task<OperationResult> TryHandlePennylaneProvisioningAsync(
+        public Task<OperationResult> TryHandlePennylaneProvisioningAsync(
             AuthorizationUpdateRequest request,
             AuthorizationUpdateResponse response)
         {
-            try
+            return ExecuteWithExceptionHandlingAsync(async () =>
             {
                 _logger.LogInformation("Granting Pennylane access for ContactId: {ContactId}, AccountId: {AccountId}, Role: {Role}",
                     request.Authorization!.ContactId,
@@ -116,42 +125,60 @@ namespace ApiGateway.Pennylane
                     _logger.LogWarning("Pennylane access grant failed for ContactId: {ContactId}, AccountId: {AccountId}",
                         request.Authorization.ContactId,
                         request.Authorization.AccountId);
-                    return OperationResult.Fail(new BadRequestObjectResult(new ErrorResponse
-                    {
-                        ErrorCode = Errors.PennylaneHttpRequestFailedCode,
-                        ErrorMessage = string.Format(
-                            Errors.PennylaneHttpRequestFailedMessage,
-                            nameof(AuthorizationUpdateRequest),
-                            nameof(AuthorizationController.CreateOrUpdateAuthorizationsAsync))
-                    }));
+                    return CreatePennylaneFailedResult();
                 }
-            }
-            catch (PennylaneApiException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapPennylaneApiException(
-                    _logger,
-                    ex,
-                    request,
-                    "Downstream request failed while creating Pennylane authorizations for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
-            catch (HttpRequestException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapHttpRequestException(
-                    _logger,
-                    ex,
-                    request,
-                    "Downstream request failed while creating Pennylane authorizations for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return OperationResult.Fail(AuthorizationErrorMapper.MapInvalidOperationException(
-                    _logger,
-                    ex,
-                    request,
-                    "Unexpected error while creating Pennylane authorizations for ContactId: {ContactId}, AccountId: {AccountId}"));
-            }
 
-            return OperationResult.Ok();
+                return OperationResult.Ok();
+            }, request, "creating Pennylane authorizations");
+        }
+
+        public Task<OperationResult> TryRevokePennylaneAccessAsync(
+            AuthorizationUpdateRequest request,
+            AuthorizationUpdateResponse response)
+        {
+            return ExecuteWithExceptionHandlingAsync(async () =>
+            {
+                _logger.LogInformation("Revoking Pennylane access for ContactId: {ContactId}, AccountId: {AccountId}",
+                    request.Authorization!.ContactId,
+                    request.Authorization.AccountId);
+
+                var revokeRequest = new RevokeAccessRequest
+                {
+                    AccountId = request.Authorization.AccountId,
+                    ContactId = request.Authorization.ContactId
+                };
+
+                var revokeResult = await _pennylaneService.RevokePennylaneAccessAsync(revokeRequest);
+                response.RevocationResult = AccessProvisioningMapper.MapToRevocationResult(revokeResult);
+                response.RevocationStepCompleted = true;
+
+                _logger.LogInformation("Pennylane access revoke returned status {Status} for ContactId: {ContactId}, AccountId: {AccountId}",
+                    revokeResult.Status,
+                    request.Authorization.ContactId,
+                    request.Authorization.AccountId);
+
+                if (revokeResult.Status.Equals(PennylaneAccessStatuses.Failed, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("Pennylane access revoke failed for ContactId: {ContactId}, AccountId: {AccountId}",
+                        request.Authorization.ContactId,
+                        request.Authorization.AccountId);
+                    return CreatePennylaneFailedResult();
+                }
+
+                return OperationResult.Ok();
+            }, request, "revoking Pennylane access");
+        }
+
+        private static OperationResult CreatePennylaneFailedResult()
+        {
+            return OperationResult.Fail(new BadRequestObjectResult(new ErrorResponse
+            {
+                ErrorCode = Errors.PennylaneHttpRequestFailedCode,
+                ErrorMessage = string.Format(
+                    Errors.PennylaneHttpRequestFailedMessage,
+                    nameof(AuthorizationUpdateRequest),
+                    nameof(AuthorizationController.CreateOrUpdateAuthorizationsAsync))
+            }));
         }
     }
 }

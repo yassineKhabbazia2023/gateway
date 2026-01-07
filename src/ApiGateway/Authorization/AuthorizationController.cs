@@ -50,6 +50,7 @@ namespace ApiGateway.Authorization
                 request.Authorization.AccountId);
 
             var hasPennylanePermission = request.PermissionsCodes.Contains(PermissionCodes.PennylaneAccess);
+            var alreadyHasAccess = await _pennylaneAuthorizationService.HasPennylaneAccessAsync(request);
 
             if (hasPennylanePermission)
             {
@@ -58,7 +59,6 @@ namespace ApiGateway.Authorization
                     return targetValidationError;
                 }
 
-                var alreadyHasAccess = await _pennylaneAuthorizationService.HasPennylaneAccessAsync(request);
                 if (alreadyHasAccess)
                 {
                     var roleUpdateResult = await _pennylaneAuthorizationService.TryUpdatePennylaneRoleAsync(request, response);
@@ -73,6 +73,18 @@ namespace ApiGateway.Authorization
                 if (!provisioningResult.Success)
                 {
                     return provisioningResult.Error!;
+                }
+            }
+            else if (alreadyHasAccess)
+            {
+                _logger.LogInformation("User had Pennylane access but permission was removed. Revoking access for ContactId: {ContactId}, AccountId: {AccountId}",
+                    request.Authorization.ContactId,
+                    request.Authorization.AccountId);
+
+                var revocationResult = await _pennylaneAuthorizationService.TryRevokePennylaneAccessAsync(request, response);
+                if (!revocationResult.Success)
+                {
+                    return revocationResult.Error!;
                 }
             }
 

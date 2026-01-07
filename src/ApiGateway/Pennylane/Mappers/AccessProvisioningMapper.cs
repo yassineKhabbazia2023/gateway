@@ -19,5 +19,19 @@ namespace ApiGateway.Pennylane.Mappers
                 Error = result.Error
             };
         }
+
+        public static AccessRevocationResult MapToRevocationResult(RevokePennylaneAccessResult result)
+        {
+            return new AccessRevocationResult
+            {
+                Status = result.Status,
+                Message = result.Message,
+                ContactId = result.ContactId,
+                AccountId = result.AccountId,
+                ExternalUserId = result.PennylaneUserId,
+                ExternalCompanyId = result.PennylaneCompanyId,
+                Error = result.Error
+            };
+        }
     }
 }

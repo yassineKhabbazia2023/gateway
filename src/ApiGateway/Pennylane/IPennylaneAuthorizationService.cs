@@ -14,5 +14,9 @@ namespace ApiGateway.Pennylane
         Task<OperationResult> TryHandlePennylaneProvisioningAsync(
             AuthorizationUpdateRequest request,
             AuthorizationUpdateResponse response);
+
+        Task<OperationResult> TryRevokePennylaneAccessAsync(
+            AuthorizationUpdateRequest request,
+            AuthorizationUpdateResponse response);
     }
 }

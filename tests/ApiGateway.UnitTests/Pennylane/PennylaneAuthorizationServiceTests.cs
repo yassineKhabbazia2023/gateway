@@ -160,6 +160,147 @@ public class PennylaneAuthorizationServiceTests
         objectResult!.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
     }
 
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_WhenSuccess_ShouldReturnOk()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Revoked,
+            Message = "Access revoked",
+            ContactId = request.Authorization!.ContactId,
+            AccountId = request.Authorization.AccountId
+        };
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .ReturnsAsync(revokeResult);
+
+        var outcome = await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        outcome.Success.Should().BeTrue();
+        outcome.Error.Should().BeNull();
+        response.RevocationResult.Should().NotBeNull();
+        response.RevocationResult!.Status.Should().Be(PennylaneAccessStatuses.Revoked);
+        response.RevocationStepCompleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_WhenUserNotFound_ShouldReturnOk()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.UserNotFound,
+            Message = "User not found in company",
+            ContactId = request.Authorization!.ContactId,
+            AccountId = request.Authorization.AccountId
+        };
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .ReturnsAsync(revokeResult);
+
+        var outcome = await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        outcome.Success.Should().BeTrue();
+        response.RevocationResult.Should().NotBeNull();
+        response.RevocationResult!.Status.Should().Be(PennylaneAccessStatuses.UserNotFound);
+        response.RevocationStepCompleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_WhenFailedStatus_ShouldReturnBadRequest()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Failed,
+            Message = "failed",
+            ContactId = request.Authorization!.ContactId,
+            AccountId = request.Authorization.AccountId
+        };
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .ReturnsAsync(revokeResult);
+
+        var outcome = await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        outcome.Success.Should().BeFalse();
+        outcome.Error.Should().NotBeNull();
+        outcome.Error!.Result.Should().BeOfType<BadRequestObjectResult>();
+        response.RevocationStepCompleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_WhenHttpRequestException_ShouldReturnBadGateway()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .ThrowsAsync(new HttpRequestException("downstream"));
+
+        var outcome = await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        outcome.Success.Should().BeFalse();
+        outcome.Error.Should().NotBeNull();
+        var objectResult = outcome.Error!.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
+    }
+
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_WhenInvalidOperationException_ShouldReturnInternalServerError()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .ThrowsAsync(new InvalidOperationException("unexpected"));
+
+        var outcome = await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        outcome.Success.Should().BeFalse();
+        outcome.Error.Should().NotBeNull();
+        var objectResult = outcome.Error!.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
+
+    [Fact]
+    public async Task TryRevokePennylaneAccessAsync_ShouldPassCorrectRequestParameters()
+    {
+        var request = BuildRequest();
+        var response = new AuthorizationUpdateResponse();
+        var revokeResult = new RevokePennylaneAccessResult
+        {
+            Status = PennylaneAccessStatuses.Revoked,
+            Message = "Access revoked",
+            ContactId = request.Authorization!.ContactId,
+            AccountId = request.Authorization.AccountId
+        };
+
+        RevokeAccessRequest? capturedRequest = null;
+
+        _pennylaneServiceMock
+            .Setup(x => x.RevokePennylaneAccessAsync(It.IsAny<RevokeAccessRequest>()))
+            .Callback<RevokeAccessRequest>(req => capturedRequest = req)
+            .ReturnsAsync(revokeResult);
+
+        await _service.TryRevokePennylaneAccessAsync(request, response);
+
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.AccountId.Should().Be(request.Authorization!.AccountId);
+        capturedRequest.ContactId.Should().Be(request.Authorization.ContactId);
+    }
+
     private static AuthorizationUpdateRequest BuildRequest()
     {
         return new AuthorizationUpdateRequest
