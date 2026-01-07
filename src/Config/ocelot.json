@@ -1334,7 +1334,7 @@
     {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/authentication/api/update-password/currentuser",
-      "DownstreamPathTemplate": "/api/authentication/update-password/currentUSer",
+      "DownstreamPathTemplate": "/api/authentication/update-password/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
