@@ -2865,7 +2865,7 @@
         {
           "Name": "Pulse.Back.Notifications",
           "Version": "v1",
-          "Url": "https://appcegpulsentf#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsentf#{env_id}#01.azurewebsites.net/notifications/api/v1/api.json"
         }
       ]
     },
@@ -2898,7 +2898,7 @@
         {
           "Name": "Pulse.Back.Social",
           "Version": "v1",
-          "Url": "https://appcegpulsesoc#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsesoc#{env_id}#01.azurewebsites.net/social/api/v1/api.json"
         }
       ]
     },
@@ -2909,7 +2909,7 @@
         {
           "Name": "Pulse.Back.FeedCenter",
           "Version": "v1",
-          "Url": "https://appcegpulsefdc#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsefdc#{env_id}#01.azurewebsites.net/feedcenter/api/v1/api.json"
         }
       ]
     },
@@ -2920,7 +2920,7 @@
         {
           "Name": "Pulse.Back.ContactRegistry",
           "Version": "v1",
-          "Url": "https://appcegpulsereg#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsereg#{env_id}#01.azurewebsites.net/registry/api/v1/api.json"
         }
       ]
     },
@@ -2931,7 +2931,7 @@
         {
           "Name": "Pulse.Back.Ged.Accounting",
           "Version": "v1",
-          "Url": "https://appcegpulsegac#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsegac#{env_id}#01.azurewebsites.net/api/v1/api.json"
         }
       ]
     },
@@ -2942,7 +2942,7 @@
         {
           "Name": "Pulse.Back.Ged.Social",
           "Version": "v1",
-          "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulsegso#{env_id}#01.azurewebsites.net/api/v1/api.json"
         }
       ]
     },
@@ -2953,7 +2953,7 @@
         {
           "Name": "Pulse.Back.Ged.Core",
           "Version": "v1",
-          "Url": "https://appcegpulseged#{env_id}#03.azurewebsites.net/api/api.json"
+          "Url": "https://appcegpulseged#{env_id}#03.azurewebsites.net/api/v1/api.json"
         }
       ]
     }
