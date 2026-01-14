@@ -63,6 +63,9 @@ else
     });
 }
 
+// Extract token from query string for browser-based access (e.g., PDF in new tab)
+app.UseMiddleware<QueryStringTokenMiddleware>();
+
 // Token revocation check - must be before authentication
 app.UseMiddleware<TokenRevocationMiddleware>();
 
