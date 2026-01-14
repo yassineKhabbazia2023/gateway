@@ -4,7 +4,7 @@ namespace ApiGateway.Offer.Model;
 
 public class CreateCompanyResult
 {
-    public required PennylaneCompany Company { get; set; }
+    public PennylaneCompany? Company { get; set; }
 
     public required string Status { get; set; }
 

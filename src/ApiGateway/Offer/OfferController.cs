@@ -51,7 +51,7 @@ namespace ApiGateway.Offer
             // Step 1: Check if we should create company in Pennylane for this OfferId
             if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
             {
-                bool companyCreated = false;
+                string? companyStatus = null;
                 try
                 {
                     var account = await _accountService.GetAccountAsync(subscriptionRequest.AccountId);
@@ -73,9 +73,10 @@ namespace ApiGateway.Offer
                     };
 
                     var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
-                    _logger.LogInformation("Pennylane company creation result: Status={Status}, CompanyId={CompanyId}",
-                        companyResult.Status, companyResult.Company.Id);
-                    companyCreated = companyResult.Status == "created";
+
+                    _logger.LogInformation("Pennylane company creation result: Status={Status}, AccountId={AccountId}",
+                        companyResult.Status, companyCreateRequest.AccountId);
+                    companyStatus = companyResult.Status;
                 }
                 catch (Exception ex) when (ex is HttpRequestException || ex is BadHttpRequestException)
                 {
@@ -89,9 +90,12 @@ namespace ApiGateway.Offer
                 }
 
                 // Set status based on whether company was created
-                subscriptionRequest.Status = companyCreated
-                    ? PennylaneConstants.PennylaneCreated
-                    : PennylaneConstants.PennylaneToCreate;
+                subscriptionRequest.Status = companyStatus switch
+                {
+                    PennylaneControllerStatuses.ToCreate => PennylaneConstants.PennylaneNotCreated,
+                    PennylaneControllerStatuses.Created => PennylaneConstants.PennylaneCreated,
+                    _ => PennylaneConstants.PennylaneToVerify
+                };
             }
 
             // Step 2: Create subscription (continues even if company creation failed/skipped)

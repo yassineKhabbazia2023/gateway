@@ -51,7 +51,6 @@ public class PennylaneService(
             logger.LogError("Failed to deserialize CreateCompanyResult for AccountId: {AccountId}", request.AccountId);
             throw new InvalidOperationException("Failed to deserialize CreateCompanyResult from Pennylane API");
         }
-
         return result;
     }
 

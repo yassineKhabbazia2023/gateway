@@ -8,6 +8,8 @@
 
         public const string PennylaneCreated = "pennylane-created";
 
-        public const string PennylaneToCreate = "pennylane-not-created";
+        public const string PennylaneNotCreated = "pennylane-not-created";
+
+        public const string PennylaneToVerify = "pennylane-to-verify";
     }
 }
