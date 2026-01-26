@@ -476,6 +476,27 @@
       }
     },
     {
+      "SwaggerKey": "ContactRegistry",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/hubspot/submissions/currentuser",
+      "DownstreamPathTemplate": "/api/hubspot/accounts/{accountNumber}/submissions/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsereg#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "Offer",
       "UpstreamPathTemplate": "/gtw/offer/api/subscription?accountId={abc}",
       "DownstreamPathTemplate": "/api/subscription?accountId={abc}",
