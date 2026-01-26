@@ -669,6 +669,27 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{account-id}/customers",
+      "DownstreamPathTemplate": "/api/accounts/{account-id}/contacts?Type=Customer",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser?pageNumber={abc}&pageSize={xyz}&search={ghi}",
       "DownstreamPathTemplate": "/api/accounts/currentuser?pageNumber={abc}&pageSize={xyz}&search={ghi}",
       "DownstreamScheme": "https",
