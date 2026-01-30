@@ -1,6 +1,9 @@
 using ApiGateway.Account;
 using ApiGateway.Account.Constants;
 using ApiGateway.Attributes;
+using ApiGateway.Contact;
+using ApiGateway.Contact.Enum;
+using ApiGateway.Exceptions;
 using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;
@@ -21,6 +24,7 @@ public class OfferControllerTests
     private readonly Mock<IPennylaneService> _mockPennylaneService;
     private readonly Mock<ILogger<OfferController>> _mockLogger;
     private readonly Mock<IAccountService> _mockAccountService;
+    private readonly Mock<IContactService> _mockContactService;
     private readonly OfferController _controller;
 
     public OfferControllerTests()
@@ -29,12 +33,13 @@ public class OfferControllerTests
         _mockPennylaneService = new Mock<IPennylaneService>(MockBehavior.Loose);
         _mockLogger = new Mock<ILogger<OfferController>>(MockBehavior.Loose);
         _mockAccountService = new Mock<IAccountService>(MockBehavior.Strict);
+        _mockContactService = new Mock<IContactService>(MockBehavior.Loose);
 
         // Default behavior: don't create company for any OfferId
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(It.IsAny<int>()))
             .Returns(false);
 
-        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object);
+        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object, _mockContactService.Object);
     }
 
     #region CreateSubscription Tests
@@ -977,6 +982,177 @@ public class OfferControllerTests
         // Assert
         capturedRequest.Should().NotBeNull();
         capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToVerify);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithCustomerWithoutMobilePhone_ForPennylaneOffer_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        var customerContact = new ApiGateway.Contact.Models.Contact
+        {
+            Id = 10,
+            Type = ContactType.Customer.ToString(),
+            MobilePhone = null
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockContactService.Setup(x => x.GetContactByIdAsync(10))
+            .ReturnsAsync(customerContact);
+
+        _mockContactService.Setup(x => x.GetContactByIdAsync(20))
+            .ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = 20, Type = ContactType.Collaborator.ToString() });
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var badRequestResult = result.Result as BadRequestObjectResult;
+        badRequestResult.Should().NotBeNull();
+        badRequestResult!.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithCollaboratorWithoutMobilePhone_ForPennylaneOffer_ShouldSucceed()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10 }
+        };
+
+        var collaboratorContact = new ApiGateway.Contact.Models.Contact
+        {
+            Id = 10,
+            Type = ContactType.Collaborator.ToString(),
+            MobilePhone = null
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockContactService.Setup(x => x.GetContactByIdAsync(10))
+            .ReturnsAsync(collaboratorContact);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult
+            {
+                Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test" },
+                Status = PennylaneControllerStatuses.Created
+            });
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ReturnsAsync(456);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithCustomerWithoutMobilePhone_ForNonPennylaneOffer_ShouldSucceed()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 888,
+            Contacts = new List<int> { 10 }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(888))
+            .Returns(false);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ReturnsAsync(456);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
+
+        // Verify contact service was not called
+        _mockContactService.Verify(x => x.GetContactByIdAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WithCustomerWithMobilePhone_ForPennylaneOffer_ShouldSucceed()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10 }
+        };
+
+        var customerContact = new ApiGateway.Contact.Models.Contact
+        {
+            Id = 10,
+            Type = ContactType.Customer.ToString(),
+            MobilePhone = "+33612345678"
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockContactService.Setup(x => x.GetContactByIdAsync(10))
+            .ReturnsAsync(customerContact);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult
+            {
+                Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test" },
+                Status = PennylaneControllerStatuses.Created
+            });
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+            .ReturnsAsync(456);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
 
     #endregion

@@ -59,6 +59,21 @@ public class ContactService : IContactService
         return null;
     }
 
+    public async Task<Models.Contact?> GetContactByIdAsync(int contactId)
+    {
+        var response = await httpClient.GetAsync($"contact/{contactId}");
+        if (response.IsSuccessStatusCode)
+        {
+            var jsonString = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(jsonString))
+            {
+                return null;
+            }
+            return JsonSerializer.Deserialize<Models.Contact>(jsonString);
+        }
+        return null;
+    }
+
     private string ContactUrl(string userEmail)
     {
         string encodedEmail = HttpUtility.UrlEncode(userEmail);

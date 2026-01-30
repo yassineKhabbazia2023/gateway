@@ -1,5 +1,8 @@
 ﻿using ApiGateway.Account;
 using ApiGateway.Attributes;
+using ApiGateway.Contact;
+using ApiGateway.Contact.Enum;
+using ApiGateway.Exceptions;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
 using ApiGateway.Pennylane.Constants;
@@ -19,17 +22,20 @@ namespace ApiGateway.Offer
         private readonly IOfferService _offerService;
         private readonly IPennylaneService _pennylaneService;
         private readonly IAccountService _accountService;
+        private readonly IContactService _contactService;
 
         public OfferController(
             ILogger<OfferController> logger,
             IOfferService offerService,
             IPennylaneService pennylaneService,
-            IAccountService accountService)
+            IAccountService accountService,
+            IContactService contactService)
         {
             _logger = logger;
             _offerService = offerService;
             _pennylaneService = pennylaneService;
             _accountService = accountService;
+            _contactService = contactService;
         }
 
         /// <summary>
@@ -51,6 +57,24 @@ namespace ApiGateway.Offer
             // Step 1: Check if we should create company in Pennylane for this OfferId
             if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
             {
+                var contactTasks = subscriptionRequest.Contacts.Select(id => _contactService.GetContactByIdAsync(id));
+                var contacts = await Task.WhenAll(contactTasks);
+
+                // Validation all signatory should have a mobilePhone
+                var signatoryMissingMobilePhone = contacts.FirstOrDefault(c =>
+                    c != null
+                    && string.Equals(c.Type, ContactType.Customer.ToString(), StringComparison.OrdinalIgnoreCase)
+                    && string.IsNullOrWhiteSpace(c.MobilePhone));
+
+                if (signatoryMissingMobilePhone != null)
+                {
+                    return BadRequest(new
+                    {
+                        ErrorCode = Errors.MissingMobilePhoneCode,
+                        ErrorMessage = string.Format(Errors.MissingMobilePhoneMessage, signatoryMissingMobilePhone.Id)
+                    });
+                }
+
                 string? companyStatus = null;
                 try
                 {

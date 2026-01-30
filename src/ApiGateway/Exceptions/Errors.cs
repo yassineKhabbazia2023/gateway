@@ -57,5 +57,8 @@
 
         public static readonly string UnauthorizedCode = "GTW019";
         public static readonly string UnauthorizedMessage = "Accès non autorisé. Veuillez vous reconnecter.";
+
+        public static readonly string MissingMobilePhoneCode = "GTW020";
+        public static readonly string MissingMobilePhoneMessage = "Le contact client avec l'identifiant {0} doit avoir un numéro de téléphone mobile.";
     }
 }
