@@ -26,6 +26,8 @@ namespace ApiGateway.Offer.Model
 
         [JsonIgnore]
         public DateTime? CreationDate { get; set; }
+
+        public bool? HasNoSiren { get; set; }
     }
 
     public class Note

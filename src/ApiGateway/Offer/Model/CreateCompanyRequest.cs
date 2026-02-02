@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace ApiGateway.Offer.Model;
 
@@ -19,8 +20,10 @@ public class CreateCompanyRequest
     /// <summary>
     /// Company registration number (SIREN).
     /// Maps to: <c>reg_no</c>.
+    /// When null, this field will be omitted from the JSON payload.
     /// </summary>
-    public required string RegistrationNumber { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RegistrationNumber { get; set; }
 
     /// <summary>
     /// Indicates whether the company is not yet registered.

@@ -84,14 +84,17 @@ namespace ApiGateway.Offer
                     var siren = account?.Legal?.Siren ?? string.Empty;
                     var countryCode = account?.Address?.FirstOrDefault()?.Country ?? string.Empty;
 
+                    var notYetRegistered = subscriptionRequest.HasNoSiren == true
+                        || string.IsNullOrWhiteSpace(siren);
+
                     var companyCreateRequest = new CreateCompanyRequest
                     {
                         AccountId = subscriptionRequest.AccountId,
                         Contacts = subscriptionRequest.Contacts,
                         ContactFunctions = subscriptionRequest.ContactFunctions,
                         HubName = subscriptionRequest.HubName,
-                        RegistrationNumber = siren,
-                        NotYetRegistered = string.IsNullOrWhiteSpace(siren),
+                        RegistrationNumber = notYetRegistered ? null : siren,
+                        NotYetRegistered = notYetRegistered,
                         AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),
                         CountryCode = CountryCodeMapper.CountryToPennylaneCountryCode(countryCode),
                     };
