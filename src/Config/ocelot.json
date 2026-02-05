@@ -2460,7 +2460,7 @@
     },
     {
       "SwaggerKey": "History",
-      "UpstreamPathTemplate": "/gtw/history/api/activities",
+      "UpstreamPathTemplate": "/gtw/history/api/activities/currentuser",
       "DownstreamPathTemplate": "/api/activities",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2474,8 +2474,7 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
+          "AAD"
         ]
       },
       "DelegatingHandlers": [
