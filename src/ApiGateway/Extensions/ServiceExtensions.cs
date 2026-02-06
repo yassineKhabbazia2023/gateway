@@ -112,6 +112,7 @@ public static class ServiceExtensions
             .AddDelegatingHandler<FeedCenterSettingsHandler>()
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
+            .AddTransientDefinedAggregator<SubmissionAggregator>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddGigyaConfiguration(configuration);
