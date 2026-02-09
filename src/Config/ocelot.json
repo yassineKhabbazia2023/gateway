@@ -2206,6 +2206,26 @@
       }
     },
     {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/offers",
+      "DownstreamPathTemplate": "/recommendations/offers",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "FeedCenter",
       "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser/unread/count",
       "DownstreamPathTemplate": "/api/feedcenter/notifications/unread-count/currentuser",
