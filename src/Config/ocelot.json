@@ -520,7 +520,7 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/ventya/{accountNumber}/demat-ready",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/demat-ready",
       "DownstreamPathTemplate": "/api/ventya/accounts/{accountNumber}/demat-ready",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2819,7 +2819,7 @@
       "Aggregator": "ConfigurationAggregator"
     },
     {
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/hubspot/submissions/currentuser",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/currentuser",
       "UpstreamHttpMethod": [
         "GET"
       ],

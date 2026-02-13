@@ -1,5 +1,4 @@
-// Global using directives
-
+using ApiGateway.Helpers;
 using Ocelot.Middleware;
 using Ocelot.Multiplexer;
 using System.Net;
@@ -25,47 +24,65 @@ namespace ApiGateway.Aggregator
                 .Where(x => x.Response != null)
                 .ToArray();
 
-            var responseA = responsesDownstream
-                .FirstOrDefault(x => string.Equals(x.Route?.Key, RegistryRouteKey, StringComparison.OrdinalIgnoreCase))
-                ?.Response;
-            var responseB = responsesDownstream
-                .FirstOrDefault(x => string.Equals(x.Route?.Key, AccountRouteKey, StringComparison.OrdinalIgnoreCase))
-                ?.Response;
+            var entryA = responsesDownstream
+                .FirstOrDefault(x => string.Equals(x.Route?.Key, RegistryRouteKey, StringComparison.OrdinalIgnoreCase));
+            var entryB = responsesDownstream
+                .FirstOrDefault(x => string.Equals(x.Route?.Key, AccountRouteKey, StringComparison.OrdinalIgnoreCase));
+
+            var responseA = entryA?.Response;
+            var responseB = entryB?.Response;
 
             if (responseA == null || responseB == null)
             {
                 return BuildErrorResponse(HttpStatusCode.InternalServerError, responsesDownstream.Select(x => x.Response!));
             }
 
-            if (responseA.StatusCode == HttpStatusCode.NotFound)
+            // B = 404 → account inexistant
+            if (responseB.StatusCode == HttpStatusCode.NotFound)
             {
                 return new DownstreamResponse(
                     new StringContent(string.Empty),
                     HttpStatusCode.NotFound,
-                    responseA.Headers.ToList(),
+                    responseB.Headers.ToList(),
                     "Not Found");
             }
 
-            if (responseA.StatusCode == HttpStatusCode.OK)
+            // Extraire les données de B (contactWithAccess, externalDematMail, isReady)
+            var accountData = await TryReadAccountResponseAsync(responseB.Content);
+            var contactWithAccess = accountData?.ContactWithAccess;
+            var externalDematMail = accountData?.ExternalDematMail;
+
+            // Si B = 200 OK et isReady = true
+            if (responseB.StatusCode == HttpStatusCode.OK && accountData?.IsReady == true)
             {
-                if (responseB.StatusCode != HttpStatusCode.OK)
-                {
-                    return BuildErrorResponse(HttpStatusCode.InternalServerError, responsesDownstream.Select(x => x.Response!));
-                }
+                var currentUserEmail = ExtractCurrentUserEmail(entryA!.Context);
 
-                var isReady = await TryReadIsReadyAsync(responseB.Content);
-                if (!isReady.HasValue)
-                {
-                    return BuildErrorResponse(HttpStatusCode.InternalServerError, responsesDownstream.Select(x => x.Response!));
-                }
+                var tabState = string.Equals(currentUserEmail, contactWithAccess, StringComparison.OrdinalIgnoreCase)
+                    ? "connection-ready-unlocked"
+                    : "connection-ready-locked";
 
-                return BuildStatusResponse(isReady.Value ? "completed" : "submitted", responsesDownstream.Select(x => x.Response!));
+                return BuildJsonResponse(tabState, contactWithAccess, externalDematMail, responsesDownstream.Select(x => x.Response!));
             }
 
-            return responseA;
+            // Sinon → vérifier A
+            var tabStateFromRegistry = responseA.StatusCode == HttpStatusCode.NotFound
+                ? "form-start"
+                : "form-submitted";
+
+            return BuildJsonResponse(tabStateFromRegistry, contactWithAccess, externalDematMail, responsesDownstream.Select(x => x.Response!));
         }
 
-        private static async Task<bool?> TryReadIsReadyAsync(HttpContent content)
+        private static string ExtractCurrentUserEmail(HttpContext httpContext)
+        {
+            var token = JwtHelper.ExtractBearerToken(httpContext.Request);
+            if (string.IsNullOrEmpty(token))
+            {
+                return string.Empty;
+            }
+            return JwtHelper.ExtractUserEmailFromToken(token);
+        }
+
+        private static async Task<AccountResponse?> TryReadAccountResponseAsync(HttpContent content)
         {
             var payload = await content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(payload))
@@ -81,34 +98,61 @@ namespace ApiGateway.Aggregator
                     return null;
                 }
 
+                bool? isReady = null;
+                string? contactWithAccess = null;
+                string? externalDematMail = null;
+
                 foreach (var property in document.RootElement.EnumerateObject())
                 {
-                    if (!string.Equals(property.Name, "isReady", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(property.Name, "isReady", StringComparison.OrdinalIgnoreCase))
                     {
-                        continue;
+                        isReady = property.Value.ValueKind switch
+                        {
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            JsonValueKind.String => bool.TryParse(property.Value.GetString(), out var parsed) ? parsed : null,
+                            _ => null
+                        };
                     }
-
-                    return property.Value.ValueKind switch
+                    else if (string.Equals(property.Name, "contactWithAccess", StringComparison.OrdinalIgnoreCase))
                     {
-                        JsonValueKind.True => true,
-                        JsonValueKind.False => false,
-                        JsonValueKind.String => bool.TryParse(property.Value.GetString(), out var parsed) ? parsed : null,
-                        _ => null
-                    };
+                        contactWithAccess = property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
+                    }
+                    else if (string.Equals(property.Name, "externalDematMail", StringComparison.OrdinalIgnoreCase))
+                    {
+                        externalDematMail = property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
+                    }
                 }
 
-                return null;
+                return new AccountResponse(isReady, contactWithAccess, externalDematMail);
             }
-            catch (System.Text.Json.JsonException)
+            catch (JsonException)
             {
                 return null;
             }
         }
 
-        private static DownstreamResponse BuildStatusResponse(string status, IEnumerable<DownstreamResponse> responses)
+        private static DownstreamResponse BuildJsonResponse(
+            string tabState,
+            string? contactWithAccess,
+            string? externalDematMail,
+            IEnumerable<DownstreamResponse> responses)
         {
+            var result = new Dictionary<string, string?>
+            {
+                ["tab-state"] = tabState,
+                ["contactWithAccess"] = contactWithAccess,
+                ["externalDematMail"] = externalDematMail
+            };
+
+            var json = JsonSerializer.Serialize(result);
+
             return new DownstreamResponse(
-                new StringContent(status, new MediaTypeHeaderValue("text/plain")),
+                new StringContent(json, new MediaTypeHeaderValue("application/json")),
                 HttpStatusCode.OK,
                 responses.SelectMany(x => x.Headers).ToList(),
                 "OK");
@@ -122,5 +166,7 @@ namespace ApiGateway.Aggregator
                 responses.SelectMany(x => x.Headers).ToList(),
                 statusCode == HttpStatusCode.InternalServerError ? "Internal Server Error" : statusCode.ToString());
         }
+
+        private sealed record AccountResponse(bool? IsReady, string? ContactWithAccess, string? ExternalDematMail);
     }
 }
