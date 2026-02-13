@@ -2168,6 +2168,32 @@
         "AuthenticationProviderKeys": [
           "AAD"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COAIOFFER"
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/validation",
+      "DownstreamPathTemplate": "/recommendations/validation",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "PUT": "COAIOFFER"
       }
     },
     {
