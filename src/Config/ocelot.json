@@ -2175,6 +2175,29 @@
     },
     {
       "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/sales-pitch",
+      "DownstreamPathTemplate": "/recommendations/sales-pitch",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COAIOFFER"
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/validation",
       "DownstreamPathTemplate": "/recommendations/validation",
       "DownstreamScheme": "https",
