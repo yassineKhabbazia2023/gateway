@@ -2826,7 +2826,11 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      }
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler",
+        "BookingWhitelistHandler"
+      ]
     },
     {
       "SwaggerKey": "Booking",
@@ -2848,7 +2852,10 @@
         "AuthenticationProviderKeys": [
           "AAD"
         ]
-      }
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
     }
   ],
   "Aggregates": [

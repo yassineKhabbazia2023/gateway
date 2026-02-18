@@ -2,6 +2,8 @@ using ApiGateway.Account;
 using ApiGateway.Aggregator;
 using ApiGateway.Authorization;
 using ApiGateway.Authorization.Validators;
+using ApiGateway.Booking;
+using ApiGateway.Booking.Options;
 using ApiGateway.Cache;
 using ApiGateway.Configuration;
 using ApiGateway.ConnectExperience.Services;
@@ -113,9 +115,13 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddTransientDefinedAggregator<SubmissionAggregator>()
+            .AddDelegatingHandler<BookingWhitelistHandler>()
+            .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
+        services.AddSingleton<IBookingExperienceGuards, BookingExperienceGuards>();
         services.AddGigyaConfiguration(configuration);
+        services.AddBookingExperienceConfiguration(configuration);
     }
 
     private static void AddSwaggerConfig(IServiceCollection services, IConfiguration configuration)
@@ -207,6 +213,17 @@ public static class ServiceExtensions
             // Désactiver explicitement tous les types de sampling
             options.EnableAdaptiveSampling = false;
         });
+    }
+
+    private static IServiceCollection AddBookingExperienceConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<XpBookingOptions>()
+            .Configure(opt =>
+            {
+                opt.FeatureFlagEnabled = configuration.GetValue<bool?>("XpBookingFeatureFlagEnabled") ?? false;
+                opt.Whitelist = configuration["XpBookingWhitelist"] ?? string.Empty;
+            });
+        return services;
     }
 
     private static IServiceCollection AddGigyaConfiguration(this IServiceCollection services, IConfiguration configuration)
