@@ -477,8 +477,8 @@
     },
     {
       "SwaggerKey": "ContactRegistry",
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/hubspot/submissions/currentuser",
-      "DownstreamPathTemplate": "/api/hubspot/accounts/{accountNumber}/submissions/currentuser",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/hubspot/submissions/currentuser",
+      "DownstreamPathTemplate": "/api/hubspot/accounts/{accountId}/submissions/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -498,8 +498,8 @@
     },
     {
       "SwaggerKey": "ContactRegistry",
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/hubspot/submissions",
-      "DownstreamPathTemplate": "/api/hubspot/accounts/{accountNumber}/submissions",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/hubspot/submissions",
+      "DownstreamPathTemplate": "/api/hubspot/accounts/{accountId}/submissions",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -520,8 +520,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/demat-ready",
-      "DownstreamPathTemplate": "/api/ventya/accounts/{accountNumber}/demat-ready",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/demat-ready",
+      "DownstreamPathTemplate": "/api/ventya/accounts/{accountId}/demat-ready",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -2875,7 +2875,7 @@
       "Aggregator": "ConfigurationAggregator"
     },
     {
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountNumber}/currentuser",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/currentuser",
       "UpstreamHttpMethod": [
         "GET"
       ],
