@@ -204,6 +204,101 @@ namespace ApiGateway.Tests.DelegatingHandlers
             capturedRequest.RequestUri.Should().Be(request.RequestUri);
             capturedRequest.Method.Should().Be(request.Method);
         }
+
+        [Fact]
+        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldNotLogAuthorizationHeader()
+        {
+            // Arrange
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
+            request.Headers.Add("Authorization", "Bearer secret-token");
+            request.Headers.Add("X-Custom-Header", "safe-value");
+            request.Content = new StringContent("body");
+
+            var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+            {
+                Content = new StringContent("{\"errorCode\":\"ERR\",\"errorMessage\":\"fail\"}")
+            };
+
+            _innerHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response);
+
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            await invoker.SendAsync(request, CancellationToken.None);
+
+            // Assert
+            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
+            et.Properties.Should().NotContainKey("Authorization");
+            et.Properties.Should().ContainKey("X-Custom-Header");
+            et.Properties["X-Custom-Header"].Should().Be("safe-value");
+        }
+
+        [Theory]
+        [InlineData("Cookie")]
+        [InlineData("Set-Cookie")]
+        [InlineData("authorization")]
+        [InlineData("AUTHORIZATION")]
+        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldFilterSensitiveHeaders(string sensitiveHeaderName)
+        {
+            // Arrange
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
+            request.Headers.TryAddWithoutValidation(sensitiveHeaderName, "sensitive-value");
+            request.Content = new StringContent("body");
+
+            var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
+            var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
+            };
+
+            _innerHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response);
+
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            await invoker.SendAsync(request, CancellationToken.None);
+
+            // Assert
+            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
+            et.Properties.Keys.Should().NotContain(key => key.Equals(sensitiveHeaderName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldKeepNonSensitiveHeaders()
+        {
+            // Arrange
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
+            request.Headers.Add("X-Request-Id", "123");
+            request.Headers.Add("X-Correlation-Id", "abc");
+            request.Content = new StringContent("body");
+
+            var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
+            var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+            {
+                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
+            };
+
+            _innerHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response);
+
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            await invoker.SendAsync(request, CancellationToken.None);
+
+            // Assert
+            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
+            et.Properties.Keys.Should().Contain(key => key.Equals("X-Request-Id", StringComparison.OrdinalIgnoreCase));
+            et.Properties.Keys.Should().Contain(key => key.Equals("X-Correlation-Id", StringComparison.OrdinalIgnoreCase));
+        }
     }
 
     // Custom stub telemetry channel for testing

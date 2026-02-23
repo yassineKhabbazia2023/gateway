@@ -62,6 +62,13 @@ namespace ApiGateway.DelegatingHandlers
             return httpResponse;
         }
 
+        private static readonly HashSet<string> SensitiveHeaders = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Authorization",
+            "Cookie",
+            "Set-Cookie"
+        };
+
         private Dictionary<string, string> FormatHeaders(Dictionary<string, string> content, HttpHeaders headers)
         {
             if (headers == null || !headers.Any())
@@ -69,12 +76,15 @@ namespace ApiGateway.DelegatingHandlers
                 return content;
             }
 
-
             foreach (var header in headers)
             {
-                string headerName = header.Key;
+                if (SensitiveHeaders.Contains(header.Key))
+                {
+                    continue;
+                }
+
                 string headerValues = string.Join(", ", header.Value);
-                content.TryAdd(headerName, headerValues);
+                content.TryAdd(header.Key, headerValues);
             }
 
             return content;
