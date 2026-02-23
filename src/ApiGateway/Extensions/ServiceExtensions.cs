@@ -119,6 +119,16 @@ public static class ServiceExtensions
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
+        services.AddScoped<IBookingProvisioningService, BookingProvisioningService>();
+
+        services.AddHttpClient("BookingClient", client =>
+        {
+            client.BaseAddress = new Uri(configuration["BookingApiUri"]!);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
         services.AddSingleton<IBookingExperienceGuards, BookingExperienceGuards>();
         services.AddGigyaConfiguration(configuration);
         services.AddBookingExperienceConfiguration(configuration);

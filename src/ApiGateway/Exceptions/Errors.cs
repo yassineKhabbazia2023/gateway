@@ -66,5 +66,11 @@
 
         public static readonly string XpBookingFeatureFlagDisabledCode = "GTW022";
         public static readonly string XpBookingFeatureFlagDisabledMessage = "L'expérience Booking est désactivée.";
+
+        public static readonly string BookingProvisioningFailedCode = "GTW023";
+        public static readonly string BookingProvisioningFailedMessage = "Le provisioning du booking a échoué : {0}";
+
+        public static readonly string MissingBearerTokenCode = "GTW024";
+        public static readonly string MissingBearerTokenMessage = "Le token d'authentification est manquant ou invalide.";
     }
 }
