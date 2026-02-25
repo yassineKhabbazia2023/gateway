@@ -162,4 +162,69 @@ public class ConnectControllerTests
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
     }
+
+    [Fact]
+    public async Task GetSummary_ShouldNotCallCheckRoles_WhenSkipRoleCheckIsTrue()
+    {
+        // Arrange
+        SetupHttpContextForController();
+
+        // Make SkipRoleCheck return true by including permission "COADMI004"
+        _authorizationService
+            .Setup(s => s.GetContactAuthorizationAsync(_contactId, _accountId))
+            .ReturnsAsync(new List<string> { "COADMI004" });
+
+        _experienceServices
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .ReturnsAsync(new ApiGateway.Models.Summary());
+
+        // Act
+        var result = await _sut.GetSummary(_accountId);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+
+        // Verify CheckContactRoleAsync was NOT called (optimization)
+        _accountService.Verify(
+            s => s.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<string?>()),
+            Times.Never,
+            "CheckContactRoleAsync should not be called when SkipRoleCheck returns true");
+    }
+
+    [Fact]
+    public async Task GetSummary_ShouldCallCheckRoles_WhenSkipRoleCheckIsFalse()
+    {
+        // Arrange
+        SetupHttpContextForController();
+
+        // Drive AuthorizationHelper.SkipRoleCheck -> false
+        _authorizationService
+            .Setup(s => s.GetContactAuthorizationAsync(_contactId, _accountId))
+            .ReturnsAsync(new List<string>()); // no NoRoleCheckPermissions
+
+        // Drive AuthorizationHelper.CheckRoles -> no bypass, role check returns true
+        _authorizationService
+            .Setup(s => s.GetContactAuthorizationAsync(_contactId, GlobalsConstants.CollaboratorAccountId))
+            .ReturnsAsync(new List<string>()); // no NoAccountCheckPermissions
+
+        _accountService
+            .Setup(s => s.CheckContactRoleAsync(_contactId, _accountId, null))
+            .ReturnsAsync(true);
+
+        _experienceServices
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .ReturnsAsync(new ApiGateway.Models.Summary());
+
+        // Act
+        var result = await _sut.GetSummary(_accountId);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+
+        // Verify CheckContactRoleAsync WAS called when skip is false
+        _accountService.Verify(
+            s => s.CheckContactRoleAsync(_contactId, _accountId, null),
+            Times.Once,
+            "CheckContactRoleAsync should be called when SkipRoleCheck returns false");
+    }
 }

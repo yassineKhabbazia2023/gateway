@@ -116,4 +116,85 @@ public class ExperienceServicesTests
 
         result.Should().BeEquivalentTo(account);
     }
+
+    [Fact]
+    public async Task GetSummaryAsync_ShouldCallBothServicesInParallel()
+    {
+        // Arrange
+        var accountId = 123;
+        var contactId = 456;
+        var expectedSummary = new Fixture().Create<Summary>();
+        var expectedSubscriptions = new[] { new SubscriptionStatus { OfferCode = "SUB1" } };
+
+        var summaryCallTime = DateTime.MinValue;
+        var subscriptionsCallTime = DateTime.MinValue;
+
+        _accountMock
+            .Setup(s => s.GetSummaryAsync(accountId, contactId))
+            .Returns(async () =>
+            {
+                summaryCallTime = DateTime.UtcNow;
+                await Task.Delay(50); // Simulate network latency
+                return expectedSummary;
+            });
+
+        _offerMock
+            .Setup(s => s.GetSubscriptionsAsync(accountId))
+            .Returns(async () =>
+            {
+                subscriptionsCallTime = DateTime.UtcNow;
+                await Task.Delay(50); // Simulate network latency
+                return expectedSubscriptions;
+            });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetSummaryAsync(accountId, contactId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Subscriptions.Should().BeEquivalentTo(expectedSubscriptions);
+
+        // Verify both services were called
+        _accountMock.Verify(s => s.GetSummaryAsync(accountId, contactId), Times.Once);
+        _offerMock.Verify(s => s.GetSubscriptionsAsync(accountId), Times.Once);
+
+        // Verify calls were made in parallel (within 20ms of each other)
+        var timeDifference = Math.Abs((summaryCallTime - subscriptionsCallTime).TotalMilliseconds);
+        timeDifference.Should().BeLessThan(20, "Both calls should start approximately at the same time (parallel execution)");
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_ShouldReturnSummaryWithSubscriptions_WhenBothCallsSucceed()
+    {
+        // Arrange
+        var accountId = 789;
+        var contactId = 101;
+        var expectedSummary = new Summary
+        {
+            AccountNumber = "ACC123",
+            LegalName = "Test Company"
+        };
+        var expectedSubscriptions = new[]
+        {
+            new SubscriptionStatus { OfferCode = "PREMIUM", OfferName = "Premium Plan" },
+            new SubscriptionStatus { OfferCode = "BASIC", OfferName = "Basic Plan" }
+        };
+
+        _accountMock.Setup(s => s.GetSummaryAsync(accountId, contactId)).ReturnsAsync(expectedSummary);
+        _offerMock.Setup(s => s.GetSubscriptionsAsync(accountId)).ReturnsAsync(expectedSubscriptions);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetSummaryAsync(accountId, contactId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.AccountNumber.Should().Be(expectedSummary.AccountNumber);
+        result.LegalName.Should().Be(expectedSummary.LegalName);
+        result.Subscriptions.Should().HaveCount(2);
+        result.Subscriptions.Should().BeEquivalentTo(expectedSubscriptions);
+    }
 }

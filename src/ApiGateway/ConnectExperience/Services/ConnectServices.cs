@@ -45,13 +45,23 @@ public class ConnectServices(
 
     public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId)
     {
-        var summary = await accountService.GetSummaryAsync(accountId, currentUserId);
-        
-        if (summary is null) throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
-        
-        var subscriptions = await offerService.GetSubscriptionsAsync(accountId);
-        
-        if (subscriptions is null) throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+        var summaryTask = accountService.GetSummaryAsync(accountId, currentUserId);
+        var subscriptionsTask = offerService.GetSubscriptionsAsync(accountId);
+
+        await Task.WhenAll(summaryTask, subscriptionsTask);
+
+        var summary = await summaryTask;
+        var subscriptions = await subscriptionsTask;
+
+        if (summary is null)
+        {
+            throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+        }
+
+        if (subscriptions is null)
+        {
+            throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+        }
 
         summary.Subscriptions = subscriptions;
         return summary;

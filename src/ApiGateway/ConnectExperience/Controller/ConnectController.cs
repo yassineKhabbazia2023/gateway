@@ -51,10 +51,13 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
             var contactId = contact.Id;
 
             var shouldSkipRoleCheck = await AuthorizationHelper.SkipRoleCheck(accountId, contactId, HttpContext);
-            var hasTheNeededRoles = await AuthorizationHelper.CheckRoles(accountId, null, contactId, HttpContext);
-            if(!shouldSkipRoleCheck && !hasTheNeededRoles)
+            if (!shouldSkipRoleCheck)
             {
-                return new BadRequestObjectResult(new { ErrorMessage = Errors.NoRoleOnAccountCode, ErrorCode = string.Format(Errors.NoRoleOnAccountMessage, contactId, accountId) });
+                var hasTheNeededRoles = await AuthorizationHelper.CheckRoles(accountId, null, contactId, HttpContext);
+                if (!hasTheNeededRoles)
+                {
+                    return new BadRequestObjectResult(new { ErrorMessage = Errors.NoRoleOnAccountCode, ErrorCode = string.Format(Errors.NoRoleOnAccountMessage, contactId, accountId) });
+                }
             }
 
             var result = await experienceServices.GetSummaryAsync(accountId, contactId);
