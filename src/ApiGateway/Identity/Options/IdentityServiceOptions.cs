@@ -12,6 +12,8 @@ namespace ApiGateway.Identity.Options
 
         public required string? CollaboratorsSecurityGroup { get; set; }
 
+        public string? AdministratorsSecurityGroup { get; set; }
+
         public required string CollaboratorRole { get; set; }
 
         public required string CustomerRole { get; set; }

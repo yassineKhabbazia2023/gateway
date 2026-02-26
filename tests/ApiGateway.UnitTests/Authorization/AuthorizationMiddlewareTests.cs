@@ -765,4 +765,86 @@ public class AuthorizationMiddlewareTests
         _mockAuthorizationService.Verify(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
         _mockAccountService.Verify(x => x.GetContactRolesAsync(It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenAdministratorValidationFails_ShouldReturnForbidden()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "admin@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var mockIdentityService = new Mock<IIdentityService>();
+        mockIdentityService.Setup(x => x.ValidateAdministrator(It.IsAny<HttpContext>())).Returns(false);
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+             .Callback<string>(email => email.Equals(contactEmail))
+             .ReturnsAsync("90")
+             .Verifiable();
+
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Administrator") }, "TestAuthType"));
+        var cacheService = new Mock<ICacheService>();
+        var logger = Mock.Of<ILogger<Program>>();
+
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .AddSingleton(logger)
+            .BuildServiceProvider();
+
+        // Act
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().BeEquivalentTo(Errors.NotValidAdministratorCode);
+        result.Which.Message.Should().BeEquivalentTo(string.Format(Errors.NotValidAdministratorMessage, contactEmail));
+    }
+
+    [Fact]
+    public async Task AuthorizationFilter_WhenAdministratorValidationSucceeds_ShouldAllowAccess()
+    {
+        // Arrange
+        var path = "/gtw/authorization/api/accounts/1";
+        var method = "GET";
+        var contactEmail = "admin@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>();
+
+        var mockIdentityService = new Mock<IIdentityService>();
+        mockIdentityService.Setup(x => x.ValidateAdministrator(It.IsAny<HttpContext>())).Returns(true);
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+             .ReturnsAsync("90")
+             .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>() { "COADMI001" })
+            .Verifiable();
+
+        _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>())).ReturnsAsync(true).Verifiable();
+
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new Claim(ClaimTypes.Role, "Administrator") }, "TestAuthType"));
+        var cacheService = new Mock<ICacheService>();
+
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .BuildServiceProvider();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+        mockIdentityService.Verify(x => x.ValidateAdministrator(It.IsAny<HttpContext>()), Times.Once);
+    }
 }

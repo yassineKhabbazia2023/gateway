@@ -72,5 +72,8 @@
 
         public static readonly string MissingBearerTokenCode = "GTW024";
         public static readonly string MissingBearerTokenMessage = "Le token d'authentification est manquant ou invalide.";
+
+        public static readonly string NotValidAdministratorCode = "GTW025";
+        public static readonly string NotValidAdministratorMessage = "L'utilisateur {0} n'a pas les droits nécessaires pour accéder à cette ressource.";
     }
 }

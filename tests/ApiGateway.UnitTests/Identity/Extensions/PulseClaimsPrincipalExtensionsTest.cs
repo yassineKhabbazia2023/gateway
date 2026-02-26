@@ -118,5 +118,43 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             // Assert
             Assert.False(result);
         }
+
+        [Fact]
+        public void IsAdministrator_WhenPrincipalIsNull_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            ClaimsPrincipal principal = null!;
+
+            // Act & Assert
+            Assert.Throws<GatewayException>(() => principal.IsAdministrator());
+        }
+
+        [Fact]
+        public void IsAdministrator_WhenPrincipalHasAdministratorRole_ShouldReturnTrue()
+        {
+            // Arrange
+            var claims = new List<Claim> { new Claim(ClaimTypes.Role, "Administrator") };
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            // Act
+            var result = principal.IsAdministrator();
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void IsAdministrator_WhenPrincipalDoesNotHaveAdministratorRole_ShouldReturnFalse()
+        {
+            // Arrange
+            var claims = new List<Claim> { new Claim(ClaimTypes.Role, "SomeOtherRole") };
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            // Act
+            var result = principal.IsAdministrator();
+
+            // Assert
+            Assert.False(result);
+        }
     }
 }

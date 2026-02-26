@@ -12,6 +12,8 @@ namespace ApiGateway.Identity.Extensions
 
         private static readonly string CustomerRole = "Customer";
 
+        private static readonly string AdministratorRole = "Administrator";
+
         /// <summary>
         /// Gets the login name of the user represented by his <paramref name="principal"/>.
         /// </summary>
@@ -72,6 +74,24 @@ namespace ApiGateway.Identity.Extensions
             }
 
             return principal.IsInRole(CustomerRole);
+        }
+
+        /// <summary>
+        /// Determines if the specified <paramref name="principal"/> has the <see cref="AdministratorRole"/>.
+        /// </summary>
+        /// <param name="principal">The <see cref="ClaimsPrincipal"/> to determine if the user has the
+        /// <see cref="AdministratorRole"/>.</param>
+        /// <returns><see langword="true"/> if the <paramref name="principal"/> has the <see cref="AdministratorRole"/>
+        /// <see langword="false"/> in otherwise.</returns>
+        /// <exception cref="ArgumentNullException">If the specified <paramref name="principal"/> argument is <see langword="null"/>.</exception>
+        public static bool IsAdministrator(this ClaimsPrincipal principal)
+        {
+            if (principal == null)
+            {
+                throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(principal)));
+            }
+
+            return principal.IsInRole(AdministratorRole);
         }
     }
 }

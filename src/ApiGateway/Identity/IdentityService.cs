@@ -35,6 +35,21 @@ namespace ApiGateway.Identity
             return hasRequiredGroup;
         }
 
+        public bool ValidateAdministrator(HttpContext httpContext)
+        {
+            if (string.IsNullOrEmpty(options.Value.AdministratorsSecurityGroup))
+            {
+                return false;
+            }
+            var user = httpContext.User;
+
+            var hasRequiredGroup = user.Claims
+                .Where(claim => claim.Type == "groups")
+                .Any(claim => claim.Value == options.Value.AdministratorsSecurityGroup);
+
+            return hasRequiredGroup;
+        }
+
         public async Task<bool> ValidateCustomerAsync(string email)
         {
             return await CheckUserExistsInGigyaAsync(email);

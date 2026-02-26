@@ -227,5 +227,113 @@ namespace ApiGateway.UnitTests.Identity
             // Assert
             await act.Should().ThrowAsync<GatewayException>().WithMessage("Something went wrong while communicating with Gigya, details: Anomaly { errorCode = 123, errorDetails = An error occurred }");
         }
+
+        [Fact]
+        public void ValidateAdministrator_ShouldReturnTrue_WhenUserIsInAdministratorsSecurityGroup()
+        {
+            // Arrange
+            var mockHttpClient = new Mock<HttpClient>();
+            var mockOptions = new Mock<IOptions<IdentityServiceOptions>>();
+            var optionsValue = new IdentityServiceOptions
+            {
+                CollaboratorRole = "Collaborator",
+                CustomerRole = "Customer",
+                CollaboratorsSecurityGroup = "collaborators-group",
+                AdministratorsSecurityGroup = "admin-group",
+                GigyaApiKey = "api-key",
+                GigyaSecret = "secret",
+                GigyaUserKey = "user-key"
+            };
+            mockOptions.Setup(o => o.Value).Returns(optionsValue);
+            var logger = Mock.Of<ILogger<IdentityService>>();
+            var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object, logger);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "Administrator"),
+                new Claim("groups", "admin-group")
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var adminHttpContext = new DefaultHttpContext { User = principal };
+
+            // Act
+            var result = identityService.ValidateAdministrator(adminHttpContext);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void ValidateAdministrator_ShouldReturnFalse_WhenUserIsNotInAdministratorsSecurityGroup()
+        {
+            // Arrange
+            var mockHttpClient = new Mock<HttpClient>();
+            var mockOptions = new Mock<IOptions<IdentityServiceOptions>>();
+            var optionsValue = new IdentityServiceOptions
+            {
+                CollaboratorRole = "Collaborator",
+                CustomerRole = "Customer",
+                CollaboratorsSecurityGroup = "collaborators-group",
+                AdministratorsSecurityGroup = "admin-group",
+                GigyaApiKey = "api-key",
+                GigyaSecret = "secret",
+                GigyaUserKey = "user-key"
+            };
+            mockOptions.Setup(o => o.Value).Returns(optionsValue);
+            var logger = Mock.Of<ILogger<IdentityService>>();
+            var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object, logger);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "Administrator"),
+                new Claim("groups", "some-other-group")
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var adminHttpContext = new DefaultHttpContext { User = principal };
+
+            // Act
+            var result = identityService.ValidateAdministrator(adminHttpContext);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void ValidateAdministrator_ShouldReturnFalse_WhenAdministratorsSecurityGroupIsNullOrEmpty()
+        {
+            // Arrange
+            var mockHttpClient = new Mock<HttpClient>();
+            var mockOptions = new Mock<IOptions<IdentityServiceOptions>>();
+            var optionsValue = new IdentityServiceOptions
+            {
+                CollaboratorRole = "Collaborator",
+                CustomerRole = "Customer",
+                CollaboratorsSecurityGroup = "collaborators-group",
+                AdministratorsSecurityGroup = null,
+                GigyaApiKey = "api-key",
+                GigyaSecret = "secret",
+                GigyaUserKey = "user-key"
+            };
+            mockOptions.Setup(o => o.Value).Returns(optionsValue);
+            var logger = Mock.Of<ILogger<IdentityService>>();
+            var identityService = new IdentityService(mockHttpClient.Object, mockOptions.Object, logger);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "Administrator"),
+                new Claim("groups", "admin-group")
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var adminHttpContext = new DefaultHttpContext { User = principal };
+
+            // Act
+            var result = identityService.ValidateAdministrator(adminHttpContext);
+
+            // Assert
+            Assert.False(result);
+        }
     }
 }

@@ -245,7 +245,7 @@ public static class ServiceExtensions
                 opt.GigyaSecret = configuration["GigyaSecret"]!;
                 opt.GigyaUserKey = configuration["GigyaUserKey"]!;
                 opt.CollaboratorsSecurityGroup = configuration["CollaboratorsSecurityGroup"]!;
-
+                opt.AdministratorsSecurityGroup = configuration["AdministratorsSecurityGroup"];
             }
         });
         return services;

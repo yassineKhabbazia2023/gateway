@@ -30,6 +30,17 @@ namespace ApiGateway.Extensions
         {
             bool isCollaborator = httpContext.User.IsCollaborator();
             bool isCustomer = httpContext.User.IsCustomer();
+            bool isAdministrator = httpContext.User.IsAdministrator();
+
+            if (isAdministrator)
+            {
+                var isValidAdministrator = identityServiceProvider.ValidateAdministrator(httpContext);
+                if (!isValidAdministrator)
+                {
+                    throw new GatewayException(StatusCodes.Status403Forbidden, Errors.NotValidAdministratorCode, string.Format(Errors.NotValidAdministratorMessage, userEmail));
+                }
+            }
+
             if (isCollaborator)
             {
                 var isValidCollaborator = identityServiceProvider.ValidateCollaborator(httpContext);
