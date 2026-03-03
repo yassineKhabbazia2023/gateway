@@ -2231,7 +2231,7 @@
         }
       ],
       "UpstreamHttpMethod": [
-        "POST"
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
@@ -2251,7 +2251,27 @@
         }
       ],
       "UpstreamHttpMethod": [
-        "POST"
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD ADM"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/filters",
+      "DownstreamPathTemplate": "/monitoring/filters",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
