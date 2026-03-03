@@ -2154,11 +2154,11 @@
       "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/offers",
       "DownstreamPathTemplate": "/recommendations/offers",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
-          "Port": 443
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
         }
       ],
       "UpstreamHttpMethod": [
@@ -2177,11 +2177,11 @@
       "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/sales-pitch",
       "DownstreamPathTemplate": "/recommendations/sales-pitch",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
-          "Port": 443
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
         }
       ],
       "UpstreamHttpMethod": [
@@ -2200,11 +2200,11 @@
       "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/validation",
       "DownstreamPathTemplate": "/recommendations/validation",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
-          "Port": 443
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
         }
       ],
       "UpstreamHttpMethod": [
@@ -2223,11 +2223,11 @@
       "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/details",
       "DownstreamPathTemplate": "/monitoring/details",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
-          "Port": 443
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
         }
       ],
       "UpstreamHttpMethod": [
@@ -2243,11 +2243,11 @@
       "SwaggerKey": "AiServices",
       "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/summary",
       "DownstreamPathTemplate": "/monitoring/summary",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseais#{env_id}#01.azurewebsites.net",
-          "Port": 443
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
         }
       ],
       "UpstreamHttpMethod": [
