@@ -2916,6 +2916,52 @@
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler"
       ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/collaborators/{collaboratorId}/booking-link/currentuser",
+      "DownstreamPathTemplate": "/api/collaborators/{collaboratorId}/booking-link",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/collaborators/currentuser",
+      "DownstreamPathTemplate": "/api/collaborators",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
     }
   ],
   "Aggregates": [
