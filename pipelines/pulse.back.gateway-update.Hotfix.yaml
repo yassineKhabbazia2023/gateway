@@ -1,0 +1,21 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)-$(SourceBranchName)
+
+trigger: none
+
+pool:
+  vmImage: windows-latest
+
+parameters:
+- name: deployToPrd
+  displayName: 'Déployer sur PROD'
+  type: boolean
+  default: true
+
+stages:
+- template: templates/update-gateway.yaml
+  parameters:
+    deployToDev: false
+    deployToItg: false
+    deployToRec: false
+    deployToPrd: ${{ parameters.deployToPrd }}
+    isHotfix: true

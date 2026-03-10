@@ -47,7 +47,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "CORAPP001"
+        "GET": "CORAPP001, CORAP002"
       }
     },
     {

@@ -15,17 +15,23 @@ parameters:
   displayName: 'Déployer sur PROD'
   type: boolean
   default: true
+- name: isHotfix
+  type: boolean
+  default: false
 
 stages:
 - ${{ if eq(parameters.deployToDev, true) }}:
   - 'Deployment to DEV environment is no longer supported.': error
-  
-- ${{ if and(parameters.deployToPrd, not(parameters.deployToRec)) }}:
+
+- ${{ if and(parameters.deployToPrd, not(parameters.deployToRec), not(parameters.isHotfix)) }}:
   - 'Deploying to REC is mandatory before deploying to PROD.': error
 
 - ${{ if and(not(parameters.deployToItg), not(parameters.deployToRec), not(parameters.deployToPrd)) }}:
   - 'At least one environment must be chosen.': error
-  
+
+- ${{ if and(parameters.isHotfix, not(startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))) }}:
+  - 'Hotfix pipeline must be run from a hotfix/* branch.': error
+
 - stage: build
   displayName: 'Build'
   jobs:
@@ -35,6 +41,7 @@ stages:
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
+
 # - ${{ if parameters.deployToDev }}:
 #   - stage: DEV
 #       displayName: 'Development-dev01'
@@ -54,6 +61,7 @@ stages:
 #                 environment: dev01
 #                 subscription: ceg-corp-pulse-dev
 #                 serviceConnection: Rydge-dev
+
 - ${{ if parameters.deployToItg }}:
   - stage: ITG01
     displayName: 'Integration'
@@ -74,7 +82,8 @@ stages:
                 environment: itg01
                 subscription: ceg-corp-pulse-itg
                 serviceConnection: Rydge-itg
-- ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+
+- ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(parameters.isHotfix, true)) }}:
   - ${{ if parameters.deployToRec }}:
     - stage: REC01
       displayName: Recette-rec01
@@ -128,7 +137,10 @@ stages:
       displayName: Production-prd01
       pool: Pulse-prd
       dependsOn:
-      - REC01
+      - ${{ if parameters.isHotfix }}:
+        - Build
+      - ${{ else }}:
+        - REC01
       jobs:
       - deployment: deploy
         displayName: 'Updating PRD01 config'
