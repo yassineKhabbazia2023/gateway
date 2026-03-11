@@ -426,6 +426,26 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/prospect/api/referential-infos",
+      "DownstreamPathTemplate": "/api/referentials/AccountReferentialInformation",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/offer/api/referentials/hubs",
       "DownstreamPathTemplate": "/api/referentials/hubs",
       "DownstreamScheme": "https",
