@@ -10,6 +10,8 @@ namespace ApiGateway.Offer.Model
 
         public int? PlanId { get; set; }
 
+        public int? PlanPricingId { get; set; }
+
         public IReadOnlyList<int> ProductConfigurations { get; set; } = [];
 
         public IReadOnlyList<int> Contacts { get; set; } = [];
