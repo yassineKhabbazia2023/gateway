@@ -58,6 +58,30 @@ public class BookingProvisioningService(
         return result;
     }
 
+    public async Task<BookingApiResponse> DeleteBusinessAsync(string businessEmail, int contactId, string bearerToken)
+    {
+        var client = CreateClient(bearerToken, contactId);
+        var url = $"/api/booking/businesses/email?businessId={businessEmail}";
+
+        logger.LogInformation("Calling Booking API: DELETE {Url} for ContactId: {ContactId}", url, contactId);
+
+        var response = await client.DeleteAsync(url);
+        var result = await ToBookingApiResponse(response);
+
+        if (!result.IsSuccessStatusCode)
+        {
+            logger.LogError("Booking business deletion failed. Status: {StatusCode}, Response: {Response}",
+                result.StatusCode, result.Content);
+        }
+        else
+        {
+            logger.LogInformation("Booking business deletion returned {StatusCode} for ContactId: {ContactId}",
+                result.StatusCode, contactId);
+        }
+
+        return result;
+    }
+
     private HttpClient CreateClient(string bearerToken, int contactId)
     {
         var client = httpClientFactory.CreateClient("BookingClient");

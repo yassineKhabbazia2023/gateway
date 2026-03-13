@@ -38,15 +38,13 @@ public class BookingControllerTests
             _bookingGuards.Object,
             _contactService.Object,
             _provisioningService.Object,
-            _logger.Object);
+            _logger.Object
+        );
 
         // Setup HttpContext with Authorization header for provisioning tests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.Authorization = new StringValues("Bearer test-jwt-token");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = httpContext
-        };
+        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
     }
 
     private static Mock<IUserContext> CreateUserContext(string email)
@@ -59,21 +57,25 @@ public class BookingControllerTests
         return userContext;
     }
 
-    private static BookingProvisioningRequest CreateProvisioningRequest() => new()
-    {
-        DisplayName = "Consultation fiscale",
-        Description = "30 minutes",
-        IsOnline = true,
-        Duration = 30,
-        Availability =
-        [
-            new BookingServiceAvailabilityRequest
-            {
-                Day = "monday",
-                TimeSlots = [new BookingServiceTimeSlotRequest { Start = "09:00", End = "12:00" }]
-            }
-        ]
-    };
+    private static BookingProvisioningRequest CreateProvisioningRequest() =>
+        new()
+        {
+            DisplayName = "Consultation fiscale",
+            Description = "30 minutes",
+            IsOnline = true,
+            Duration = 30,
+            Availability =
+            [
+                new BookingServiceAvailabilityRequest
+                {
+                    Day = "monday",
+                    TimeSlots =
+                    [
+                        new BookingServiceTimeSlotRequest { Start = "09:00", End = "12:00" },
+                    ],
+                },
+            ],
+        };
 
     private void SetupGuardsAllowed()
     {
@@ -83,7 +85,8 @@ public class BookingControllerTests
 
     private void SetupContactFound(int contactId = 123)
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail))
+        _contactService
+            .Setup(s => s.GetContactAsync(UserEmail))
             .ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = contactId });
     }
 
@@ -95,7 +98,7 @@ public class BookingControllerTests
         {
             StatusCode = HttpStatusCode.Created,
             IsSuccessStatusCode = true,
-            Content = JsonSerializer.Serialize(body)
+            Content = JsonSerializer.Serialize(body),
         };
     }
 
@@ -140,8 +143,12 @@ public class BookingControllerTests
         bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
         bookingGuards.Setup(s => s.HasAccess("notlisted@test.fr")).Returns(false);
         var controller = new BookingController(
-            userContext.Object, bookingGuards.Object,
-            _contactService.Object, _provisioningService.Object, _logger.Object);
+            userContext.Object,
+            bookingGuards.Object,
+            _contactService.Object,
+            _provisioningService.Object,
+            _logger.Object
+        );
 
         // Act
         var result = controller.GetBookingAccess() as ObjectResult;
@@ -212,7 +219,8 @@ public class BookingControllerTests
     {
         // Arrange
         SetupGuardsAllowed();
-        _contactService.Setup(s => s.GetContactAsync(UserEmail))
+        _contactService
+            .Setup(s => s.GetContactAsync(UserEmail))
             .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
         var request = CreateProvisioningRequest();
 
@@ -236,13 +244,16 @@ public class BookingControllerTests
         SetupGuardsAllowed();
         SetupContactFound();
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                IsSuccessStatusCode = false,
-                Content = "Graph API error"
-            });
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    IsSuccessStatusCode = false,
+                    Content = "Graph API error",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -264,13 +275,16 @@ public class BookingControllerTests
         SetupContactFound();
 
         var body = new BookingBusinessResponse(); // Id = 0 by default
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.Created,
-                IsSuccessStatusCode = true,
-                Content = JsonSerializer.Serialize(body)
-            });
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.Created,
+                    IsSuccessStatusCode = true,
+                    Content = JsonSerializer.Serialize(body),
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -295,16 +309,27 @@ public class BookingControllerTests
         SetupGuardsAllowed();
         SetupContactFound();
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
             .ReturnsAsync(CreateBusinessSuccessResponse(42));
 
-        _provisioningService.Setup(s => s.CreateServiceAsync("42", 123, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                IsSuccessStatusCode = false,
-                Content = "Service validation error"
-            });
+        _provisioningService
+            .Setup(s =>
+                s.CreateServiceAsync(
+                    "42",
+                    123,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                )
+            )
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    IsSuccessStatusCode = false,
+                    Content = "Service validation error",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -329,16 +354,27 @@ public class BookingControllerTests
         SetupGuardsAllowed();
         SetupContactFound();
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
             .ReturnsAsync(CreateBusinessSuccessResponse(42));
 
-        _provisioningService.Setup(s => s.CreateServiceAsync("42", 123, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.Created,
-                IsSuccessStatusCode = true,
-                Content = "{}"
-            });
+        _provisioningService
+            .Setup(s =>
+                s.CreateServiceAsync(
+                    "42",
+                    123,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                )
+            )
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.Created,
+                    IsSuccessStatusCode = true,
+                    Content = "{}",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -359,21 +395,34 @@ public class BookingControllerTests
         // Step 1 returns 200 (already configured)
         var body = new BookingBusinessResponse { Id = 10 };
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.OK,
-                IsSuccessStatusCode = true,
-                Content = JsonSerializer.Serialize(body)
-            });
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    IsSuccessStatusCode = true,
+                    Content = JsonSerializer.Serialize(body),
+                }
+            );
 
-        _provisioningService.Setup(s => s.CreateServiceAsync("10", 123, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.Created,
-                IsSuccessStatusCode = true,
-                Content = "{}"
-            });
+        _provisioningService
+            .Setup(s =>
+                s.CreateServiceAsync(
+                    "10",
+                    123,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                )
+            )
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.Created,
+                    IsSuccessStatusCode = true,
+                    Content = "{}",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -391,16 +440,27 @@ public class BookingControllerTests
         SetupGuardsAllowed();
         SetupContactFound();
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(123, It.IsAny<string>()))
             .ReturnsAsync(CreateBusinessSuccessResponse(42));
 
-        _provisioningService.Setup(s => s.CreateServiceAsync("42", 123, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.OK,
-                IsSuccessStatusCode = true,
-                Content = "{}"
-            });
+        _provisioningService
+            .Setup(s =>
+                s.CreateServiceAsync(
+                    "42",
+                    123,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                )
+            )
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    IsSuccessStatusCode = true,
+                    Content = "{}",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -418,16 +478,27 @@ public class BookingControllerTests
         SetupGuardsAllowed();
         SetupContactFound(contactId: 999);
 
-        _provisioningService.Setup(s => s.CreateBusinessAsync(999, It.IsAny<string>()))
+        _provisioningService
+            .Setup(s => s.CreateBusinessAsync(999, It.IsAny<string>()))
             .ReturnsAsync(CreateBusinessSuccessResponse(50));
 
-        _provisioningService.Setup(s => s.CreateServiceAsync("50", 999, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()))
-            .ReturnsAsync(new BookingApiResponse
-            {
-                StatusCode = HttpStatusCode.Created,
-                IsSuccessStatusCode = true,
-                Content = "{}"
-            });
+        _provisioningService
+            .Setup(s =>
+                s.CreateServiceAsync(
+                    "50",
+                    999,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                )
+            )
+            .ReturnsAsync(
+                new BookingApiResponse
+                {
+                    StatusCode = HttpStatusCode.Created,
+                    IsSuccessStatusCode = true,
+                    Content = "{}",
+                }
+            );
 
         var request = CreateProvisioningRequest();
 
@@ -435,8 +506,20 @@ public class BookingControllerTests
         await _controller.ProvisionBookingService(request);
 
         // Assert
-        _provisioningService.Verify(s => s.CreateBusinessAsync(999, It.IsAny<string>()), Times.Once);
-        _provisioningService.Verify(s => s.CreateServiceAsync("50", 999, It.IsAny<BookingProvisioningRequest>(), It.IsAny<string>()), Times.Once);
+        _provisioningService.Verify(
+            s => s.CreateBusinessAsync(999, It.IsAny<string>()),
+            Times.Once
+        );
+        _provisioningService.Verify(
+            s =>
+                s.CreateServiceAsync(
+                    "50",
+                    999,
+                    It.IsAny<BookingProvisioningRequest>(),
+                    It.IsAny<string>()
+                ),
+            Times.Once
+        );
     }
 
     #endregion

@@ -2563,7 +2563,9 @@
     {
       "SwaggerKey": "notifications",
       "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/accounts/{id}/contact/{destinationId}/message",
-      "UpstreamHttpMethod": [ "POST" ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
       "DownstreamPathTemplate": "/api/notifications/currentuser/message?destinationId={destinationId}&accountId={id}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2582,7 +2584,9 @@
     {
       "SwaggerKey": "notifications",
       "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/messages",
-      "UpstreamHttpMethod": [ "GET" ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
       "DownstreamPathTemplate": "/api/notifications/currentuser/messages",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -2782,7 +2786,9 @@
           "Port": 443
         }
       ],
-      "UpstreamHttpMethod": [ "GET" ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
           "AAD",
@@ -2807,7 +2813,9 @@
           "Port": 443
         }
       ],
-      "UpstreamHttpMethod": [ "DELETE" ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
           "AAD",
@@ -3003,6 +3011,30 @@
         ]
       },
       "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/email",
+      "DownstreamPathTemplate": "/api/booking/businesses/email",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingWhitelistHandler",
         "BookingFeatureFlagHandler"
       ]
     }

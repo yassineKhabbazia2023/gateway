@@ -23,7 +23,7 @@ public class BookingProvisioningServiceTests
 
         var httpClient = new HttpClient(_mockHttpMessageHandler.Object)
         {
-            BaseAddress = new Uri("http://local.booking/")
+            BaseAddress = new Uri("http://local.booking/"),
         };
 
         _mockHttpClientFactory
@@ -32,7 +32,8 @@ public class BookingProvisioningServiceTests
 
         _service = new BookingProvisioningService(
             _mockHttpClientFactory.Object,
-            _mockLogger.Object);
+            _mockLogger.Object
+        );
     }
 
     #region CreateBusinessAsync Tests
@@ -46,7 +47,7 @@ public class BookingProvisioningServiceTests
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.Created,
-            Content = JsonContent.Create(businessResponse)
+            Content = JsonContent.Create(businessResponse),
         };
 
         _mockHttpMessageHandler
@@ -54,9 +55,11 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Post &&
-                    req.RequestUri!.ToString().Contains("/booking/businesses")),
-                ItExpr.IsAny<CancellationToken>())
+                    req.Method == HttpMethod.Post
+                    && req.RequestUri!.ToString().Contains("/booking/businesses")
+                ),
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -64,8 +67,10 @@ public class BookingProvisioningServiceTests
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = JsonSerializer.Deserialize<BookingBusinessResponse>(result.Content,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var body = JsonSerializer.Deserialize<BookingBusinessResponse>(
+            result.Content,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        );
         body!.Id.Should().Be(42);
     }
 
@@ -78,7 +83,7 @@ public class BookingProvisioningServiceTests
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.Created,
-            Content = JsonContent.Create(new BookingBusinessResponse())
+            Content = JsonContent.Create(new BookingBusinessResponse()),
         };
 
         _mockHttpMessageHandler
@@ -86,7 +91,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
             .ReturnsAsync(httpResponse);
 
@@ -107,7 +113,7 @@ public class BookingProvisioningServiceTests
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.OK,
-            Content = JsonContent.Create(new BookingBusinessResponse { Id = 10 })
+            Content = JsonContent.Create(new BookingBusinessResponse { Id = 10 }),
         };
 
         _mockHttpMessageHandler
@@ -115,7 +121,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -132,7 +139,7 @@ public class BookingProvisioningServiceTests
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.BadRequest,
-            Content = new StringContent("Graph API error")
+            Content = new StringContent("Graph API error"),
         };
 
         _mockHttpMessageHandler
@@ -140,7 +147,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -169,15 +177,18 @@ public class BookingProvisioningServiceTests
                 new BookingServiceAvailabilityRequest
                 {
                     Day = "monday",
-                    TimeSlots = [new BookingServiceTimeSlotRequest { Start = "09:00", End = "12:00" }]
-                }
-            ]
+                    TimeSlots =
+                    [
+                        new BookingServiceTimeSlotRequest { Start = "09:00", End = "12:00" },
+                    ],
+                },
+            ],
         };
 
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.Created,
-            Content = new StringContent("{}")
+            Content = new StringContent("{}"),
         };
 
         _mockHttpMessageHandler
@@ -185,9 +196,11 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Post &&
-                    req.RequestUri!.ToString().Contains("/booking/businesses/42/services")),
-                ItExpr.IsAny<CancellationToken>())
+                    req.Method == HttpMethod.Post
+                    && req.RequestUri!.ToString().Contains("/booking/businesses/42/services")
+                ),
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -203,16 +216,12 @@ public class BookingProvisioningServiceTests
         // Arrange
         HttpRequestMessage? capturedRequest = null;
 
-        var request = new BookingProvisioningRequest
-        {
-            DisplayName = "Test",
-            Duration = 30
-        };
+        var request = new BookingProvisioningRequest { DisplayName = "Test", Duration = 30 };
 
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.Created,
-            Content = new StringContent("{}")
+            Content = new StringContent("{}"),
         };
 
         _mockHttpMessageHandler
@@ -220,7 +229,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
             .ReturnsAsync(httpResponse);
 
@@ -239,16 +249,12 @@ public class BookingProvisioningServiceTests
     public async Task CreateServiceAsync_WhenAlreadyExists_ShouldReturn200()
     {
         // Arrange
-        var request = new BookingProvisioningRequest
-        {
-            DisplayName = "Test",
-            Duration = 30
-        };
+        var request = new BookingProvisioningRequest { DisplayName = "Test", Duration = 30 };
 
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.OK,
-            Content = new StringContent("{}")
+            Content = new StringContent("{}"),
         };
 
         _mockHttpMessageHandler
@@ -256,7 +262,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -270,16 +277,12 @@ public class BookingProvisioningServiceTests
     public async Task CreateServiceAsync_WhenBadRequest_ShouldReturnError()
     {
         // Arrange
-        var request = new BookingProvisioningRequest
-        {
-            DisplayName = "Test",
-            Duration = 30
-        };
+        var request = new BookingProvisioningRequest { DisplayName = "Test", Duration = 30 };
 
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.BadRequest,
-            Content = new StringContent("Validation error")
+            Content = new StringContent("Validation error"),
         };
 
         _mockHttpMessageHandler
@@ -287,7 +290,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .ReturnsAsync(httpResponse);
 
         // Act
@@ -317,16 +321,16 @@ public class BookingProvisioningServiceTests
                     TimeSlots =
                     [
                         new BookingServiceTimeSlotRequest { Start = "09:00", End = "12:00" },
-                        new BookingServiceTimeSlotRequest { Start = "14:00", End = "17:00" }
-                    ]
-                }
-            ]
+                        new BookingServiceTimeSlotRequest { Start = "14:00", End = "17:00" },
+                    ],
+                },
+            ],
         };
 
         var httpResponse = new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.Created,
-            Content = new StringContent("{}")
+            Content = new StringContent("{}"),
         };
 
         _mockHttpMessageHandler
@@ -334,7 +338,8 @@ public class BookingProvisioningServiceTests
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
+                ItExpr.IsAny<CancellationToken>()
+            )
             .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
             .ReturnsAsync(httpResponse);
 
@@ -351,4 +356,101 @@ public class BookingProvisioningServiceTests
     }
 
     #endregion
+
+    #region DeleteBusinessAsync Tests
+
+    [Fact]
+    public async Task DeleteBusinessAsync_WhenSuccess_ShouldReturnNoContent()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NoContent,
+            Content = new StringContent(""),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Delete
+                    && req.RequestUri!.ToString().Contains("/api/booking/businesses/email")
+                ),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _service.DeleteBusinessAsync("test@example.com", 123, "token");
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task DeleteBusinessAsync_ShouldSendCorrectUrlAndHeaders()
+    {
+        // Arrange
+        HttpRequestMessage? capturedRequest = null;
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NoContent,
+            Content = new StringContent(""),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _service.DeleteBusinessAsync("biz@kpmg.fr", 456, "my-token");
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Method.Should().Be(HttpMethod.Delete);
+        capturedRequest.RequestUri!.ToString().Should().Contain("/api/booking/businesses/email");
+        capturedRequest.RequestUri.ToString().Should().Contain("businessId=biz@kpmg.fr");
+        capturedRequest.RequestUri.ToString().Should().NotContain("ContactId=");
+        capturedRequest.Headers.Authorization!.Parameter.Should().Be("my-token");
+        capturedRequest.Headers.GetValues("CurrentUser").Should().Contain("456");
+    }
+
+    [Fact]
+    public async Task DeleteBusinessAsync_WhenError_ShouldReturnErrorResponse()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Content = new StringContent("Error message"),
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _service.DeleteBusinessAsync("test@example.com", 123, "token");
+
+        // Assert
+        result.IsSuccessStatusCode.Should().BeFalse();
+        result.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        result.Content.Should().Be("Error message");
+    }
+
+    #endregion
+
 }
