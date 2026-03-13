@@ -117,6 +117,7 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<SubmissionAggregator>()
             .AddDelegatingHandler<BookingWhitelistHandler>()
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
+            .AddDelegatingHandler<ProspectExperienceHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddScoped<IBookingProvisioningService, BookingProvisioningService>();

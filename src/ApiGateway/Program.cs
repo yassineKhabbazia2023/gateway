@@ -1,5 +1,6 @@
 using ApiGateway.Configuration;
 using ApiGateway.Extensions;
+using ApiGateway.FeatureFlags.Extensions;
 using ApiGateway.Middlewares;
 using Microsoft.FeatureManagement;
 using Ocelot.Middleware;
@@ -10,6 +11,7 @@ builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
+builder.Services.AddFeatureFlags(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
 builder.Services.RegisterApplicationInsights(builder.Configuration);

@@ -75,5 +75,8 @@
 
         public static readonly string NotValidAdministratorCode = "GTW025";
         public static readonly string NotValidAdministratorMessage = "L'utilisateur {0} n'a pas les droits nécessaires pour accéder à cette ressource.";
+
+        public static readonly string ProspectExperienceDisabledCode = "GTW026";
+        public static readonly string ProspectExperienceDisabledMessage = "L'expérience Prospect est désactivée.";
     }
 }
