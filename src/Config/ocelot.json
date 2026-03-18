@@ -847,6 +847,27 @@
       }
     },
     {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/wallet/api/prospects/currentuser",
+      "DownstreamPathTemplate": "/api/accounts?EntityType=PROSPECT",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/wallet/api/favorites/currentuser/{everything}",
       "DownstreamPathTemplate": "/api/favorites/currentuser/{everything}",
@@ -3276,6 +3297,17 @@
           "Name": "Pulse.Back.Ged.Core",
           "Version": "v1",
           "Url": "https://appcegpulseged#{env_id}#03.azurewebsites.net/api/v1/api.json"
+        }
+      ]
+    },
+    {
+      "Key": "Prospect",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Prospect",
+          "Version": "v1",
+          "Url": "https://appcegpulseprs#{env_id}#01.azurewebsites.net/prospect/api/v1/api.json"
         }
       ]
     }
