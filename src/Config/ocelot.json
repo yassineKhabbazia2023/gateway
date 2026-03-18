@@ -890,6 +890,30 @@
       }
     },
     {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/wallet/api/infos/currentuser",
+      "DownstreamPathTemplate": "/api/entity-count-by-type/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+       "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/contact/api/contacts/currentuser",
       "DownstreamPathTemplate": "/api/contacts/currentuser",
@@ -2560,7 +2584,7 @@
         "OPTIONS"
       ]
     },
-    {
+     {
       "SwaggerKey": "notifications",
       "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/accounts/{id}/contact/{destinationId}/message",
       "UpstreamHttpMethod": [
