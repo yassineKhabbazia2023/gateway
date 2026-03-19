@@ -847,13 +847,13 @@
       }
     },
     {
-      "SwaggerKey": "Prospect",
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/wallet/api/prospects/currentuser",
-      "DownstreamPathTemplate": "/api/accounts?EntityType=PROSPECT",
+      "DownstreamPathTemplate": "/api/accounts/currentuser?EntityType=PROSPECT",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
@@ -862,7 +862,6 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
           "GIGYA MyPulse v2"
         ]
       }
