@@ -2984,7 +2984,8 @@
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler"
+        "BookingWhitelistHandler",
+        "BookingSyncHandler"
       ]
     },
     {
@@ -3009,7 +3010,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
+        "BookingFeatureFlagHandler",
+        "BookingSyncHandler"
       ]
     },
     {
@@ -3032,7 +3034,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
+        "BookingFeatureFlagHandler",
+        "BookingSyncHandler"
       ]
     },
     {
@@ -3055,7 +3058,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
+        "BookingFeatureFlagHandler",
+        "BookingSyncHandler"
       ]
     },
     {
@@ -3079,7 +3083,86 @@
       },
       "DelegatingHandlers": [
         "BookingWhitelistHandler",
-        "BookingFeatureFlagHandler"
+        "BookingFeatureFlagHandler",
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/upcoming/currentuser?limit={limit}",
+      "DownstreamPathTemplate": "/api/booking/appointments?period=upcoming&limit={limit}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler",
+        "BookingWhitelistHandler",
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/upcoming/count/currentuser",
+      "DownstreamPathTemplate": "/api/booking/appointments/upcoming/count",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler",
+        "BookingWhitelistHandler",
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/past/currentuser?limit={limit}",
+      "DownstreamPathTemplate": "/api/booking/appointments?period=past&limit={limit}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler",
+        "BookingWhitelistHandler",
+        "BookingSyncHandler"
       ]
     }
   ],

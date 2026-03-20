@@ -117,6 +117,7 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<SubmissionAggregator>()
             .AddDelegatingHandler<BookingWhitelistHandler>()
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
+            .AddDelegatingHandler<BookingSyncHandler>()
             .AddDelegatingHandler<ProspectExperienceHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
@@ -130,6 +131,7 @@ public static class ServiceExtensions
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
+        services.AddSingleton<IBookingSyncTrigger, BookingSyncTrigger>();
         services.AddSingleton<IBookingExperienceGuards, BookingExperienceGuards>();
         services.AddGigyaConfiguration(configuration);
         services.AddBookingExperienceConfiguration(configuration);
@@ -232,6 +234,7 @@ public static class ServiceExtensions
             {
                 opt.FeatureFlagEnabled = configuration.GetValue<bool?>("XpBookingFeatureFlagEnabled") ?? false;
                 opt.Whitelist = configuration["XpBookingWhitelist"] ?? string.Empty;
+                opt.SyncIntervalMinutes = configuration.GetValue<int?>("XpBookingSyncIntervalMinutes") ?? 5;
             });
         return services;
     }

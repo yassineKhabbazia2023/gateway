@@ -20,6 +20,7 @@ public class BookingControllerTests
     private readonly Mock<IBookingExperienceGuards> _bookingGuards;
     private readonly Mock<IContactService> _contactService;
     private readonly Mock<IBookingProvisioningService> _provisioningService;
+    private readonly Mock<IBookingSyncTrigger> _syncTrigger;
     private readonly Mock<ILogger<BookingController>> _logger;
     private readonly BookingController _controller;
 
@@ -31,6 +32,7 @@ public class BookingControllerTests
         _bookingGuards = new Mock<IBookingExperienceGuards>();
         _contactService = new Mock<IContactService>();
         _provisioningService = new Mock<IBookingProvisioningService>();
+        _syncTrigger = new Mock<IBookingSyncTrigger>();
         _logger = new Mock<ILogger<BookingController>>();
 
         _controller = new BookingController(
@@ -38,6 +40,7 @@ public class BookingControllerTests
             _bookingGuards.Object,
             _contactService.Object,
             _provisioningService.Object,
+            _syncTrigger.Object,
             _logger.Object
         );
 
@@ -105,14 +108,15 @@ public class BookingControllerTests
     #region GetBookingAccess Tests
 
     [Fact]
-    public void GetBookingAccess_FeatureFlagEnabled_UserHasAccess_ReturnsHasAccessTrue()
+    public async Task GetBookingAccess_FeatureFlagEnabled_UserHasAccess_ReturnsHasAccessTrue()
     {
         // Arrange
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
         _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(true);
+        SetupContactFound();
 
         // Act
-        var result = _controller.GetBookingAccess() as ObjectResult;
+        var result = await _controller.GetBookingAccess() as ObjectResult;
 
         // Assert
         result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
@@ -120,14 +124,14 @@ public class BookingControllerTests
     }
 
     [Fact]
-    public void GetBookingAccess_FeatureFlagDisabled_UserHasAccess_ReturnsHasAccessFalse()
+    public async Task GetBookingAccess_FeatureFlagDisabled_UserHasAccess_ReturnsHasAccessFalse()
     {
         // Arrange
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
         _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(true);
 
         // Act
-        var result = _controller.GetBookingAccess() as ObjectResult;
+        var result = await _controller.GetBookingAccess() as ObjectResult;
 
         // Assert
         result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
@@ -135,7 +139,7 @@ public class BookingControllerTests
     }
 
     [Fact]
-    public void GetBookingAccess_FeatureFlagEnabled_UserHasNoAccess_ReturnsHasAccessFalse()
+    public async Task GetBookingAccess_FeatureFlagEnabled_UserHasNoAccess_ReturnsHasAccessFalse()
     {
         // Arrange
         var userContext = CreateUserContext("notlisted@test.fr");
@@ -147,11 +151,12 @@ public class BookingControllerTests
             bookingGuards.Object,
             _contactService.Object,
             _provisioningService.Object,
+            _syncTrigger.Object,
             _logger.Object
         );
 
         // Act
-        var result = controller.GetBookingAccess() as ObjectResult;
+        var result = await controller.GetBookingAccess() as ObjectResult;
 
         // Assert
         result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
@@ -159,18 +164,102 @@ public class BookingControllerTests
     }
 
     [Fact]
-    public void GetBookingAccess_FeatureFlagDisabled_UserHasNoAccess_ReturnsHasAccessFalse()
+    public async Task GetBookingAccess_FeatureFlagDisabled_UserHasNoAccess_ReturnsHasAccessFalse()
     {
         // Arrange
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
         _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(false);
 
         // Act
-        var result = _controller.GetBookingAccess() as ObjectResult;
+        var result = await _controller.GetBookingAccess() as ObjectResult;
 
         // Assert
         result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
         result.Value.Should().BeEquivalentTo(new { hasAccess = false });
+    }
+
+    [Fact]
+    public async Task GetBookingAccess_WhenHasAccess_ResolvesContactAndTriggersSyncIfNeeded()
+    {
+        // Arrange
+        SetupGuardsAllowed();
+        SetupContactFound(contactId: 123);
+        _syncTrigger.Setup(s => s.ShouldTriggerSync(123)).Returns(true);
+
+        // Act
+        var result = await _controller.GetBookingAccess() as ObjectResult;
+
+        // Assert
+        result!.Value.Should().BeEquivalentTo(new { hasAccess = true });
+        _contactService.Verify(s => s.GetContactAsync(UserEmail), Times.Once);
+        _syncTrigger.Verify(s => s.ShouldTriggerSync(123), Times.Once);
+        _syncTrigger.Verify(s => s.TriggerSync(123), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetBookingAccess_WhenHasAccess_AndContactNotFound_ReturnsHasAccessTrue()
+    {
+        // Arrange
+        SetupGuardsAllowed();
+        _contactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        // Act
+        var result = await _controller.GetBookingAccess() as ObjectResult;
+
+        // Assert
+        result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        result.Value.Should().BeEquivalentTo(new { hasAccess = true });
+        _syncTrigger.Verify(s => s.ShouldTriggerSync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetBookingAccess_WhenHasAccess_AndContactResolutionFails_ReturnsHasAccessTrue()
+    {
+        // Arrange
+        SetupGuardsAllowed();
+        _contactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ThrowsAsync(new Exception("Contact API down"));
+
+        // Act
+        var result = await _controller.GetBookingAccess() as ObjectResult;
+
+        // Assert
+        result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        result.Value.Should().BeEquivalentTo(new { hasAccess = true });
+    }
+
+    [Fact]
+    public async Task GetBookingAccess_WhenNoAccess_DoesNotResolveContact()
+    {
+        // Arrange
+        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
+        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(false);
+
+        // Act
+        await _controller.GetBookingAccess();
+
+        // Assert
+        _contactService.Verify(s => s.GetContactAsync(It.IsAny<string>()), Times.Never);
+        _syncTrigger.Verify(s => s.ShouldTriggerSync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetBookingAccess_WhenShouldTriggerSyncFalse_DoesNotCallTriggerSync()
+    {
+        // Arrange
+        SetupGuardsAllowed();
+        SetupContactFound(contactId: 123);
+        _syncTrigger.Setup(s => s.ShouldTriggerSync(123)).Returns(false);
+
+        // Act
+        await _controller.GetBookingAccess();
+
+        // Assert
+        _syncTrigger.Verify(s => s.ShouldTriggerSync(123), Times.Once);
+        _syncTrigger.Verify(s => s.TriggerSync(It.IsAny<int>()), Times.Never);
     }
 
     #endregion
