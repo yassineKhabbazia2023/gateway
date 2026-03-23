@@ -862,6 +862,7 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
+          "AAD",
           "GIGYA MyPulse v2"
         ]
       }
