@@ -3089,7 +3089,32 @@
     },
     {
       "SwaggerKey": "Booking",
-      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/upcoming/currentuser?limit={limit}",
+      "UpstreamPathTemplate": "/gtw/booking/api/businesses/{configurationId}/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses/{configurationId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingWhitelistHandler",
+        "BookingFeatureFlagHandler",
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/upcoming/currentuser?limit={limit}",
       "DownstreamPathTemplate": "/api/booking/appointments?period=upcoming&limit={limit}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -3115,7 +3140,7 @@
     },
     {
       "SwaggerKey": "Booking",
-      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/upcoming/count/currentuser",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/upcoming/count/currentuser",
       "DownstreamPathTemplate": "/api/booking/appointments/upcoming/count",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -3141,7 +3166,7 @@
     },
     {
       "SwaggerKey": "Booking",
-      "UpstreamPathTemplate": "/gtw/booking/api/booking/appointments/past/currentuser?limit={limit}",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/past/currentuser?limit={limit}",
       "DownstreamPathTemplate": "/api/booking/appointments?period=past&limit={limit}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
