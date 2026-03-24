@@ -81,7 +81,7 @@ public class BookingWhitelistHandlerTests
     }
 
     [Fact]
-    public async Task Should_Return_401_When_User_Not_In_Whitelist()
+    public async Task Should_Return_403_When_User_Not_In_Whitelist()
     {
         // Arrange
         var bookingGuards = new Mock<IBookingExperienceGuards>();
@@ -97,7 +97,7 @@ public class BookingWhitelistHandlerTests
         // Assert
         var expected = new HttpResponseMessage
         {
-            StatusCode = HttpStatusCode.Unauthorized,
+            StatusCode = HttpStatusCode.Forbidden,
             Content = JsonContent.Create(new { ErrorCode = Errors.XpBookingUnauthorizedCode, ErrorMessage = Errors.XpBookingUnauthorizedMessage })
         };
         result.Should().BeEquivalentTo(expected);

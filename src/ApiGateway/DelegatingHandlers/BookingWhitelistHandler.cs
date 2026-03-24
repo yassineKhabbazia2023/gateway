@@ -38,8 +38,8 @@ public class BookingWhitelistHandler(IBookingExperienceGuards bookingGuards, ILo
             return await base.SendAsync(request, cancellationToken);
         }
 
-        logger.LogWarning("[Response]: 401 - [Handler]: BookingWhitelistHandler - [Function]: SendAsync - [Reason]: User {UserEmail} is not in XpBookingWhitelist", userEmail);
-        return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        logger.LogWarning("[Response]: 403 - [Handler]: BookingWhitelistHandler - [Function]: SendAsync - [Reason]: User {UserEmail} is not in XpBookingWhitelist", userEmail);
+        return new HttpResponseMessage(HttpStatusCode.Forbidden)
         {
             Content = JsonContent.Create(new { ErrorCode = Errors.XpBookingUnauthorizedCode, ErrorMessage = Errors.XpBookingUnauthorizedMessage })
         };
