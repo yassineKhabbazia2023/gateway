@@ -929,10 +929,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      },
-       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
-      ]
+      }
     },
     {
       "SwaggerKey": "Contact",
