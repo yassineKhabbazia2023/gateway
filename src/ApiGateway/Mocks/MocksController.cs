@@ -1,6 +1,5 @@
 using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Mocks.Models;
-using LiteDB;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 using System.Net;
@@ -11,42 +10,37 @@ namespace ApiGateway.Mocks;
 [Route("mocks")]
 public class MocksController : ControllerBase
 {
-    private readonly ILiteDatabase database;
+    private readonly IMockResponseRepository repository;
     private readonly IFeatureManager featureManager;
 
-    public MocksController(ILiteDatabase database, IFeatureManager featureManager)
+    public MocksController(IMockResponseRepository repository, IFeatureManager featureManager)
     {
-        this.database = database;
+        this.repository = repository;
         this.featureManager = featureManager;
     }
 
     [HttpGet("get-mock-index")]
     public async Task<IActionResult> GetMockIndex()
     {
-        if (!await featureManager!.IsEnabledAsync("Mocks"))
+        if (!await featureManager.IsEnabledAsync("Mocks"))
         {
-            return this.StatusCode((int)HttpStatusCode.Forbidden);
+            return StatusCode((int)HttpStatusCode.Forbidden);
         }
 
-        var mockIndexCollection = this.database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
-        var mockIndexes = mockIndexCollection.FindAll();
-
-        return Ok(mockIndexes);
+        var mockEntries = await repository.ListAllAsync();
+        return Ok(mockEntries);
     }
 
     /// <summary>
     /// It will update or insert a new response mock json response
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="fileUpdate"></param>
-    /// <returns></returns>
     [HttpPost("modify-mock-response")]
     public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request,
         [FromForm] MockEntryFileUpdate? fileUpdate)
     {
-        if (!await featureManager!.IsEnabledAsync("Mocks"))
+        if (!await featureManager.IsEnabledAsync("Mocks"))
         {
-            return this.StatusCode((int)HttpStatusCode.Forbidden);
+            return StatusCode((int)HttpStatusCode.Forbidden);
         }
 
         if (fileUpdate?.File == null || request == null)
@@ -75,25 +69,31 @@ public class MocksController : ControllerBase
             return BadRequest("The file content is not valid JSON.");
         }
 
-        var mockIndexDoc = new MockIndexDoc
-        {
-            DownstreamUri = request.DownstreamUri,
-            HttpVerb = request.HttpVerb,
-            JsonContent = fileContent,
-        };
-        mockIndexDoc.Id = mockIndexDoc.GenerateId();
-
-        var mockIndexCollection = this.database.GetCollection<MockIndexDoc>(MocksConstants.MockResponsesCollection);
-        var existingDoc = mockIndexCollection.FindById(mockIndexDoc.Id);
-        if (existingDoc != null)
-        {
-            mockIndexCollection.Update(mockIndexDoc);
-        }
-        else
-        {
-            mockIndexCollection.Insert(mockIndexDoc);
-        }
+        var routeKey = $"{request.HttpVerb}:{request.DownstreamUri}".ToLower();
+        await repository.UpsertAsync(routeKey, fileContent);
 
         return Ok("Mock response updated successfully.");
+    }
+
+    [HttpDelete("delete-mock-response")]
+    public async Task<IActionResult> DeleteMockResponse([FromQuery] string routeKey)
+    {
+        if (!await featureManager.IsEnabledAsync("Mocks"))
+        {
+            return StatusCode((int)HttpStatusCode.Forbidden);
+        }
+
+        if (string.IsNullOrWhiteSpace(routeKey))
+        {
+            return BadRequest("Route key is required.");
+        }
+
+        var deleted = await repository.DeleteAsync(routeKey);
+        if (!deleted)
+        {
+            return NotFound("Mock response not found.");
+        }
+
+        return Ok("Mock response deleted successfully.");
     }
 }

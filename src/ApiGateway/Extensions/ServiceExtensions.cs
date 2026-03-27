@@ -16,7 +16,7 @@ using ApiGateway.Identity.Options;
 using ApiGateway.Offer;
 using ApiGateway.Pennylane;
 using ApiGateway.TokenRevocation;
-using LiteDB;
+using Azure.Storage.Blobs;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -195,8 +195,16 @@ public static class ServiceExtensions
 
     private static void ConfigureMockService(IServiceCollection services, IConfiguration configuration)
     {
-        var databasePath = FileHelper.GetLiteDbDir(configuration);
-        services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase(databasePath));
+        var credential = new Azure.Storage.StorageSharedKeyCredential(
+            configuration["IsvcAzureStorageName"]!,
+            configuration["IsvcAzureStorageKey"]!);
+        var containerUri = new Uri($"{configuration["IsvcAzureBlobStorageUri"]!.TrimEnd('/')}/{MocksConstants.ContainerName}");
+        services.AddSingleton(_ =>
+        {
+            var client = new BlobContainerClient(containerUri, credential);
+            client.CreateIfNotExists();
+            return client;
+        });
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
     }
 

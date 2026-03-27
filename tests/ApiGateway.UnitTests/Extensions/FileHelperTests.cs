@@ -23,7 +23,7 @@ namespace ApiGateway.UnitTests.Extensions
             // Arrange
             var fixture = new Fixture();
             var expectedPath = fixture.Create<string>();
-            var expectedFileName = "ocelot.json"; 
+            var expectedFileName = "ocelot.json";
             var configMock = new Mock<IConfiguration>();
             configMock.Setup(c => c[It.IsAny<string>()]).Returns(expectedPath);
 
@@ -33,34 +33,5 @@ namespace ApiGateway.UnitTests.Extensions
             // Assert
             fullPath.Should().Be(Path.Combine(expectedPath, expectedFileName));
         }
-
-        [Fact]
-        public void GetLiteDbDir_ValidConfigurationPath_ReturnsExpectedDirectoryPath()
-        {
-            // Arrange
-            var fixture = new Fixture();
-            var expectedPath = fixture.Create<string>();
-            var expectedDbName = "mocks.db";
-            var configMock = new Mock<IConfiguration>();
-            configMock.Setup(c => c[It.IsAny<string>()]).Returns(expectedPath);
-
-            // Act
-            var dbDir = FileHelper.GetLiteDbDir(configMock.Object);
-
-            // Assert
-            dbDir.Should().Be(Path.Combine(expectedPath, expectedDbName));
-        }
-
-        [Fact]
-        public void GetLiteDbDir_ConfigurationPathNotSet_ThrowsNullReferenceException()
-        {
-            // Arrange
-            var configMock = new Mock<IConfiguration>();
-            configMock.Setup(c => c[It.IsAny<string>()]).Returns<string>(null!);
-
-            // Act & Assert
-            Assert.Throws<GatewayException>(() => FileHelper.GetLiteDbDir(configMock.Object));
-        }
-
     }
 }

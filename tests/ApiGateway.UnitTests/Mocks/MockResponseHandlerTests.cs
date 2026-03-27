@@ -1,97 +1,104 @@
 using System.Net;
 using ApiGateway.DelegatingHandlers.Mocks;
+using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
 
 namespace ApiGateway.UnitTests.Mocks
 {
     public class MockResponseHandlerTests
     {
+        private readonly Mock<IMockResponseRepository> _mockRepo = new();
+        private readonly Mock<IFeatureManager> _featureManager = new(MockBehavior.Strict);
+        private readonly Mock<ILogger<MockResponseHandler>> _logger = new();
+
         [Fact]
-        public async Task SendAsync_RequestHasNoRegisteredResponse_ReturnsFallbackResponse()
+        public async Task SendAsync_MocksFeatureDisabled_ReturnsFallbackWithoutCallingRepository()
         {
             // Arrange
-            var mockRepo = new Mock<IMockResponseRepository>();
-            mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
-                .Returns((false, null)!);
+            _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
 
-            var request = new HttpRequestMessage(HttpMethod.Get,
-                "http://localhost/test");
-            var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test");
+            var handler = new MockResponseHandler(_mockRepo.Object, _featureManager.Object, _logger.Object)
             {
                 InnerHandler = new MockHttpMessageHandler(new(HttpStatusCode.BadRequest))
             };
-
-            var invoker = new HttpMessageInvoker(mockResponseHandler);
+            var invoker = new HttpMessageInvoker(handler);
 
             // Act
-            var response = await invoker.SendAsync(request,
-                new());
+            var response = await invoker.SendAsync(request, new());
 
             // Assert
-            response.StatusCode.Should()
-                .Be(HttpStatusCode.BadRequest);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            _mockRepo.Verify(r => r.GetJsonContentAsync(It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
-        public async Task SendAsync_RequestWithQueryParameters_MatchesCorrectly()
+        public async Task SendAsync_MocksEnabled_NoRegisteredResponse_ReturnsFallbackResponse()
         {
             // Arrange
-            var mockRepo = new Mock<IMockResponseRepository>();
-            var testUriWithQuery = "http://localhost/test?param=value";
-            var routeKeyWithQuery = $"get:{testUriWithQuery}".ToLower();
-            var expectedContentWithQuery = "{\"key\":\"value\"}";
+            _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+            _mockRepo.Setup(repo => repo.GetJsonContentAsync(It.IsAny<string>()))
+                .ReturnsAsync((false, null)!);
 
-            // Ensure the mock setup matches the routeKeyWithQuery exactly as it's generated in the handler.
-            mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
-                .Returns<string>(key => (true, expectedContentWithQuery));
-
-            var requestWithQuery = new HttpRequestMessage(HttpMethod.Get,
-                testUriWithQuery);
-            var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test");
+            var handler = new MockResponseHandler(_mockRepo.Object, _featureManager.Object, _logger.Object)
             {
-                InnerHandler =
-                    new MockHttpMessageHandler(
-                        new HttpResponseMessage(HttpStatusCode
-                            .OK)) // Default fallback, won't be used in successful match
+                InnerHandler = new MockHttpMessageHandler(new(HttpStatusCode.BadRequest))
             };
-
-            var invoker = new HttpMessageInvoker(mockResponseHandler);
+            var invoker = new HttpMessageInvoker(handler);
 
             // Act
-            var responseWithQuery = await invoker.SendAsync(requestWithQuery,
-                new CancellationToken());
-            var contentWithQuery = await responseWithQuery.Content.ReadAsStringAsync();
+            var response = await invoker.SendAsync(request, new());
 
             // Assert
-            responseWithQuery.StatusCode.Should()
-                .Be(HttpStatusCode.OK);
-            contentWithQuery.Should()
-                .Be(expectedContentWithQuery);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact]
-        public async Task SendAsync_RequestUriIsInvalid_ReturnsFallbackResponse()
+        public async Task SendAsync_MocksEnabled_RequestWithQueryParameters_MatchesCorrectly()
         {
             // Arrange
-            var mockRepo = new Mock<IMockResponseRepository>();
-            mockRepo.Setup(repo => repo.GetJsonContent(It.IsAny<string>()))
-                .Returns((false, null));
-            var request = new HttpRequestMessage(HttpMethod.Get,
-                "http://localhost/invalidpath");
-            var mockResponseHandler = new MockResponseHandler(mockRepo.Object)
-            {
-                InnerHandler =
-                    new MockHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.NotFound)) // Fallback response setup
-            };
+            _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+            var expectedContent = "{\"key\":\"value\"}";
+            _mockRepo.Setup(repo => repo.GetJsonContentAsync(It.IsAny<string>()))
+                .ReturnsAsync((true, expectedContent));
 
-            var invoker = new HttpMessageInvoker(mockResponseHandler);
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/test?param=value");
+            var handler = new MockResponseHandler(_mockRepo.Object, _featureManager.Object, _logger.Object)
+            {
+                InnerHandler = new MockHttpMessageHandler(new(HttpStatusCode.OK))
+            };
+            var invoker = new HttpMessageInvoker(handler);
 
             // Act
-            var response = await invoker.SendAsync(request,
-                new CancellationToken());
+            var response = await invoker.SendAsync(request, new CancellationToken());
+            var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should()
-                .Be(HttpStatusCode.NotFound); // Verifying fallback response is returned
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            content.Should().Be(expectedContent);
+        }
+
+        [Fact]
+        public async Task SendAsync_MocksEnabled_RequestUriIsInvalid_ReturnsFallbackResponse()
+        {
+            // Arrange
+            _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+            _mockRepo.Setup(repo => repo.GetJsonContentAsync(It.IsAny<string>()))
+                .ReturnsAsync((false, null));
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/invalidpath");
+            var handler = new MockResponseHandler(_mockRepo.Object, _featureManager.Object, _logger.Object)
+            {
+                InnerHandler = new MockHttpMessageHandler(new(HttpStatusCode.NotFound))
+            };
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            var response = await invoker.SendAsync(request, new CancellationToken());
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 }

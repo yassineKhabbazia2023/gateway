@@ -1,5 +1,4 @@
 using ApiGateway.Configuration;
-using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Exceptions;
 
 namespace ApiGateway.Helpers;
@@ -19,10 +18,5 @@ public static class FileHelper
             throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, nameof(configFullPathName)));
         }
         return configFullPathName;
-    }
-
-    public static string GetLiteDbDir(IConfiguration configuration)
-    {
-        return Path.Combine(GetStoragePath(configuration), MocksConstants.FileDbName);
     }
 }

@@ -1,9 +1,8 @@
 using System.Net;
 using System.Text;
+using ApiGateway.DelegatingHandlers.Mocks;
 using ApiGateway.Mocks;
 using ApiGateway.Mocks.Models;
-using IdentityModel.OidcClient;
-using LiteDB;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
@@ -12,52 +11,42 @@ namespace ApiGateway.UnitTests.Mocks;
 
 public class MocksControllerTests
 {
+    private readonly Mock<IMockResponseRepository> _mockRepo = new();
+    private readonly Mock<IFeatureManager> _featureManager = new(MockBehavior.Strict);
+
+    private MocksController CreateController() => new(_mockRepo.Object, _featureManager.Object);
+
+    // ---- GET /mocks/get-mock-index ----
+
     [Fact]
-    public async void GetMockIndex_WhenCalled_ReturnsOkResultWithMockIndexes()
+    public async Task GetMockIndex_WhenCalled_ReturnsOkResultWithMockEntries()
     {
         // Arrange
-        var fixture = new Fixture();
-        var mockIndexes = fixture.CreateMany<MockIndexDoc>()
-            .ToList();
-        var mockDatabase = new Mock<ILiteDatabase>();
-        var mockCollection = new Mock<ILiteCollection<MockIndexDoc>>();
+        var mockEntries = new List<MockEntry>
+        {
+            new("get:/api/contacts", "{\"name\":\"test\"}"),
+            new("post:/api/users", "{}")
+        };
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _mockRepo.Setup(r => r.ListAllAsync()).ReturnsAsync(mockEntries);
 
-        mockCollection.Setup(x => x.FindAll())
-            .Returns(mockIndexes);
-        mockDatabase.Setup(db => db.GetCollection<MockIndexDoc>(It.IsAny<string>(),
-                BsonAutoId.ObjectId))
-            .Returns(mockCollection.Object);
-
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+        var controller = CreateController();
 
         // Act
         var result = await controller.GetMockIndex();
 
         // Assert
-        result.Should()
-            .BeOfType<OkObjectResult>();
+        result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
-        okResult?.Value.Should()
-            .BeEquivalentTo(mockIndexes);
+        okResult?.Value.Should().BeEquivalentTo(mockEntries);
     }
 
-
     [Fact]
-    public async void GetMockIndex_WhenFeatureGate_False_ReturnsForbidden()
+    public async Task GetMockIndex_WhenFeatureGate_False_ReturnsForbidden()
     {
         // Arrange
-        var fixture = new Fixture();
-        var mockIndexes = fixture.CreateMany<MockIndexDoc>()
-            .ToList();
-        var mockDatabase = new Mock<ILiteDatabase>();
-        var mockCollection = new Mock<ILiteCollection<MockIndexDoc>>();
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        var controller = CreateController();
 
         // Act
         var result = await controller.GetMockIndex() as StatusCodeResult;
@@ -66,209 +55,149 @@ public class MocksControllerTests
         result!.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
     }
 
+    // ---- POST /mocks/modify-mock-response ----
+
     [Fact]
     public async Task ModifyMockResponse_FileIsNotJson_ReturnsBadRequest()
     {
         // Arrange
-        var mockDatabase = new Mock<ILiteDatabase>();
-
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        var controller = CreateController();
         var mockFile = new Mock<IFormFile>();
-        mockFile.Setup(_ => _.FileName)
-            .Returns("invalid.txt"); // Ensure file extension is not .json
+        mockFile.Setup(_ => _.FileName).Returns("invalid.txt");
 
-        var request = new MockIndexRequest
-        {
-            DownstreamUri = "http://test.com",
-            HttpVerb = "GET"
-        };
-        var fileUpdate = new MockEntryFileUpdate
-        {
-            File = mockFile.Object
-        };
+        var request = new MockIndexRequest { DownstreamUri = "http://test.com", HttpVerb = "GET" };
+        var fileUpdate = new MockEntryFileUpdate { File = mockFile.Object };
 
         // Act
-        var result = await controller.ModifyMockResponse(request,
-            fileUpdate);
+        var result = await controller.ModifyMockResponse(request, fileUpdate);
 
         // Assert
-        result.Should()
-            .BeOfType<BadRequestObjectResult>();
-        var badRequestResult = result as BadRequestObjectResult;
-        badRequestResult?.Value.Should()
-            .Be("Only JSON files are accepted.");
+        result.Should().BeOfType<BadRequestObjectResult>();
+        (result as BadRequestObjectResult)?.Value.Should().Be("Only JSON files are accepted.");
     }
 
     [Fact]
     public async Task ModifyMockResponse_FileContentIsNotValidJson_ReturnsBadRequest()
     {
         // Arrange
-        var mockDatabase = new Mock<ILiteDatabase>();
-
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
-        var invalidJsonContent = "Invalid JSON";
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        var controller = CreateController();
         var mockFile = new Mock<IFormFile>();
-        mockFile.Setup(f => f.FileName)
-            .Returns("response.json");
+        mockFile.Setup(f => f.FileName).Returns("response.json");
         mockFile.Setup(f => f.OpenReadStream())
-            .Returns(new MemoryStream(Encoding.UTF8.GetBytes(invalidJsonContent)));
+            .Returns(new MemoryStream(Encoding.UTF8.GetBytes("Invalid JSON")));
 
-        var request = new MockIndexRequest
-        {
-            DownstreamUri = "http://example.com",
-            HttpVerb = "GET"
-        };
-        var fileUpdate = new MockEntryFileUpdate
-        {
-            File = mockFile.Object
-        };
+        var request = new MockIndexRequest { DownstreamUri = "http://example.com", HttpVerb = "GET" };
+        var fileUpdate = new MockEntryFileUpdate { File = mockFile.Object };
 
         // Act
-        var result = await controller.ModifyMockResponse(request,
-            fileUpdate);
+        var result = await controller.ModifyMockResponse(request, fileUpdate);
 
         // Assert
-        result.Should()
-            .BeOfType<BadRequestObjectResult>();
-        (result as BadRequestObjectResult)?.Value.Should()
-            .Be("The file content is not valid JSON.");
+        result.Should().BeOfType<BadRequestObjectResult>();
+        (result as BadRequestObjectResult)?.Value.Should().Be("The file content is not valid JSON.");
     }
 
     [Fact]
-    public async Task ModifyMockResponse_NewMockIndexDoc_InsertsDocSuccessfully()
+    public async Task ModifyMockResponse_ValidFile_CallsUpsertAndReturnsOk()
     {
         // Arrange
-        var mockDatabase = new Mock<ILiteDatabase>();
-        var mockCollection = new Mock<ILiteCollection<MockIndexDoc>>();
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _mockRepo.Setup(r => r.UpsertAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
 
-        mockCollection.Setup(x => x.FindById(It.IsAny<BsonValue>()))
-            .Returns(value: null!);
-        mockCollection.Setup(x => x.Insert(It.IsAny<MockIndexDoc>()))
-            .Verifiable();
-        mockDatabase.Setup(db => db.GetCollection<MockIndexDoc>(It.IsAny<string>(),
-                BsonAutoId.ObjectId))
-            .Returns(mockCollection.Object);
-
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
+        var controller = CreateController();
         var mockFile = new Mock<IFormFile>();
-
-        mockFile.Setup(f => f.FileName)
-            .Returns("valid.json");
+        mockFile.Setup(f => f.FileName).Returns("valid.json");
         mockFile.Setup(f => f.OpenReadStream())
             .Returns(new MemoryStream("{}"u8.ToArray()));
 
-        var request = new MockIndexRequest
-        {
-            DownstreamUri = "http://test.com",
-            HttpVerb = "GET"
-        };
-        var fileUpdate = new MockEntryFileUpdate
-        {
-            File = mockFile.Object
-        };
+        var request = new MockIndexRequest { DownstreamUri = "http://test.com", HttpVerb = "GET" };
+        var fileUpdate = new MockEntryFileUpdate { File = mockFile.Object };
 
         // Act
-        var result = await controller.ModifyMockResponse(request,
-            fileUpdate);
+        var result = await controller.ModifyMockResponse(request, fileUpdate);
 
         // Assert
-        mockCollection.Verify(x => x.Insert(It.IsAny<MockIndexDoc>()),
-            Times.Once);
-        result.Should()
-            .BeOfType<OkObjectResult>();
-        (result as OkObjectResult)!.Value.Should()
-            .Be("Mock response updated successfully.");
-    }
-
-    [Fact]
-    public async Task ModifyMockResponse_ExistingMockIndexDoc_UpdatesDocSuccessfully()
-    {
-        // Arrange
-        var mockDatabase = new Mock<ILiteDatabase>();
-        var mockCollection = new Mock<ILiteCollection<MockIndexDoc>>();
-        var existingMockIndexDoc = new MockIndexDoc
-        {
-            DownstreamUri = "http://test.com",
-            HttpVerb = "GET",
-            JsonContent = "{}",
-            Id = "someId"
-        };
-
-        mockCollection.Setup(x => x.FindById(It.IsAny<BsonValue>()))
-            .Returns(existingMockIndexDoc);
-        mockCollection.Setup(x => x.Update(It.IsAny<MockIndexDoc>()))
-            .Verifiable();
-        mockDatabase.Setup(db => db.GetCollection<MockIndexDoc>(It.IsAny<string>(),
-                BsonAutoId.ObjectId))
-            .Returns(mockCollection.Object);
-
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
-        var mockFile = new Mock<IFormFile>();
-        mockFile.Setup(f => f.FileName)
-            .Returns("valid.json");
-        mockFile.Setup(f => f.OpenReadStream())
-            .Returns(new MemoryStream(Encoding.UTF8.GetBytes("{}")));
-
-        var request = new MockIndexRequest
-        {
-            DownstreamUri = "http://test.com",
-            HttpVerb = "GET"
-        };
-        var fileUpdate = new MockEntryFileUpdate
-        {
-            File = mockFile.Object
-        };
-
-        // Act
-        var result = await controller.ModifyMockResponse(request,
-            fileUpdate);
-
-        // Assert
-        mockCollection.Verify(x => x.Update(It.IsAny<MockIndexDoc>()),
-            Times.Once);
-        result.Should()
-            .BeOfType<OkObjectResult>();
-        ((result as OkObjectResult)!).Value.Should()
-            .Be("Mock response updated successfully.");
+        _mockRepo.Verify(r => r.UpsertAsync("get:http://test.com", "{}"), Times.Once);
+        result.Should().BeOfType<OkObjectResult>();
+        (result as OkObjectResult)!.Value.Should().Be("Mock response updated successfully.");
     }
 
     [Fact]
     public async Task ModifyMockResponse_WhenFeatureGate_False_ReturnsForbidden()
     {
         // Arrange
-        var mockDatabase = new Mock<ILiteDatabase>();
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        var controller = CreateController();
 
-        var featureManager = new Mock<IFeatureManager>(MockBehavior.Strict);
-        featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
-
-        var controller = new MocksController(mockDatabase.Object, featureManager.Object);
-        var mockFile = new Mock<IFormFile>();
-
-        var request = new MockIndexRequest
-        {
-            DownstreamUri = "http://example.com",
-            HttpVerb = "GET"
-        };
-        var fileUpdate = new MockEntryFileUpdate
-        {
-            File = mockFile.Object
-        };
+        var request = new MockIndexRequest { DownstreamUri = "http://example.com", HttpVerb = "GET" };
+        var fileUpdate = new MockEntryFileUpdate { File = new Mock<IFormFile>().Object };
 
         // Act
-        var result = await controller.ModifyMockResponse(request,
-            fileUpdate) as StatusCodeResult;
+        var result = await controller.ModifyMockResponse(request, fileUpdate) as StatusCodeResult;
+
+        // Assert
+        result!.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+    }
+
+    // ---- DELETE /mocks/delete-mock-response ----
+
+    [Fact]
+    public async Task DeleteMockResponse_ExistingKey_ReturnsOk()
+    {
+        // Arrange
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _mockRepo.Setup(r => r.DeleteAsync("get:/api/contacts")).ReturnsAsync(true);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.DeleteMockResponse("get:/api/contacts");
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        (result as OkObjectResult)!.Value.Should().Be("Mock response deleted successfully.");
+    }
+
+    [Fact]
+    public async Task DeleteMockResponse_NonExistingKey_ReturnsNotFound()
+    {
+        // Arrange
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _mockRepo.Setup(r => r.DeleteAsync("get:/api/unknown")).ReturnsAsync(false);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.DeleteMockResponse("get:/api/unknown");
+
+        // Assert
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteMockResponse_EmptyRouteKey_ReturnsBadRequest()
+    {
+        // Arrange
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.DeleteMockResponse("");
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteMockResponse_WhenFeatureGate_False_ReturnsForbidden()
+    {
+        // Arrange
+        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.DeleteMockResponse("get:/api/contacts") as StatusCodeResult;
 
         // Assert
         result!.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);

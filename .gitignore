@@ -362,7 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 .idea
-src/ApiGateway/mocks.db
+
 /.vscode/launch.json
 nuget.config
 .vscode/tasks.json
