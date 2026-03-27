@@ -14,5 +14,6 @@ namespace ApiGateway.Pennylane.Constants
         public const string AlreadyExists = "already_exists";
         public const string ToCreate = "to_create";
         public const string PartialSuccess = "partial_success";
+        public const string Validated = "validated";
     }
 }

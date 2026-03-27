@@ -43,4 +43,11 @@ public class CreateCompanyRequest
     /// Maps to: <c>country_alpha2</c>.
     /// </summary>
     public required string CountryCode { get; set; }
+
+    /// <summary>
+    /// Requested plan code from the Offer system.
+    /// Used by Pennylane to compare with the actual SaaS plan.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RequestedPlanCode { get; set; }
 }

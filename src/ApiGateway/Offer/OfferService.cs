@@ -26,4 +26,12 @@ public class OfferService(HttpClient httpClient) : IOfferService
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<SubscriptionStatus[]>() ?? [];
     }
+
+    public async Task<OfferDetails?> GetOfferByIdAsync(int offerId)
+    {
+        var url = $"/api/offers/{offerId}";
+        var response = await httpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<OfferDetails>();
+    }
 }

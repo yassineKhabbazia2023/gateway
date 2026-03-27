@@ -242,4 +242,87 @@ public class OfferServiceTests
     }
 
     #endregion
+
+    #region GetOfferByIdAsync Tests
+
+    [Fact]
+    public async Task GetOfferByIdAsync_WhenSuccess_ShouldReturnOfferDetails()
+    {
+        var offerDetails = new OfferDetails
+        {
+            OfferId = 42,
+            Plans = new List<OfferPlan>
+            {
+                new OfferPlan { PlanId = 1, PlanCode = "COLLABORATIVE" },
+                new OfferPlan { PlanId = 2, PlanCode = "ESSENTIAL" }
+            }
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(offerDetails)
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri != null && req.RequestUri.ToString().Contains("/api/offers/42")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetOfferByIdAsync(42);
+
+        result.Should().NotBeNull();
+        result!.OfferId.Should().Be(42);
+        result.Plans.Should().HaveCount(2);
+        result.Plans![0].PlanCode.Should().Be("COLLABORATIVE");
+    }
+
+    [Fact]
+    public async Task GetOfferByIdAsync_WhenNotFound_ShouldReturnNull()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NotFound
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetOfferByIdAsync(999);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetOfferByIdAsync_WhenServerError_ShouldReturnNull()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.InternalServerError
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetOfferByIdAsync(42);
+
+        result.Should().BeNull();
+    }
+
+    #endregion
 }

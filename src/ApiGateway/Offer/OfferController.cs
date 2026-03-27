@@ -87,6 +87,15 @@ namespace ApiGateway.Offer
                     var notYetRegistered = subscriptionRequest.HasNoSiren == true
                         || string.IsNullOrWhiteSpace(siren);
 
+                    string? requestedPlanCode = null;
+                    if (subscriptionRequest.PlanId.HasValue)
+                    {
+                        var offer = await _offerService.GetOfferByIdAsync(subscriptionRequest.OfferId);
+                        requestedPlanCode = offer?.Plans?
+                            .FirstOrDefault(p => p.PlanId == subscriptionRequest.PlanId.Value)?
+                            .PlanCode;
+                    }
+
                     var companyCreateRequest = new CreateCompanyRequest
                     {
                         AccountId = subscriptionRequest.AccountId,
@@ -97,6 +106,7 @@ namespace ApiGateway.Offer
                         NotYetRegistered = notYetRegistered,
                         AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),
                         CountryCode = CountryCodeMapper.CountryToPennylaneCountryCode(countryCode),
+                        RequestedPlanCode = requestedPlanCode,
                     };
 
                     var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
@@ -121,6 +131,7 @@ namespace ApiGateway.Offer
                 {
                     PennylaneControllerStatuses.ToCreate => PennylaneConstants.PennylaneNotCreated,
                     PennylaneControllerStatuses.Created => PennylaneConstants.PennylaneCreated,
+                    PennylaneControllerStatuses.Validated => PennylaneControllerStatuses.Validated,
                     _ => PennylaneConstants.PennylaneToVerify
                 };
             }

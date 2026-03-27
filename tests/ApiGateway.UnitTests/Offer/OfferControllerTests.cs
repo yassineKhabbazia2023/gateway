@@ -1791,4 +1791,327 @@ public class OfferControllerTests
     }
 
     #endregion
+
+    #region Plan Comparison Tests
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneReturnsValidated_ShouldSetStatusToValidated()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 1,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Validated
+        };
+
+        var offerDetails = new OfferDetails
+        {
+            OfferId = 999,
+            Plans = new List<OfferPlan> { new OfferPlan { PlanId = 1, PlanCode = "COLLABORATIVE" } }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>())).ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneControllerStatuses.Validated);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPlanIdProvided_ShouldResolveAndPassPlanCodeToPennylane()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 2,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateCompanyRequest? capturedCompanyRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Created
+        };
+
+        var offerDetails = new OfferDetails
+        {
+            OfferId = 999,
+            Plans = new List<OfferPlan>
+            {
+                new OfferPlan { PlanId = 1, PlanCode = "COLLABORATIVE" },
+                new OfferPlan { PlanId = 2, PlanCode = "ESSENTIAL" }
+            }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedCompanyRequest.Should().NotBeNull();
+        capturedCompanyRequest!.RequestedPlanCode.Should().Be("ESSENTIAL");
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPlanIdIsNull_ShouldNotCallGetOfferById()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = null,
+            Contacts = new List<int> { 10 }
+        };
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Created
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>())).ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        _mockOfferService.Verify(x => x.GetOfferByIdAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenOfferApiReturnsNull_ShouldPassNullPlanCode()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 1,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateCompanyRequest? capturedCompanyRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Created
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync((OfferDetails?)null);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedCompanyRequest.Should().NotBeNull();
+        capturedCompanyRequest!.RequestedPlanCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPlanIdNotFoundInOffer_ShouldPassNullPlanCode()
+    {
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 99,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateCompanyRequest? capturedCompanyRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Created
+        };
+
+        var offerDetails = new OfferDetails
+        {
+            OfferId = 999,
+            Plans = new List<OfferPlan> { new OfferPlan { PlanId = 1, PlanCode = "COLLABORATIVE" } }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+
+        await _controller.CreateSubscription(request);
+
+        capturedCompanyRequest.Should().NotBeNull();
+        capturedCompanyRequest!.RequestedPlanCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenOfferHasNullPlans_ShouldPassNullPlanCode()
+    {
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 1,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateCompanyRequest? capturedCompanyRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Created
+        };
+
+        var offerDetails = new OfferDetails { OfferId = 999, Plans = null };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+
+        await _controller.CreateSubscription(request);
+
+        capturedCompanyRequest.Should().NotBeNull();
+        capturedCompanyRequest!.RequestedPlanCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenValidatedStatus_ShouldAlsoPassPlanCodeCorrectly()
+    {
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            PlanId = 1,
+            Contacts = new List<int> { 10 }
+        };
+
+        CreateCompanyRequest? capturedCompanyRequest = null;
+        CreateSubscriptionOffer? capturedSubscriptionRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.Validated
+        };
+
+        var offerDetails = new OfferDetails
+        {
+            OfferId = 999,
+            Plans = new List<OfferPlan> { new OfferPlan { PlanId = 1, PlanCode = "COLLABORATIVE" } }
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
+            .ReturnsAsync(companyResult);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedSubscriptionRequest = req)
+            .ReturnsAsync(456);
+
+        await _controller.CreateSubscription(request);
+
+        capturedCompanyRequest!.RequestedPlanCode.Should().Be("COLLABORATIVE");
+        capturedSubscriptionRequest!.Status.Should().Be(PennylaneControllerStatuses.Validated);
+    }
+
+    #endregion
 }
