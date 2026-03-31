@@ -847,13 +847,13 @@
       }
     },
     {
-      "SwaggerKey": "Account",
+      "SwaggerKey": "Prospect",
       "UpstreamPathTemplate": "/gtw/wallet/api/prospects/currentuser",
-      "DownstreamPathTemplate": "/api/accounts/currentuser?EntityType=PROSPECT",
+      "DownstreamPathTemplate": "/api/prospects/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
           "Port": 443
         }
       ],
