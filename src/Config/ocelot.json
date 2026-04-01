@@ -3210,6 +3210,30 @@
       "DelegatingHandlers": [
         "ProspectExperienceHandler"
       ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "Key": "BookingUpdateService",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/{configurationId}/services/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses/{configurationId}/services",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
     }
   ],
   "Aggregates": [
