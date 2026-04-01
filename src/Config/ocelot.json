@@ -2602,7 +2602,7 @@
         "OPTIONS"
       ]
     },
-     {
+    {
       "SwaggerKey": "notifications",
       "UpstreamPathTemplate": "/gtw/notifications/api/currentuser/accounts/{id}/contact/{destinationId}/message",
       "UpstreamHttpMethod": [
@@ -3187,6 +3187,29 @@
         "BookingWhitelistHandler",
         "BookingSyncHandler"
       ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/wallet/api/prospects/{prospectId}/currentuser",
+      "DownstreamPathTemplate": "/api/prospects/{prospectId}/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
     }
   ],
   "Aggregates": [
@@ -3412,7 +3435,7 @@
         {
           "Name": "Pulse.Back.Prospect",
           "Version": "v1",
-          "Url": "https://appcegpulseprs#{env_id}#01.azurewebsites.net/prospect/api/v1/api.json"
+          "Url": "https://appcegpulseprs#{env_id}#01.azurewebsites.net/api/v1/api.json"
         }
       ]
     }
