@@ -13,17 +13,13 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
 builder.Services.AddFeatureFlags(builder.Configuration);
 builder.Services.AddSignalR();
-builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
-builder.Services.RegisterApplicationInsights(builder.Configuration);
-
-builder.Logging.AddApplicationInsights();
-
 builder.Services.AddHttpLogging(o =>
 {
 });
 
-
 builder.Configuration.AddJsonConfiguration();
+
+builder.Logging.AddApplicationInsights();
 
 var app = builder.Build();
 
