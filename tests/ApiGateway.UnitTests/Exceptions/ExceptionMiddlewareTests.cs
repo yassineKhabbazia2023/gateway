@@ -1,4 +1,4 @@
-﻿using ApiGateway.Exceptions;
+using ApiGateway.Exceptions;
 using ApiGateway.Middlewares;
 using AutoFixture;
 using Microsoft.ApplicationInsights;
@@ -71,7 +71,7 @@ namespace ApiGateway.Tests.Middlewares
 
             // Assert
             Assert.True(nextCalled);
-            Assert.Equal(0, _telemetryChannel.SentItems.Count);
+            Assert.Empty(_telemetryChannel.SentItems);
         }
 
         [Fact]

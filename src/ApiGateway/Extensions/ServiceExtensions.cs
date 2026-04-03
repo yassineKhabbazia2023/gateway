@@ -121,8 +121,6 @@ public static class ServiceExtensions
             .AddDelegatingHandler<ProspectExperienceHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
-        services.AddScoped<IBookingProvisioningService, BookingProvisioningService>();
-
         services.AddHttpClient("BookingClient", client =>
         {
             client.BaseAddress = new Uri(configuration["BookingApiUri"]!);
