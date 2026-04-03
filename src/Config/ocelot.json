@@ -3283,7 +3283,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
+        "BookingFeatureFlagHandler",
+        "BookingWhitelistHandler"
       ]
     }
   ],
