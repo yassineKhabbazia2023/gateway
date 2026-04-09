@@ -52,6 +52,7 @@
     "GET /gtw/wallet/api/statistics/currentuser/{everything}",
     "OPTIONS /gtw/hub/ged/{everything}",
     "OPTIONS /gtw/hub/ged/Pia/negotiate?{queryString}",
+    "PATCH /gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
     "PATCH /gtw/contact/api/contacts/currentuser",
     "PATCH /gtw/contact/api/contacts/currentuser/{everything}",
     "PATCH /gtw/contact/api/contacts/currentuser/terms",
