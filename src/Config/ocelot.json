@@ -1654,27 +1654,6 @@
       }
     },
     {
-      "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
-      "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "UpstreamHttpMethod": [
-        "PATCH"
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      }
-    },
-    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/account/api/roles/currentuser/hub/contact/{everything}",
       "DownstreamPathTemplate": "/api/collaborators/currentuser/GetCollaboratorHubContacts/{everything}",
