@@ -115,6 +115,7 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<ConfigurationAggregator>()
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddTransientDefinedAggregator<SubmissionAggregator>()
+            .AddTransientDefinedAggregator<WalletInfoAggregator>()
             .AddDelegatingHandler<BookingWhitelistHandler>()
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<BookingSyncHandler>()

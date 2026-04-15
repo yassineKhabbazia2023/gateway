@@ -912,7 +912,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/wallet/api/infos/currentuser",
+      "Key": "WalletInfoAccount",
+      "UpstreamPathTemplate": "/gtw/internal/wallet/api/infos/account/currentuser",
       "DownstreamPathTemplate": "/api/entity-count-by-type/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
@@ -930,6 +931,31 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "Key": "WalletInfoProspect",
+      "UpstreamPathTemplate": "/gtw/internal/wallet/api/infos/prospect/currentuser",
+      "DownstreamPathTemplate": "/api/entity-count/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
     },
     {
       "SwaggerKey": "Contact",
@@ -3357,6 +3383,17 @@
         "VentyaDematReady"
       ],
       "Aggregator": "SubmissionAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/wallet/api/infos/currentuser",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "RouteKeys": [
+        "WalletInfoAccount",
+        "WalletInfoProspect"
+      ],
+      "Aggregator": "WalletInfoAggregator"
     }
   ],
   "SwaggerEndPoints": [
