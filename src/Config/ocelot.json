@@ -1174,6 +1174,29 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "UpstreamPathTemplate": "/gtw/wallet/api/delegations/currentuser/delegator",
+      "DownstreamPathTemplate": "/api/delegations/currentuser/delegator",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COUSER002, COGES001"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/customer-wallet/api/customers/currentuser",
       "DownstreamPathTemplate": "/api/accounts/contacts/currentuser",
       "DownstreamScheme": "https",
