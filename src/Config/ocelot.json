@@ -3352,6 +3352,29 @@
         "BookingFeatureFlagHandler",
         "BookingWhitelistHandler"
       ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/eligibility/currentuser",
+      "DownstreamPathTemplate": "/api/booking/eligibility",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "BookingFeatureFlagHandler"
+      ]
     }
   ],
   "Aggregates": [
