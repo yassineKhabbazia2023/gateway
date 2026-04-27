@@ -50,4 +50,10 @@ public class CreateCompanyRequest
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RequestedPlanCode { get; set; }
+
+    /// <summary>
+    /// The number of user you want to define in the current selected plan.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? UserNumber { get; set; }
 }

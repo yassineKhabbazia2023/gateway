@@ -3,7 +3,6 @@ using ApiGateway.Account.Constants;
 using ApiGateway.Attributes;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
-using ApiGateway.Exceptions;
 using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;
@@ -38,6 +37,27 @@ public class OfferControllerTests
         // Default behavior: don't create company for any OfferId
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(It.IsAny<int>()))
             .Returns(false);
+        var expectedOffer = new OfferDetails
+        {
+            OfferId = 8,
+            Plans =
+            [
+                new ()
+                {
+                    PlanId = 80,
+                    PlanCode = "STARTER",
+                    Pricings =
+                    [
+                        new ()
+                        {
+                            PlanPricingId = 800,
+                            Label = "1 utilisateur",
+                        }
+                    ]
+                }
+            ]
+        };
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(It.IsAny<int>())).ReturnsAsync(expectedOffer);
 
         _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object, _mockContactService.Object);
     }
@@ -199,7 +219,9 @@ public class OfferControllerTests
         {
             AccountId = 123,
             OfferId = 999,
-            Contacts = new List<int> { 10, 20 }
+            Contacts = new List<int> { 10, 20 },
+            PlanId = 80,
+            PlanPricingId = 800
         };
 
         var companyResult = new CreateCompanyResult
@@ -220,7 +242,10 @@ public class OfferControllerTests
             .ReturnsAsync(account);
 
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.Is<CreateCompanyRequest>(
-            req => req.AccountId == 123 && req.Contacts.Count == 2)))
+            req => req.AccountId == 123 &&
+            req.Contacts.Count == 2 &&
+            req.RequestedPlanCode == "STARTER" &&
+            req.UserNumber == "1 utilisateur")))
             .ReturnsAsync(companyResult);
 
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
@@ -2111,6 +2136,73 @@ public class OfferControllerTests
 
         capturedCompanyRequest!.RequestedPlanCode.Should().Be("COLLABORATIVE");
         capturedSubscriptionRequest!.Status.Should().Be(PennylaneControllerStatuses.Validated);
+    }
+
+    #endregion
+
+    #region GetPlanInfoAsync Tests
+
+    [Fact]
+    public async Task GetPlanInfoAsync_NoPlanId_ReturnsNulls()
+    {
+        var request = new CreateSubscriptionOffer { PlanId = null };
+
+        var result = await _controller.GetPlanInfoAsync(request);
+
+        result.Item1.Should().BeNull();
+        result.Item2.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetPlanInfoAsync_PlanIdNotFound_ReturnsNulls()
+    {
+        var request = new CreateSubscriptionOffer { PlanId = 1, OfferId = 10 };
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(10)).ReturnsAsync(new OfferDetails { OfferId = 10, Plans = [] });
+
+        var result = await _controller.GetPlanInfoAsync(request);
+
+        result.Item1.Should().BeNull();
+        result.Item2.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetPlanInfoAsync_PlanIdFound_NoPricingId_ReturnsPlanCodeAndNull()
+    {
+        var plan = new OfferPlan { PlanId = 2, PlanCode = "CODE2" };
+        var request = new CreateSubscriptionOffer { PlanId = 2, OfferId = 20 };
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(20)).ReturnsAsync(new OfferDetails { OfferId = 20, Plans = [plan] });
+
+        var result = await _controller.GetPlanInfoAsync(request);
+
+        result.Item1.Should().Be("CODE2");
+        result.Item2.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetPlanInfoAsync_PlanIdAndPricingIdFound_ReturnsPlanCodeAndLabel()
+    {
+        var pricing = new PlanPricing { PlanPricingId = 5, Label = "5 utilisateurs" };
+        var plan = new OfferPlan { PlanId = 3, PlanCode = "CODE3", Pricings = new List<PlanPricing> { pricing } };
+        var request = new CreateSubscriptionOffer { PlanId = 3, OfferId = 30, PlanPricingId = 5 };
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(30)).ReturnsAsync(new OfferDetails { OfferId = 30, Plans = [plan] });
+
+        var result = await _controller.GetPlanInfoAsync(request);
+
+        result.Item1.Should().Be("CODE3");
+        result.Item2.Should().Be("5 utilisateurs");
+    }
+
+    [Fact]
+    public async Task GetPlanInfoAsync_PlanIdFound_PricingIdNotFound_ReturnsPlanCodeAndNull()
+    {
+        var plan = new OfferPlan { PlanId = 4, PlanCode = "CODE4", Pricings = new List<PlanPricing>() };
+        var request = new CreateSubscriptionOffer { PlanId = 4, OfferId = 40, PlanPricingId = 99 };
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(40)).ReturnsAsync(new OfferDetails { OfferId = 40, Plans = [plan] });
+
+        var result = await _controller.GetPlanInfoAsync(request);
+
+        result.Item1.Should().Be("CODE4");
+        result.Item2.Should().BeNull();
     }
 
     #endregion
