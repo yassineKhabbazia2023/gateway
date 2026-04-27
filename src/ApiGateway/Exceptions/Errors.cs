@@ -61,9 +61,6 @@
         public static readonly string MissingMobilePhoneCode = "GTW020";
         public static readonly string MissingMobilePhoneMessage = "Le contact client avec l'identifiant {0} doit avoir un numéro de téléphone mobile.";
 
-        public static readonly string XpBookingUnauthorizedCode = "GTW021";
-        public static readonly string XpBookingUnauthorizedMessage = "L'utilisateur n'a pas accès à l'expérience Booking.";
-
         public static readonly string XpBookingFeatureFlagDisabledCode = "GTW022";
         public static readonly string XpBookingFeatureFlagDisabledMessage = "L'expérience Booking est désactivée.";
 

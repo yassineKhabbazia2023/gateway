@@ -116,7 +116,6 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddTransientDefinedAggregator<SubmissionAggregator>()
             .AddTransientDefinedAggregator<WalletInfoAggregator>()
-            .AddDelegatingHandler<BookingWhitelistHandler>()
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<BookingSyncHandler>()
             .AddDelegatingHandler<ProspectExperienceHandler>()
@@ -240,7 +239,6 @@ public static class ServiceExtensions
             .Configure(opt =>
             {
                 opt.FeatureFlagEnabled = configuration.GetValue<bool?>("XpBookingFeatureFlagEnabled") ?? false;
-                opt.Whitelist = configuration["XpBookingWhitelist"] ?? string.Empty;
                 opt.SyncIntervalMinutes = configuration.GetValue<int?>("XpBookingSyncIntervalMinutes") ?? 5;
             });
         return services;

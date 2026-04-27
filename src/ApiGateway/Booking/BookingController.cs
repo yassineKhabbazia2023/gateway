@@ -20,13 +20,13 @@ public class BookingController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetBookingAccess()
     {
-        var userEmail = userContext.User.GetEmail();
-        var hasAccess = bookingGuards.IsFeatureFlagEnabled() && bookingGuards.HasAccess(userEmail);
+        var hasAccess = bookingGuards.IsFeatureFlagEnabled();
 
         if (hasAccess)
         {
             try
             {
+                var userEmail = userContext.User.GetEmail();
                 var contact = await contactService.GetContactAsync(userEmail);
                 if (contact is not null && syncTrigger.ShouldTriggerSync(contact.Id))
                 {

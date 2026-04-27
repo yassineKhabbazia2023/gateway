@@ -3027,7 +3027,6 @@
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3051,6 +3050,11 @@
         "AuthenticationProviderKeys": [
           "AAD"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001",
+        "POST": "CORDV001",
+        "PUT": "CORDV001"
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
@@ -3124,8 +3128,10 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "DELETE": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingWhitelistHandler",
         "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
@@ -3149,9 +3155,11 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler"
+        "BookingFeatureFlagHandler"
       ]
     },
     {
@@ -3173,8 +3181,10 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingWhitelistHandler",
         "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
@@ -3201,7 +3211,6 @@
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3227,7 +3236,6 @@
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3253,7 +3261,6 @@
       },
       "DelegatingHandlers": [
         "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3276,9 +3283,11 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "POST": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler"
+        "BookingFeatureFlagHandler"
       ]
     },
     {
@@ -3300,9 +3309,11 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "POST": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler"
+        "BookingFeatureFlagHandler"
       ]
     },
     {
@@ -3348,9 +3359,11 @@
           "AAD"
         ]
       },
+      "RouteClaimsRequirement": {
+        "PATCH": "CORDV001"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
-        "BookingWhitelistHandler"
+        "BookingFeatureFlagHandler"
       ]
     },
     {

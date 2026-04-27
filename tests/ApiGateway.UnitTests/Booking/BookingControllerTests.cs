@@ -50,7 +50,6 @@ public class BookingControllerTests
     private void SetupGuardsAllowed()
     {
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
-        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(true);
     }
 
     private void SetupContactFound(int contactId = 123)
@@ -63,11 +62,10 @@ public class BookingControllerTests
     #region GetBookingAccess Tests
 
     [Fact]
-    public async Task GetBookingAccess_FeatureFlagEnabled_UserHasAccess_ReturnsHasAccessTrue()
+    public async Task GetBookingAccess_FeatureFlagEnabled_ReturnsHasAccessTrue()
     {
         // Arrange
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
-        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(true);
         SetupContactFound();
 
         // Act
@@ -79,50 +77,10 @@ public class BookingControllerTests
     }
 
     [Fact]
-    public async Task GetBookingAccess_FeatureFlagDisabled_UserHasAccess_ReturnsHasAccessFalse()
+    public async Task GetBookingAccess_FeatureFlagDisabled_ReturnsHasAccessFalse()
     {
         // Arrange
         _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
-        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(true);
-
-        // Act
-        var result = await _controller.GetBookingAccess() as ObjectResult;
-
-        // Assert
-        result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
-        result.Value.Should().BeEquivalentTo(new { hasAccess = false });
-    }
-
-    [Fact]
-    public async Task GetBookingAccess_FeatureFlagEnabled_UserHasNoAccess_ReturnsHasAccessFalse()
-    {
-        // Arrange
-        var userContext = CreateUserContext("notlisted@test.fr");
-        var bookingGuards = new Mock<IBookingExperienceGuards>();
-        bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
-        bookingGuards.Setup(s => s.HasAccess("notlisted@test.fr")).Returns(false);
-        var controller = new BookingController(
-            userContext.Object,
-            bookingGuards.Object,
-            _contactService.Object,
-            _syncTrigger.Object,
-            _logger.Object
-        );
-
-        // Act
-        var result = await controller.GetBookingAccess() as ObjectResult;
-
-        // Assert
-        result!.StatusCode.Should().Be((int)HttpStatusCode.OK);
-        result.Value.Should().BeEquivalentTo(new { hasAccess = false });
-    }
-
-    [Fact]
-    public async Task GetBookingAccess_FeatureFlagDisabled_UserHasNoAccess_ReturnsHasAccessFalse()
-    {
-        // Arrange
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
-        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(false);
 
         // Act
         var result = await _controller.GetBookingAccess() as ObjectResult;
@@ -186,11 +144,10 @@ public class BookingControllerTests
     }
 
     [Fact]
-    public async Task GetBookingAccess_WhenNoAccess_DoesNotResolveContact()
+    public async Task GetBookingAccess_WhenFeatureFlagDisabled_DoesNotResolveContact()
     {
         // Arrange
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
-        _bookingGuards.Setup(s => s.HasAccess(UserEmail)).Returns(false);
+        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
 
         // Act
         await _controller.GetBookingAccess();
