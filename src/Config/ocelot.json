@@ -1242,33 +1242,6 @@
     {
       "SwaggerKey": "Account",
       "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "UpstreamPathTemplate": "/gtw/account/api/delegations/currentuser/{accountId}/history",
-      "DownstreamPathTemplate": "/api/delegations/{accountId}/history",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
-        ]
-      },
-      "RouteClaimsRequirement": {
-        "GET": "COUSER001, COUSER002, COGES001"
-      },
-      "DelegatingHandlers": [
-        "RoleHandler"
-      ]
-    },
-    {
-      "SwaggerKey": "Account",
-      "UpstreamHttpMethod": [
         "GET",
         "DELETE"
       ],
