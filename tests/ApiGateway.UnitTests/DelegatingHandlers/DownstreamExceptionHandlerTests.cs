@@ -1,9 +1,6 @@
-﻿using ApiGateway.DelegatingHandlers;
+using ApiGateway.DelegatingHandlers;
 using AutoFixture;
 using FluentAssertions;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Channel;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -22,8 +19,6 @@ namespace ApiGateway.Tests.DelegatingHandlers
     public class DownstreamExceptionHandlerTests
     {
         private readonly Mock<ILogger<DownstreamExceptionHandler>> _loggerMock;
-        private readonly TelemetryClient _telemetryClient;
-        private readonly StubTelemetryChannel _telemetryChannel;
         private readonly Fixture _fixture;
         private readonly Mock<HttpMessageHandler> _innerHandlerMock;
 
@@ -32,19 +27,10 @@ namespace ApiGateway.Tests.DelegatingHandlers
             _loggerMock = new Mock<ILogger<DownstreamExceptionHandler>>();
             _fixture = new Fixture();
             _innerHandlerMock = new Mock<HttpMessageHandler>();
-
-            // Create TelemetryClient with test channel
-            _telemetryChannel = new StubTelemetryChannel();
-            var configuration = new TelemetryConfiguration
-            {
-                TelemetryChannel = _telemetryChannel,
-                InstrumentationKey = Guid.NewGuid().ToString()
-            };
-            _telemetryClient = new TelemetryClient(configuration);
         }
 
         [Fact]
-        public async Task SendAsync_WhenResponseIsSuccessful_ShouldNotLogError()
+        public async Task SendAsync_WhenResponseIsSuccessful_ShouldNotLogWarning()
         {
             // Arrange
             var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
@@ -64,7 +50,7 @@ namespace ApiGateway.Tests.DelegatingHandlers
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
 
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient);
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
             handler.InnerHandler = _innerHandlerMock.Object;
             var invoker = new HttpMessageInvoker(handler);
 
@@ -77,28 +63,24 @@ namespace ApiGateway.Tests.DelegatingHandlers
 
             _loggerMock.Verify(
                 x => x.Log(
-                    LogLevel.Error,
+                    LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.IsAny<It.IsAnyType>(),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Never);
-
-            _telemetryChannel.SentTelemetry.Should().BeEmpty();
         }
 
         [Theory]
         [InlineData(HttpStatusCode.BadRequest)]
         [InlineData(HttpStatusCode.NotFound)]
-        [InlineData(HttpStatusCode.InternalServerError)]
-        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldLogErrorAndTrackEvent(HttpStatusCode statusCode)
+        public async Task SendAsync_WhenResponseIs4xx_ShouldLogWarning(HttpStatusCode statusCode)
         {
             // Arrange
             var request = new HttpRequestMessage(HttpMethod.Post, "https://example.com/api/resource");
             request.Headers.Add("Authorization", "Bearer token123");
             request.Content = new StringContent("{\"data\":\"test\"}", Encoding.UTF8, "application/json");
 
-            // Create response with proper error format for JSON deserialization
             var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
             var response = new HttpResponseMessage(statusCode)
             {
@@ -113,7 +95,7 @@ namespace ApiGateway.Tests.DelegatingHandlers
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
 
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient);
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
             handler.InnerHandler = _innerHandlerMock.Object;
             var invoker = new HttpMessageInvoker(handler);
 
@@ -124,30 +106,109 @@ namespace ApiGateway.Tests.DelegatingHandlers
             result.Should().NotBeNull();
             result.StatusCode.Should().Be(statusCode);
 
-            // Verify logger was called with error level
+            _loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Downstream exception")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.BadGateway)]
+        public async Task SendAsync_WhenResponseIs5xx_ShouldLogError(HttpStatusCode statusCode)
+        {
+            // Arrange
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://example.com/api/resource");
+            request.Headers.Add("Authorization", "Bearer token123");
+            request.Content = new StringContent("{\"data\":\"test\"}", Encoding.UTF8, "application/json");
+
+            var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
+            var response = new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
+            };
+            response.Headers.Add("X-Error", "ErrorDetails");
+
+            _innerHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response);
+
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
+            handler.InnerHandler = _innerHandlerMock.Object;
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            var result = await invoker.SendAsync(request, CancellationToken.None);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.StatusCode.Should().Be(statusCode);
+
             _loggerMock.Verify(
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, _) => v.ToString().Contains("Response Status")), 
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Downstream exception")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SendAsync_WhenResponseIsNonJsonContent_ShouldLogWarningAndNotThrow()
+        {
+            // Arrange
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
+            var htmlContent = "<html><body>502 Bad Gateway</body></html>";
+            var response = new HttpResponseMessage(HttpStatusCode.BadGateway)
+            {
+                Content = new StringContent(htmlContent, Encoding.UTF8, "text/html")
+            };
+
+            _innerHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response);
+
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
+            handler.InnerHandler = _innerHandlerMock.Object;
+            var invoker = new HttpMessageInvoker(handler);
+
+            // Act
+            var result = await invoker.SendAsync(request, CancellationToken.None);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.StatusCode.Should().Be(HttpStatusCode.BadGateway);
+
+            // Verify deserialization failure was logged
+            _loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Failed to deserialize")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
 
-            // Verify telemetry was sent using the stub channel
-            _telemetryChannel.SentTelemetry.Should().NotBeEmpty();
-            var eventTelemetry = _telemetryChannel.SentTelemetry.FirstOrDefault(t => t.GetType().Name == "EventTelemetry");
-            eventTelemetry.Should().NotBeNull();
-
-            // Additional verification on the event telemetry properties
-            if (eventTelemetry is Microsoft.ApplicationInsights.DataContracts.EventTelemetry et)
-            {
-                et.Name.Should().Be("Downstream Exceptions");
-                et.Properties.Should().ContainKey("Downstream Url");
-                et.Properties.Should().ContainKey("Response Status");
-                et.Properties.Should().ContainKey("ErrorCode");
-                et.Properties.Should().ContainKey("ErrorMessage");
-            }
+            // Verify error was still logged with raw content as fallback
+            _loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Downstream exception")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -164,7 +225,7 @@ namespace ApiGateway.Tests.DelegatingHandlers
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(expectedException);
 
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient);
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
             handler.InnerHandler = _innerHandlerMock.Object;
             var invoker = new HttpMessageInvoker(handler);
 
@@ -192,7 +253,7 @@ namespace ApiGateway.Tests.DelegatingHandlers
                 .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
                 .ReturnsAsync(response);
 
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient);
+            var handler = new DownstreamExceptionHandler(_loggerMock.Object);
             handler.InnerHandler = _innerHandlerMock.Object;
             var invoker = new HttpMessageInvoker(handler);
 
@@ -203,124 +264,6 @@ namespace ApiGateway.Tests.DelegatingHandlers
             capturedRequest.Should().NotBeNull();
             capturedRequest.RequestUri.Should().Be(request.RequestUri);
             capturedRequest.Method.Should().Be(request.Method);
-        }
-
-        [Fact]
-        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldNotLogAuthorizationHeader()
-        {
-            // Arrange
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
-            request.Headers.Add("Authorization", "Bearer secret-token");
-            request.Headers.Add("X-Custom-Header", "safe-value");
-            request.Content = new StringContent("body");
-
-            var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
-            {
-                Content = new StringContent("{\"errorCode\":\"ERR\",\"errorMessage\":\"fail\"}")
-            };
-
-            _innerHandlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(response);
-
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
-            var invoker = new HttpMessageInvoker(handler);
-
-            // Act
-            await invoker.SendAsync(request, CancellationToken.None);
-
-            // Assert
-            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
-            et.Properties.Should().NotContainKey("Authorization");
-            et.Properties.Should().ContainKey("X-Custom-Header");
-            et.Properties["X-Custom-Header"].Should().Be("safe-value");
-        }
-
-        [Theory]
-        [InlineData("Cookie")]
-        [InlineData("Set-Cookie")]
-        [InlineData("authorization")]
-        [InlineData("AUTHORIZATION")]
-        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldFilterSensitiveHeaders(string sensitiveHeaderName)
-        {
-            // Arrange
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
-            request.Headers.TryAddWithoutValidation(sensitiveHeaderName, "sensitive-value");
-            request.Content = new StringContent("body");
-
-            var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
-            var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
-            };
-
-            _innerHandlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(response);
-
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
-            var invoker = new HttpMessageInvoker(handler);
-
-            // Act
-            await invoker.SendAsync(request, CancellationToken.None);
-
-            // Assert
-            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
-            et.Properties.Keys.Should().NotContain(key => key.Equals(sensitiveHeaderName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        [Fact]
-        public async Task SendAsync_WhenResponseIsNotSuccessful_ShouldKeepNonSensitiveHeaders()
-        {
-            // Arrange
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/api");
-            request.Headers.Add("X-Request-Id", "123");
-            request.Headers.Add("X-Correlation-Id", "abc");
-            request.Content = new StringContent("body");
-
-            var responseContent = "{\"errorCode\":\"ERR001\",\"errorMessage\":\"Something went wrong\"}";
-            var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
-            {
-                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
-            };
-
-            _innerHandlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(response);
-
-            var handler = new DownstreamExceptionHandler(_loggerMock.Object, _telemetryClient) { InnerHandler = _innerHandlerMock.Object };
-            var invoker = new HttpMessageInvoker(handler);
-
-            // Act
-            await invoker.SendAsync(request, CancellationToken.None);
-
-            // Assert
-            var et = _telemetryChannel.SentTelemetry.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>().First();
-            et.Properties.Keys.Should().Contain(key => key.Equals("X-Request-Id", StringComparison.OrdinalIgnoreCase));
-            et.Properties.Keys.Should().Contain(key => key.Equals("X-Correlation-Id", StringComparison.OrdinalIgnoreCase));
-        }
-    }
-
-    // Custom stub telemetry channel for testing
-    public class StubTelemetryChannel : ITelemetryChannel
-    {
-        public List<ITelemetry> SentTelemetry { get; } = new List<ITelemetry>();
-        public bool IsFlushed { get; private set; }
-        public bool? DeveloperMode { get; set; }
-        public string EndpointAddress { get; set; }
-
-        public void Send(ITelemetry item)
-        {
-            SentTelemetry.Add(item);
-        }
-
-        public void Flush()
-        {
-            IsFlushed = true;
-        }
-
-        public void Dispose()
-        {
         }
     }
 }

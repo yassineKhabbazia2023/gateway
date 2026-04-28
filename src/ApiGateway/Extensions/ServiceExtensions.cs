@@ -51,7 +51,7 @@ public static class ServiceExtensions
         services.AddScoped<IAuthorizationRequestValidator, AuthorizationRequestValidator>();
         services.AddScoped<IPennylaneAuthorizationService, PennylaneAuthorizationService>();
         services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
-        services.RegisterApplicationInsights(configuration);
+        services.RegisterOpenTelemetry(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         services.AddEndpointsApiExplorer();
@@ -106,6 +106,7 @@ public static class ServiceExtensions
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddOcelot()
+            .AddDelegatingHandler<TraceContextHandler>(true)
             .AddDelegatingHandler<ContactHandler>(true)
             .AddDelegatingHandler<DownstreamExceptionHandler>(true)
             .AddDelegatingHandler<LogoutRevocationHandler>(true)
@@ -220,17 +221,6 @@ public static class ServiceExtensions
             .WaitAndRetryAsync(ConfigConstants.HttpClientRetryAttempt,
                 retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
                     retryAttempt)));
-    }
-
-    private static void RegisterApplicationInsights(this IServiceCollection services, IConfiguration configuration)
-    {
-        var applicationInsightsConexionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-        services.AddApplicationInsightsTelemetry(options =>
-        {
-            options.ConnectionString = applicationInsightsConexionString;
-            // Désactiver explicitement tous les types de sampling
-            options.EnableAdaptiveSampling = false;
-        });
     }
 
     private static IServiceCollection AddBookingExperienceConfiguration(this IServiceCollection services, IConfiguration configuration)

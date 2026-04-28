@@ -1,94 +1,57 @@
-﻿using Microsoft.ApplicationInsights;
-using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using Pulse.ExceptionMiddleware.Model;
-using System.Net.Http.Headers;
-using System.Text;
 
 namespace ApiGateway.DelegatingHandlers
 {
-    public class DownstreamExceptionHandler : DelegatingHandler
+    public sealed class DownstreamExceptionHandler : DelegatingHandler
     {
         private readonly ILogger<DownstreamExceptionHandler> _logger;
-        private readonly TelemetryClient _telemetryClient;
 
-        public DownstreamExceptionHandler(ILogger<DownstreamExceptionHandler> logger, TelemetryClient telemetryClient)
+        public DownstreamExceptionHandler(ILogger<DownstreamExceptionHandler> logger)
         {
             _logger = logger;
-            _telemetryClient = telemetryClient;
         }
-        
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-
-            StringBuilder builder = new StringBuilder();
-            // request information
             string requestUrl = request.RequestUri is null ? string.Empty : request.RequestUri.ToString();
-            string requestbody = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync();
-            var telemetryContent = new Dictionary<string, string>();
-
-            telemetryContent = FormatHeaders(telemetryContent, request.Headers);
 
             var httpResponse = await base.SendAsync(request, cancellationToken);
 
             if (!httpResponse.IsSuccessStatusCode)
             {
-                //response information
                 int statusCode = (int)httpResponse.StatusCode;
-                string content = await httpResponse.Content.ReadAsStringAsync();
+                string content = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
 
-                telemetryContent.TryAdd("Downstream Url", requestUrl);
-                telemetryContent.TryAdd("Request Content", requestbody);
-                telemetryContent.TryAdd("Response Status", statusCode.ToString());
-                ErrorResponse? errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
-                if (errorResponse is null)
+                ErrorResponse? errorResponse = null;
+                try
                 {
-                    telemetryContent.TryAdd("ErrorResponse", content);
+                    errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize downstream error response from {DownstreamUrl} - Status: {ResponseStatus}, RawContent: {RawContent}",
+                        requestUrl, statusCode, content);
+                }
+
+                if (statusCode >= 500)
+                {
+                    _logger.LogError("Downstream exception from {DownstreamUrl} - Status: {ResponseStatus}, ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}",
+                        requestUrl,
+                        statusCode,
+                        errorResponse?.ErrorCode ?? "N/A",
+                        errorResponse?.ErrorMessage ?? content);
                 }
                 else
                 {
-                    telemetryContent.TryAdd("ErrorCode", errorResponse.ErrorCode);
-                    telemetryContent.TryAdd("ErrorMessage", errorResponse.ErrorMessage);
+                    _logger.LogWarning("Downstream exception from {DownstreamUrl} - Status: {ResponseStatus}, ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}",
+                        requestUrl,
+                        statusCode,
+                        errorResponse?.ErrorCode ?? "N/A",
+                        errorResponse?.ErrorMessage ?? content);
                 }
-
-                foreach (var keyvalue in telemetryContent)
-                {
-                    builder.AppendLine($"{keyvalue.Key}: {keyvalue.Value}");
-                }
-
-                _logger.LogError(builder.ToString());
-                _telemetryClient.TrackEvent("Downstream Exceptions", telemetryContent);
             }
             return httpResponse;
         }
-
-        private static readonly HashSet<string> SensitiveHeaders = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Authorization",
-            "Cookie",
-            "Set-Cookie"
-        };
-
-        private Dictionary<string, string> FormatHeaders(Dictionary<string, string> content, HttpHeaders headers)
-        {
-            if (headers == null || !headers.Any())
-            {
-                return content;
-            }
-
-            foreach (var header in headers)
-            {
-                if (SensitiveHeaders.Contains(header.Key))
-                {
-                    continue;
-                }
-
-                string headerValues = string.Join(", ", header.Value);
-                content.TryAdd(header.Key, headerValues);
-            }
-
-            return content;
-        }
-
     }
 }

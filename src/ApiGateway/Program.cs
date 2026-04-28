@@ -6,6 +6,12 @@ using Microsoft.FeatureManagement;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.Configure(options =>
+{
+    options.ActivityTrackingOptions =
+        Microsoft.Extensions.Logging.ActivityTrackingOptions.TraceId |
+        Microsoft.Extensions.Logging.ActivityTrackingOptions.SpanId;
+});
 builder.Services.AddApiGatewayServices(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
@@ -13,13 +19,12 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddFeatureManagement();
 builder.Services.AddFeatureFlags(builder.Configuration);
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<GatewayExceptionMiddleware>();
 builder.Services.AddHttpLogging(o =>
 {
 });
 
 builder.Configuration.AddJsonConfiguration();
-
-builder.Logging.AddApplicationInsights();
 
 var app = builder.Build();
 
@@ -84,7 +89,8 @@ var config = new OcelotPipelineConfiguration
                 },
     PreErrorResponderMiddleware = async (context, next) =>
     {
-        await ApiGateway.Middlewares.GatewayExceptionMiddleware.ExceptionFilter(context, next);
+        var exceptionMiddleware = context.RequestServices.GetRequiredService<GatewayExceptionMiddleware>();
+        await exceptionMiddleware.InvokeAsync(context, next);
     }
 };
 
