@@ -51,6 +51,12 @@ namespace ApiGateway.Helpers
 
             if (jwtToken != null)
             {
+                var upnClaim = jwtToken.Claims.FirstOrDefault(c => c.Type.Equals("upn", StringComparison.OrdinalIgnoreCase));
+                if (upnClaim != null)
+                {
+                    return upnClaim.Value;
+                }
+
                 var emailClaim = jwtToken.Claims.FirstOrDefault(c => c.Type.Equals("email", StringComparison.OrdinalIgnoreCase));
                 if (emailClaim != null)
                 {

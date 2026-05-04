@@ -29,6 +29,12 @@ namespace ApiGateway.Identity.Extensions
                 throw new GatewayException(StatusCodes.Status400BadRequest, Errors.NullArgumentCode, string.Format(Errors.NullArgumentMessage, nameof(principal)));
             }
 
+            var upnClaim = principal.FindFirst(ClaimTypes.Upn);
+            if (upnClaim != null)
+            {
+                return upnClaim.Value;
+            }
+
             var emailClaim = principal.FindFirst(ClaimTypes.Email);
 
             if (emailClaim == null)

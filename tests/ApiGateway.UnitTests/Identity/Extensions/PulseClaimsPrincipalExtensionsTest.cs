@@ -43,6 +43,34 @@ namespace ApiGateway.UnitTests.Identity.Extensions
             Assert.Equal(email, result);
         }
 
+        public static TheoryData<List<Claim>, string> GetEmailResolutionCases => new()
+        {
+            // AAD : UPN prime sur email (alias externe ≠ identité réelle)
+            {
+                [new(ClaimTypes.Upn, "toto@rydge.fr"), new(ClaimTypes.Email, "toto-ext@rydge.fr")],
+                "toto@rydge.fr"
+            },
+            // AAD sans claim email
+            {
+                [new(ClaimTypes.Upn, "toto@rydge.fr")],
+                "toto@rydge.fr"
+            },
+            // Gigya : pas de UPN, fallback sur email
+            {
+                [new(ClaimTypes.Email, "toto@gmail.com")],
+                "toto@gmail.com"
+            },
+        };
+
+        [Theory]
+        [MemberData(nameof(GetEmailResolutionCases))]
+        public void GetEmail_ResolvesUpnThenEmail(List<Claim> claims, string expectedEmail)
+        {
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            Assert.Equal(expectedEmail, principal.GetEmail());
+        }
+
         [Fact]
         public void IsCollaborator_WhenPrincipalIsNull_ShouldThrowArgumentNullException()
         {
