@@ -245,7 +245,7 @@ public class OfferControllerTests
             req => req.AccountId == 123 &&
             req.Contacts.Count == 2 &&
             req.RequestedPlanCode == "STARTER" &&
-            req.UserNumber == "1 utilisateur")))
+            req.NumberOfUsers == "1 utilisateur")))
             .ReturnsAsync(companyResult);
 
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))

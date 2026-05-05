@@ -55,5 +55,5 @@ public class CreateCompanyRequest
     /// The number of user you want to define in the current selected plan.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? UserNumber { get; set; }
+    public string? NumberOfUsers { get; set; }
 }

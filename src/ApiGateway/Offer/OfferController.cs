@@ -102,7 +102,7 @@ public class OfferController : ControllerBase
                     AccountingType = AccountingTypeMapper.AccountingTypeToPennylaneAccountingType(accountingType),
                     CountryCode = CountryCodeMapper.CountryToPennylaneCountryCode(countryCode),
                     RequestedPlanCode = requestedPlanCode,
-                    UserNumber = userNumber,
+                    NumberOfUsers = userNumber,
                 };
 
                 var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
