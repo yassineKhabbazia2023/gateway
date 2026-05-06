@@ -3,6 +3,7 @@ using ApiGateway.Pennylane.Models;
 using IdentityModel.OidcClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Text.Json;
 
 namespace ApiGateway.Pennylane;
@@ -34,6 +35,18 @@ public class PennylaneService(
             url, request.AccountId, request.Contacts.Count);
 
         var response = await pennylaneClient.PostAsJsonAsync(url, request);
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            var conflictResult = await response.Content.ReadFromJsonAsync<CreateCompanyResult>();
+            if (conflictResult == null)
+            {
+                logger.LogError("Failed to deserialize CreateCompanyResult on Conflict for AccountId: {AccountId}", request.AccountId);
+                throw new InvalidOperationException("Failed to deserialize CreateCompanyResult from Pennylane API");
+            }
+
+            return conflictResult;
+        }
 
         if (!response.IsSuccessStatusCode)
         {

@@ -308,6 +308,85 @@ public class PennylaneServiceTests
     }
 
     [Fact]
+    public async Task CreateCompanyAsync_When409Conflict_ShouldReturnResultWithStatus_NotThrow()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
+        };
+
+        var conflictResult = new CreateCompanyResult
+        {
+            Company = null,
+            Status = "requires_firm_assignment"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.Conflict,
+            Content = JsonContent.Create(conflictResult)
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be("requires_firm_assignment");
+        result.Company.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateCompanyAsync_When409ConflictWithNullBody_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var request = new CreateCompanyRequest
+        {
+            AccountId = 123,
+            Contacts = new List<int> { 10, 20 },
+            NotYetRegistered = false,
+            RegistrationNumber = "REGN01",
+            AccountingType = AccountConstants.Engagemment,
+            CountryCode = "FR"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.Conflict,
+            Content = new StringContent("null", System.Text.Encoding.UTF8, "application/json")
+        };
+
+        _mockPennylaneHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var action = async () => await _pennylaneService.CreateCompanyAsync(request);
+
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Failed to deserialize CreateCompanyResult from Pennylane API");
+    }
+
+    [Fact]
     public async Task CreateCompanyAsync_When500Error_ShouldThrowException()
     {
         // Arrange

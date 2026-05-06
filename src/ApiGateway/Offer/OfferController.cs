@@ -51,6 +51,7 @@ public class OfferController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<int>> CreateSubscription([FromBody] CreateSubscriptionOffer subscriptionRequest)
     {
         _logger.LogInformation("Creating subscription for AccountId: {AccountId}, OfferId: {OfferId}", subscriptionRequest.AccountId, subscriptionRequest.OfferId);
@@ -106,6 +107,15 @@ public class OfferController : ControllerBase
                 };
 
                 var companyResult = await _pennylaneService.CreateCompanyAsync(companyCreateRequest);
+
+                if (companyResult.Status == PennylaneControllerStatuses.RequiresFirmAssignment)
+                {
+                    return Conflict(new
+                    {
+                        ErrorCode = Errors.PennylaneFirmAssignmentRequiredCode,
+                        ErrorMessage = Errors.PennylaneFirmAssignmentRequiredMessage
+                    });
+                }
 
                 _logger.LogInformation("Pennylane company creation result: Status={Status}, AccountId={AccountId}",
                     companyResult.Status, companyCreateRequest.AccountId);

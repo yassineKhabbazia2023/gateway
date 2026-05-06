@@ -15,5 +15,6 @@ namespace ApiGateway.Pennylane.Constants
         public const string ToCreate = "to_create";
         public const string PartialSuccess = "partial_success";
         public const string Validated = "validated";
+        public const string RequiresFirmAssignment = "requires_firm_assignment";
     }
 }

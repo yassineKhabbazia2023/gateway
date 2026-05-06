@@ -75,5 +75,9 @@
 
         public static readonly string ProspectExperienceDisabledCode = "GTW026";
         public static readonly string ProspectExperienceDisabledMessage = "L'expérience Prospect est désactivée.";
+
+        // --- Pennylane ---
+        public static readonly string PennylaneFirmAssignmentRequiredCode = "GTW027";
+        public static readonly string PennylaneFirmAssignmentRequiredMessage = "Le dossier existe déjà chez Pennylane et est rattaché à un autre cabinet. Une demande de réassignation doit être effectuée.";
     }
 }

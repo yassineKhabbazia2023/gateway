@@ -6,6 +6,7 @@ using ApiGateway.Contact.Enum;
 using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;
+using ApiGateway.Exceptions;
 using ApiGateway.Pennylane;
 using ApiGateway.Pennylane.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -258,6 +259,55 @@ public class OfferControllerTests
         _mockPennylaneService.Verify(x => x.ShouldCreateCompanyForOffer(999), Times.Once);
         _mockPennylaneService.Verify(x => x.CreateCompanyAsync(It.Is<CreateCompanyRequest>(
             req => req.AccountId == 123 && req.Contacts.Count == 2)), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneRequiresFirmAssignment_ReturnsConflictAndDoesNotCreateSubscription()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account()
+        {
+            AccountId = 123,
+            AccountNumber = "ACC123",
+            Accounting = new Models.Accounting() { AccountingType = "type" },
+            Legal = new Models.Legal() { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 },
+            PlanId = 80,
+            PlanPricingId = 800
+        };
+
+        var requiresFirmAssignmentResult = new CreateCompanyResult
+        {
+            Company = null,
+            Status = PennylaneControllerStatuses.RequiresFirmAssignment
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(requiresFirmAssignmentResult);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var conflictResult = result.Result as ConflictObjectResult;
+        conflictResult.Should().NotBeNull();
+        conflictResult!.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+
+        var body = conflictResult.Value!;
+        var errorCode = body.GetType().GetProperty("ErrorCode")!.GetValue(body) as string;
+        var errorMessage = body.GetType().GetProperty("ErrorMessage")!.GetValue(body) as string;
+        errorCode.Should().Be(Errors.PennylaneFirmAssignmentRequiredCode);
+        errorMessage.Should().Be(Errors.PennylaneFirmAssignmentRequiredMessage);
+
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()), Times.Never);
     }
 
     [Fact]
