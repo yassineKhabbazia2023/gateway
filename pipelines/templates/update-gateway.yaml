@@ -45,7 +45,7 @@ stages:
 # - ${{ if parameters.deployToDev }}:
 #   - stage: DEV
 #       displayName: 'Development-dev01'
-#     pool: Pulse-dev
+#     pool: Pulse-Linux-dev
 #     jobs:
 #     - deployment: deploy
 #       displayName: 'Updating config'
@@ -65,7 +65,7 @@ stages:
 - ${{ if parameters.deployToItg }}:
   - stage: ITG01
     displayName: 'Integration'
-    pool: Pulse-itg
+    pool: Pulse-Linux-itg
     dependsOn: Build
     jobs:
     - deployment: deploy
@@ -87,7 +87,7 @@ stages:
   - ${{ if parameters.deployToRec }}:
     - stage: REC01
       displayName: Recette-rec01
-      pool: Pulse-rec
+      pool: Pulse-Linux-rec
       dependsOn: Build
       jobs:
       - deployment: deploy
@@ -135,7 +135,7 @@ stages:
   - ${{ if parameters.deployToPrd }}:
     - stage: PRD01
       displayName: Production-prd01
-      pool: Pulse-prd
+      pool: Pulse-Linux-prd
       dependsOn:
       - ${{ if parameters.isHotfix }}:
         - Build
