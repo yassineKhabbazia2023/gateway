@@ -2363,6 +2363,26 @@
       }
     },
     {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/formation",
+      "DownstreamPathTemplate": "/formation/offers",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      }
+    },
+    {
       "SwaggerKey": "FeedCenter",
       "UpstreamPathTemplate": "/gtw/feedcenter/api/notifications/currentuser/unread/count",
       "DownstreamPathTemplate": "/api/feedcenter/notifications/unread-count/currentuser",
