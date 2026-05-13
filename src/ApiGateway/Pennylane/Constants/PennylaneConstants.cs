@@ -11,5 +11,7 @@
         public const string PennylaneNotCreated = "pennylane-not-created";
 
         public const string PennylaneToVerify = "pennylane-to-verify";
+
+        public const string PennylaneMandateToSend = "pennylane-mandate-to-send";
     }
 }

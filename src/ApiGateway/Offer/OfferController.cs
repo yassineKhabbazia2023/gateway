@@ -3,6 +3,8 @@ using ApiGateway.Attributes;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
 using ApiGateway.Exceptions;
+using ApiGateway.FeatureFlags;
+using ApiGateway.Offer.Constants;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
 using ApiGateway.Pennylane.Constants;
@@ -25,19 +27,22 @@ public class OfferController : ControllerBase
     private readonly IPennylaneService _pennylaneService;
     private readonly IAccountService _accountService;
     private readonly IContactService _contactService;
+    private readonly IFeatureFlagService _featureFlagService;
 
     public OfferController(
         ILogger<OfferController> logger,
         IOfferService offerService,
         IPennylaneService pennylaneService,
         IAccountService accountService,
-        IContactService contactService)
+        IContactService contactService,
+        IFeatureFlagService featureFlagService)
     {
         _logger = logger;
         _offerService = offerService;
         _pennylaneService = pennylaneService;
         _accountService = accountService;
         _contactService = contactService;
+        _featureFlagService = featureFlagService;
     }
 
     /// <summary>
@@ -60,7 +65,8 @@ public class OfferController : ControllerBase
         // Step 1: Check if we should create company in Pennylane for this OfferId
         if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
         {
-            var contactTasks = subscriptionRequest.Contacts.Select(id => _contactService.GetContactByIdAsync(id));
+            var contactsList = subscriptionRequest.Contacts ?? [];
+            var contactTasks = contactsList.Select(id => _contactService.GetContactByIdAsync(id));
             var contacts = await Task.WhenAll(contactTasks);
 
             // Validation all signatory should have a mobilePhone
@@ -79,6 +85,7 @@ public class OfferController : ControllerBase
             }
 
             string? companyStatus = null;
+            string? requestedPlanCode = null;
             try
             {
                 var account = await _accountService.GetAccountAsync(subscriptionRequest.AccountId);
@@ -90,7 +97,18 @@ public class OfferController : ControllerBase
                 var notYetRegistered = subscriptionRequest.HasNoSiren == true
                     || string.IsNullOrWhiteSpace(siren);
 
-                (string? requestedPlanCode, string? userNumber) = await GetPlanInfoAsync(subscriptionRequest);
+                string? userNumber;
+                (requestedPlanCode, userNumber) = await GetPlanInfoAsync(subscriptionRequest);
+
+                if (requestedPlanCode == OfferPlanCodes.ApprovedPlatform
+                    && !await _featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, GetUserEmail()))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+                    {
+                        ErrorCode = Errors.ApprovedPlatformDisabledCode,
+                        ErrorMessage = Errors.ApprovedPlatformDisabledMessage
+                    });
+                }
 
                 var companyCreateRequest = new CreateCompanyRequest
                 {
@@ -124,18 +142,23 @@ public class OfferController : ControllerBase
             catch (Exception ex) when (ex is HttpRequestException || ex is BadHttpRequestException)
             {
                 _logger.LogError(ex, "Pennylane API request failed for AccountId: {AccountId}. Proceeding with subscription creation.",
-                subscriptionRequest.AccountId);
+                    subscriptionRequest.AccountId);
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "Failed to deserialize Pennylane response for AccountId: {AccountId}. Proceeding with subscription creation.",
-                subscriptionRequest.AccountId);
+                    subscriptionRequest.AccountId);
             }
 
             // Set status based on whether company was created
             subscriptionRequest.Status = companyStatus switch
             {
                 PennylaneControllerStatuses.ToCreate => PennylaneConstants.PennylaneNotCreated,
+                PennylaneControllerStatuses.Created
+                    or PennylaneControllerStatuses.CreatedOnDefault
+                    or PennylaneControllerStatuses.AlreadyExists
+                    when requestedPlanCode == OfferPlanCodes.ApprovedPlatform
+                        => PennylaneConstants.PennylaneMandateToSend,
                 PennylaneControllerStatuses.Created => PennylaneConstants.PennylaneCreated,
                 PennylaneControllerStatuses.Validated => PennylaneControllerStatuses.Validated,
                 _ => PennylaneConstants.PennylaneToVerify
@@ -144,8 +167,12 @@ public class OfferController : ControllerBase
 
         // Step 2: Create subscription (continues even if company creation failed/skipped)
         var subscriptionId = await _offerService.CreateSubscriptionAsync(subscriptionRequest);
-
         return Ok(subscriptionId);
+    }
+
+    private string? GetUserEmail()
+    {
+        return User?.FindFirst("upn")?.Value ?? User?.FindFirst("email")?.Value;
     }
 
     internal async Task<Tuple<string?, string?>> GetPlanInfoAsync(CreateSubscriptionOffer subscriptionRequest)

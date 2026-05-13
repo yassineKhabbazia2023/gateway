@@ -79,5 +79,8 @@
         // --- Pennylane ---
         public static readonly string PennylaneFirmAssignmentRequiredCode = "GTW027";
         public static readonly string PennylaneFirmAssignmentRequiredMessage = "Le dossier existe déjà chez Pennylane et est rattaché à un autre cabinet. Une demande de réassignation doit être effectuée.";
+
+        public static readonly string ApprovedPlatformDisabledCode = "GTW028";
+        public static readonly string ApprovedPlatformDisabledMessage = "L'abonnement Plateforme agréée est désactivé.";
     }
 }

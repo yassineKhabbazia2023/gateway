@@ -1,8 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
-using ApiGateway.Account;
-using ApiGateway.Authorization;
 using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Model;

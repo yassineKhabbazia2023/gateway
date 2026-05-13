@@ -47,7 +47,7 @@ namespace ApiGateway.UnitTests
 
             foreach (var kv in headers)
             {
-                httpContext.Request.Headers.Add(kv.Key, kv.Value);
+                httpContext.Request.Headers[kv.Key] = kv.Value;
             }
 
             var downstreamRoute = GenerateDownStream(requiredClaims, isAnonymous);

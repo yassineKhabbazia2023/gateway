@@ -120,6 +120,7 @@ public static class ServiceExtensions
             .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<BookingSyncHandler>()
             .AddDelegatingHandler<ProspectExperienceHandler>()
+            .AddDelegatingHandler<ApprovedPlatformFilterHandler>()
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddHttpClient("BookingClient", client =>

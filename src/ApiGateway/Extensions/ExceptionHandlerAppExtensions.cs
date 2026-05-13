@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using ApiGateway.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
+using Pulse.ExceptionMiddleware.Model;
 using System.Diagnostics.CodeAnalysis;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -11,15 +13,26 @@ public static class ExceptionHandlerAppExtensions
     {
         app.Run(async context =>
         {
+            var exceptionHandlerPathFeature =
+                context.Features.Get<IExceptionHandlerPathFeature>();
+
+            if (exceptionHandlerPathFeature?.Error is GatewayException gatewayEx)
+            {
+                context.Response.StatusCode = gatewayEx.StatusCode;
+                await context.Response.WriteAsJsonAsync(new ErrorResponse
+                {
+                    ErrorCode = gatewayEx.Code,
+                    ErrorMessage = gatewayEx.Message
+                });
+                return;
+            }
+
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
             // using static System.Net.Mime.MediaTypeNames;
             context.Response.ContentType = Text.Plain;
 
             await context.Response.WriteAsync("An exception was thrown while handling this request and was not handled by the gateway.");
-
-            var exceptionHandlerPathFeature =
-                context.Features.Get<IExceptionHandlerPathFeature>();
 
             if (exceptionHandlerPathFeature?.Path != null)
             {

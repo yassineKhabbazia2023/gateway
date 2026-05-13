@@ -3,10 +3,12 @@ using ApiGateway.Account.Constants;
 using ApiGateway.Attributes;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
+using ApiGateway.Exceptions;
+using ApiGateway.FeatureFlags;
 using ApiGateway.Models;
 using ApiGateway.Offer;
+using ApiGateway.Offer.Constants;
 using ApiGateway.Offer.Model;
-using ApiGateway.Exceptions;
 using ApiGateway.Pennylane;
 using ApiGateway.Pennylane.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Pulse.ExceptionMiddleware.Model;
 using System.Reflection;
+using System.Text.Json.Nodes;
 
 namespace ApiGateway.UnitTests.Offer;
 
@@ -25,6 +28,7 @@ public class OfferControllerTests
     private readonly Mock<ILogger<OfferController>> _mockLogger;
     private readonly Mock<IAccountService> _mockAccountService;
     private readonly Mock<IContactService> _mockContactService;
+    private readonly Mock<IFeatureFlagService> _mockFeatureFlagService;
     private readonly OfferController _controller;
 
     public OfferControllerTests()
@@ -34,6 +38,10 @@ public class OfferControllerTests
         _mockLogger = new Mock<ILogger<OfferController>>(MockBehavior.Loose);
         _mockAccountService = new Mock<IAccountService>(MockBehavior.Strict);
         _mockContactService = new Mock<IContactService>(MockBehavior.Loose);
+        _mockFeatureFlagService = new Mock<IFeatureFlagService>(MockBehavior.Loose);
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         // Default behavior: don't create company for any OfferId
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(It.IsAny<int>()))
@@ -60,7 +68,7 @@ public class OfferControllerTests
         };
         _mockOfferService.Setup(x => x.GetOfferByIdAsync(It.IsAny<int>())).ReturnsAsync(expectedOffer);
 
-        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object, _mockContactService.Object);
+        _controller = new OfferController(_mockLogger.Object, _mockOfferService.Object, _mockPennylaneService.Object, _mockAccountService.Object, _mockContactService.Object, _mockFeatureFlagService.Object);
     }
 
     #region CreateSubscription Tests
@@ -1230,6 +1238,248 @@ public class OfferControllerTests
         okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
 
+    [Fact]
+    public async Task CreateSubscription_WhenApprovedPlatformPlanAndFlagDisabled_ShouldReturn403WithGTW028()
+    {
+        // Arrange: Pennylane offer with APPROVED_PLATFORM plan, flag is OFF
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }]
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var forbiddenResult = result.Result as ObjectResult;
+        forbiddenResult.Should().NotBeNull();
+        forbiddenResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var errorResponse = forbiddenResult.Value as ErrorResponse;
+        errorResponse.Should().NotBeNull();
+        errorResponse!.ErrorCode.Should().Be(Errors.ApprovedPlatformDisabledCode);
+        errorResponse.ErrorMessage.Should().Be(Errors.ApprovedPlatformDisabledMessage);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()), Times.Never);
+        _mockPennylaneService.Verify(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenApprovedPlatformPlanAndFlagEnabled_ShouldProceed()
+    {
+        // Arrange: Pennylane offer with APPROVED_PLATFORM plan, flag is ON
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }]
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(555);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
+        okResult.Value.Should().Be(555);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenNonApprovedPlatformPlanAndFlagDisabled_ShouldProceed()
+    {
+        // Arrange: Pennylane offer with non-APPROVED_PLATFORM plan, flag OFF must not block
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 80,
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(777);
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.StatusCode.Should().Be(StatusCodes.Status200OK);
+        okResult.Value.Should().Be(777);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCreatedAndApprovedPlatform_ShouldSetMandateToSendStatus()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }],
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        CreateSubscriptionOffer? captured = null;
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(r => captured = r)
+            .ReturnsAsync(555);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        captured.Should().NotBeNull();
+        captured!.Status.Should().Be(PennylaneConstants.PennylaneMandateToSend);
+    }
+
+    [Theory]
+    [InlineData(PennylaneControllerStatuses.CreatedOnDefault)]
+    [InlineData(PennylaneControllerStatuses.AlreadyExists)]
+    public async Task CreateSubscription_WhenPennylaneCompanyExistsAndApprovedPlatform_ShouldSetMandateToSendStatus(string pennylaneStatus)
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }],
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = pennylaneStatus });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        CreateSubscriptionOffer? captured = null;
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(r => captured = r)
+            .ReturnsAsync(555);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        captured.Should().NotBeNull();
+        captured!.Status.Should().Be(PennylaneConstants.PennylaneMandateToSend);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneCreatedAndOtherPlan_ShouldSetPennylaneCreatedStatus()
+    {
+        // Arrange
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 80,
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
+
+        CreateSubscriptionOffer? captured = null;
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(r => captured = r)
+            .ReturnsAsync(777);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert: APPROVED_PLATFORM-only mapping must not leak to other plans
+        captured!.Status.Should().Be(PennylaneConstants.PennylaneCreated);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenPennylaneFailsAndApprovedPlatform_ShouldNotSetMandateToSend()
+    {
+        // Arrange: Pennylane creation fails (no Created status returned) — fallback path
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }],
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ThrowsAsync(new HttpRequestException("Pennylane down"));
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        CreateSubscriptionOffer? captured = null;
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(r => captured = r)
+            .ReturnsAsync(999);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert: fallback to PennylaneToVerify, never MandateToSend
+        captured!.Status.Should().Be(PennylaneConstants.PennylaneToVerify);
+    }
+
     #endregion
 
     #region Controller Attributes Tests
@@ -1327,7 +1577,7 @@ public class OfferControllerTests
         var method = typeof(OfferController).GetMethod(nameof(OfferController.CreateSubscription));
 
         // Act
-        var attributes = method.GetCustomAttributes<ProducesResponseTypeAttribute>().ToList();
+        var attributes = method!.GetCustomAttributes<ProducesResponseTypeAttribute>().ToList();
 
         // Assert
         attributes.Should().NotBeEmpty();
@@ -1341,7 +1591,7 @@ public class OfferControllerTests
         var method = typeof(OfferController).GetMethod(nameof(OfferController.CreateSubscription));
 
         // Act
-        var attributes = method.GetCustomAttributes<ProducesResponseTypeAttribute>();
+        var attributes = method!.GetCustomAttributes<ProducesResponseTypeAttribute>();
         var status200 = attributes.FirstOrDefault(a => a.StatusCode == StatusCodes.Status200OK);
 
         // Assert
@@ -1356,7 +1606,7 @@ public class OfferControllerTests
         var method = typeof(OfferController).GetMethod(nameof(OfferController.CreateSubscription));
 
         // Act
-        var attributes = method.GetCustomAttributes<ProducesResponseTypeAttribute>();
+        var attributes = method!.GetCustomAttributes<ProducesResponseTypeAttribute>();
         var status404 = attributes.FirstOrDefault(a => a.StatusCode == StatusCodes.Status404NotFound);
 
         // Assert
@@ -1371,7 +1621,7 @@ public class OfferControllerTests
         var method = typeof(OfferController).GetMethod(nameof(OfferController.CreateSubscription));
 
         // Act
-        var attributes = method.GetCustomAttributes<ProducesResponseTypeAttribute>();
+        var attributes = method!.GetCustomAttributes<ProducesResponseTypeAttribute>();
         var status400 = attributes.FirstOrDefault(a => a.StatusCode == StatusCodes.Status400BadRequest);
 
         // Assert
@@ -1386,7 +1636,7 @@ public class OfferControllerTests
         var method = typeof(OfferController).GetMethod(nameof(OfferController.CreateSubscription));
 
         // Act
-        var attributes = method.GetCustomAttributes<ProducesResponseTypeAttribute>();
+        var attributes = method!.GetCustomAttributes<ProducesResponseTypeAttribute>();
         var status403 = attributes.FirstOrDefault(a => a.StatusCode == StatusCodes.Status403Forbidden);
 
         // Assert

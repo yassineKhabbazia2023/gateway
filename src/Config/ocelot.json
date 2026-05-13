@@ -314,7 +314,10 @@
       },
       "RouteClaimsRequirement": {
         "GET": "COOFF001"
-      }
+      },
+      "DelegatingHandlers": [
+        "ApprovedPlatformFilterHandler"
+      ]
     },
     {
       "SwaggerKey": "Offer",

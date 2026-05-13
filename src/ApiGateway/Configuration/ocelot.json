@@ -60,7 +60,10 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "AAD", "GIGYA MyPulse v2" ]
-      }
+      },
+      "DelegatingHandlers": [
+        "ApprovedPlatformFilterHandler"
+      ]
     },
     {
       "DownstreamPathTemplate": "/account/api/accounts/currentuser/{everything}",
