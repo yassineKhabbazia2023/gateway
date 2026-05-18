@@ -18,6 +18,16 @@ parameters:
 - name: isHotfix
   type: boolean
   default: false
+- name: squad
+  type: string
+  default: none
+  values:
+    - none
+    - transverse
+    - tokyo
+    - frydge
+    - forrest
+    - joker
 
 stages:
 - ${{ if eq(parameters.deployToDev, true) }}:
@@ -31,6 +41,9 @@ stages:
 
 - ${{ if and(parameters.isHotfix, not(startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))) }}:
   - 'Hotfix pipeline must be run from a hotfix/* branch.': error
+
+- ${{ if and(parameters.deployToRec, ne(parameters.squad, 'none')) }}:
+  - 'Team configuration cannot be deployed to REC.': error
 
 - stage: build
   displayName: 'Build'
@@ -82,6 +95,7 @@ stages:
                 environment: itg01
                 subscription: ceg-corp-pulse-itg
                 serviceConnection: Rydge-itg
+                squad: ${{ parameters.squad }}
 
 - ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(parameters.isHotfix, true)) }}:
   - ${{ if parameters.deployToRec }}:

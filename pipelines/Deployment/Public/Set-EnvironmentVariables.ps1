@@ -33,7 +33,10 @@ Typically, this is done during a pipeline by using the AzureCLI@2 task.
     [String] $WorkingFolder = "$($Env:PIPELINE_WORKSPACE)/Module",
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [String] $Subscription
+    [String] $Subscription,
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [String] $Squad
   )
 
   try 
@@ -52,7 +55,7 @@ Typically, this is done during a pipeline by using the AzureCLI@2 task.
     $accountName = "sacegpulsegtw$($Environment)01"   
     $AccountKey = $(az storage account keys list -g $expRg -n $accountName --query [0].value -o tsv)
 
-    $shareName = 'desktop'
+    $shareName = $Squad -eq 'none' ? 'desktop' : $Squad
     $targetFile = 'ocelot.json'
     az storage file upload --account-name $accountName --account-key "$AccountKey" --path $targetFile --share-name $shareName --source $SourcePath
   }

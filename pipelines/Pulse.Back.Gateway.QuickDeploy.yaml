@@ -12,7 +12,16 @@ parameters:
   displayName: 'Déployer sur ITG'
   type: boolean
   default: true
-
+- name: squad
+  type: string
+  default: none
+  values:
+    - none
+    - transverse
+    - tokyo
+    - frydge
+    - forrest
+    - joker
 
 resources:
   repositories:
@@ -28,6 +37,11 @@ extends:
     deployToItg: ${{ parameters.deployToItg }}
     srcPath: src/ApiGateway/ApiGateway.csproj
     domain: gtw
-    name: desktop
+    name: ${{ iif(ne(parameters.squad, 'none'), parameters.squad, 'desktop') }}
     appType: webApp
-    id: '01'
+    id: ${{ iif(eq(parameters.squad, 'none'), '01', 
+        iif(eq(parameters.squad, 'transverse'), '02',
+        iif(eq(parameters.squad, 'tokyo'), '03',
+        iif(eq(parameters.squad, 'frydge'), '04',
+        iif(eq(parameters.squad, 'forrest'), '05',
+        iif(eq(parameters.squad, 'joker'), '06', '00')))))) }}

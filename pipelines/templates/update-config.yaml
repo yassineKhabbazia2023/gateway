@@ -2,10 +2,32 @@
 parameters:
 - name: environment
   type: string
+  values:
+  - itg01
+  - rec01
+  - prd01
 - name: subscription
   type: string
+  values:
+  - ceg-corp-pulse-itg
+  - ceg-corp-pulse-rec
+  - ceg-corp-pulse-prd
 - name: serviceConnection
   type: string
+  values:
+  - Rydge-itg
+  - Rydge-rec
+  - Rydge-prd
+- name: squad
+  type: string
+  default: none
+  values:
+  - none
+  - transverse
+  - tokyo
+  - frydge
+  - forrest
+  - joker
 
 steps:
 - task: AzureCLI@2
@@ -16,4 +38,4 @@ steps:
     scriptLocation: inlineScript
     inlineScript: |
       Import-Module $Env:PIPELINE_WORKSPACE/Module/Deployment
-      Set-EnvironmentVariables -Environment ${{ parameters.environment }} -Subscription ${{ parameters.subscription }}
+      Set-EnvironmentVariables -Environment ${{ parameters.environment }} -Subscription ${{ parameters.subscription }} -Squad ${{ parameters.squad }}

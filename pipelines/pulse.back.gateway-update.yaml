@@ -28,6 +28,16 @@ parameters:
   displayName: 'Déployer sur PROD'
   type: boolean
   default: true
+- name: squad
+  type: string
+  default: none
+  values:
+    - none
+    - transverse
+    - tokyo
+    - frydge
+    - forrest
+    - joker
 
 stages:
 - template: templates/update-gateway.yaml
@@ -36,3 +46,4 @@ stages:
     deployToItg: ${{ parameters.deployToItg }}
     deployToRec: ${{ parameters.deployToRec }}
     deployToPrd: ${{ parameters.deployToPrd }}
+    squad: ${{ parameters.squad }}
