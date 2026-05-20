@@ -161,6 +161,7 @@ public class OfferController : ControllerBase
                         => PennylaneConstants.PennylaneMandateToSend,
                 PennylaneControllerStatuses.Created => PennylaneConstants.PennylaneCreated,
                 PennylaneControllerStatuses.Validated => PennylaneControllerStatuses.Validated,
+                PennylaneControllerStatuses.RequiresFirmTransfer => PennylaneConstants.PennylaneToTransfer,
                 _ => PennylaneConstants.PennylaneToVerify
             };
         }

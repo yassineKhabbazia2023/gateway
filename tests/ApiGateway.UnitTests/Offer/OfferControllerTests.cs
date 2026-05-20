@@ -823,6 +823,53 @@ public class OfferControllerTests
     }
 
     [Fact]
+    public async Task CreateSubscription_WhenPennylaneCompanyRequiresFirmTransfer_ShouldSetStatusToPennylaneToTransfer()
+    {
+        // Arrange
+        var account = new ApiGateway.Models.Account
+        {
+            AccountId = 123,
+            Accounting = new Models.Accounting { AccountingType = "type" },
+            Legal = new Models.Legal { Siren = "SIREN01" }
+        };
+
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 999,
+            Contacts = new List<int> { 10, 20 }
+        };
+
+        CreateSubscriptionOffer? capturedRequest = null;
+
+        var companyResult = new CreateCompanyResult
+        {
+            Company = new PennylaneCompany { Id = "ACC123", FirmId = "FIRM001", Name = "Test Company" },
+            Status = PennylaneControllerStatuses.RequiresFirmTransfer
+        };
+
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999))
+            .Returns(true);
+
+        _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
+            .ReturnsAsync(account);
+
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(companyResult);
+
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
+            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+            .ReturnsAsync(456);
+
+        // Act
+        await _controller.CreateSubscription(request);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Status.Should().Be(PennylaneConstants.PennylaneToTransfer);
+    }
+
+    [Fact]
     public async Task CreateSubscription_WhenPennylaneCompanyPartiallyCreated_ShouldSetStatusToPennylaneToVerify()
     {
         // Arrange

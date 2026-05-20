@@ -13,5 +13,7 @@
         public const string PennylaneToVerify = "pennylane-to-verify";
 
         public const string PennylaneMandateToSend = "pennylane-mandate-to-send";
+
+        public const string PennylaneToTransfer = "pennylane-to-transfer";
     }
 }
