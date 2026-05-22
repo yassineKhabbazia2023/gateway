@@ -722,12 +722,31 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD",
-          "GIGYA MyPulse v2"
+          "AAD"
         ]
       },
       "RouteClaimsRequirement": {
         "GET": "COADMI004"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/search",
+      "DownstreamPathTemplate": "/api/accounts/search",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
       }
     },
     {
