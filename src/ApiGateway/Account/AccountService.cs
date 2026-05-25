@@ -1,5 +1,7 @@
 using ApiGateway.Models;
+using ApiGateway.ProspectExperience.Models.Internal;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace ApiGateway.Account;
@@ -119,5 +121,43 @@ public class AccountService : IAccountService
         }
 
         return null;
+    }
+
+    public async Task<AccountCreated> CreateAccountForProspectAsync(CreateAccountRequest request, int? currentUserId, CancellationToken ct)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/accounts")
+        {
+            Content = JsonContent.Create(request, options: _jsonSerializerOptions)
+        };
+        if (currentUserId.HasValue)
+        {
+            httpRequest.Headers.Add("CurrentUser", currentUserId.Value.ToString());
+        }
+
+        var response = await _httpClient.SendAsync(httpRequest, ct);
+        response.EnsureSuccessStatusCode();
+        var created = await response.Content.ReadFromJsonAsync<AccountCreated>(_jsonSerializerOptions, ct)
+                      ?? throw new HttpRequestException("Account creation response was empty.");
+        return created;
+    }
+
+    public async Task<CreateRolesBulkResult> CreateRolesAsync(int accountId, IReadOnlyCollection<CreateRolesBulkItem> contacts, int? currentUserId, CancellationToken ct)
+    {
+        var payload = new CreateRolesBulkRequest { Contacts = contacts };
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"api/roles/bulk?accountId={accountId}")
+        {
+            Content = JsonContent.Create(payload, options: _jsonSerializerOptions)
+        };
+        if (currentUserId.HasValue)
+        {
+            httpRequest.Headers.Add("CurrentUser", currentUserId.Value.ToString());
+        }
+
+        var response = await _httpClient.SendAsync(httpRequest, ct);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<CreateRolesBulkResult>(_jsonSerializerOptions, ct)
+                     ?? throw new HttpRequestException("Bulk roles creation response was empty.");
+        return result;
     }
 }

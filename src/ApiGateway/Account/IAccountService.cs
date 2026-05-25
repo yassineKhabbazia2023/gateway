@@ -1,4 +1,5 @@
 using ApiGateway.Models;
+using ApiGateway.ProspectExperience.Models.Internal;
 
 namespace ApiGateway.Account;
 
@@ -15,4 +16,8 @@ public interface IAccountService
     Task<IReadOnlyCollection<FavoriteAccount>?> GetFavoriteAccountsByContactIdAsync(int contactId);
 
     Task<Summary?> GetSummaryAsync(int accountId, int currentUserId);
+
+    Task<AccountCreated> CreateAccountForProspectAsync(CreateAccountRequest request, int? currentUserId, CancellationToken ct);
+
+    Task<CreateRolesBulkResult> CreateRolesAsync(int accountId, IReadOnlyCollection<CreateRolesBulkItem> contacts, int? currentUserId, CancellationToken ct);
 }

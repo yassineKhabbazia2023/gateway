@@ -1,8 +1,10 @@
-﻿using System.Text.Json;
+﻿using System.Net.Http.Json;
+using System.Text.Json;
 using System.Web;
 using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
+using ApiGateway.ProspectExperience.Models.Internal;
 
 namespace ApiGateway.Contact;
 
@@ -72,6 +74,20 @@ public class ContactService : IContactService
             return JsonSerializer.Deserialize<Models.Contact>(jsonString);
         }
         return null;
+    }
+
+    public async Task<ContactCreated> CreateContactForProspectAsync(CreateContactRequest request, CancellationToken ct)
+    {
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var response = await httpClient.PostAsJsonAsync("contacts", request, jsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+        var created = await response.Content.ReadFromJsonAsync<ContactCreated>(jsonOptions, ct)
+                      ?? throw new HttpRequestException("Contact creation response was empty.");
+        return created;
     }
 
     private string ContactUrl(string userEmail)

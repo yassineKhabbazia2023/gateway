@@ -11,6 +11,8 @@ public class GatewayException : BusinessException
     {
         this.StatusCode = statusCode;
     }
+
+    public virtual void EnrichTelemetry(IDictionary<string, string> properties) { }
 }
 
 

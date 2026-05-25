@@ -10,6 +10,11 @@ public class Summary
 
     public string? LegalName { get; set; }
 
+    /// <summary>
+    /// Gets or sets the type of account.
+    /// </summary>
+    public string? AccountType { get; set; }
+
     public bool? IsFavorite { get; set; }
 
     public bool? IsCustomerRelation { get; set; }

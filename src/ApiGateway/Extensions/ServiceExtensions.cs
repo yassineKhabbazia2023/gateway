@@ -10,19 +10,25 @@ using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Contact;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.DelegatingHandlers.Mocks;
+using ApiGateway.Exceptions;
 using ApiGateway.Helpers;
 using ApiGateway.Identity;
 using ApiGateway.Identity.Options;
 using ApiGateway.Offer;
 using ApiGateway.Pennylane;
+using ApiGateway.ProspectExperience.Services;
+using ApiGateway.ProspectExperience.Validators;
 using ApiGateway.TokenRevocation;
+using FluentValidation;
 using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Ocelot.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
+using Pulse.ExceptionMiddleware.Model;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
@@ -51,9 +57,20 @@ public static class ServiceExtensions
         services.AddScoped<IAuthorizationRequestValidator, AuthorizationRequestValidator>();
         services.AddScoped<IPennylaneAuthorizationService, PennylaneAuthorizationService>();
         services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
+        services.AddScoped<IProspectService, ProspectOrchestrationService>();
+        services.AddValidatorsFromAssemblyContaining<CreateProspectRequestValidator>();
         services.RegisterOpenTelemetry(configuration);
         services.AddControllers()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+
+        services.Configure<ApiBehaviorOptions>(options =>
+        {
+            options.InvalidModelStateResponseFactory = context => new BadRequestObjectResult(new ErrorResponse
+            {
+                ErrorCode = Errors.InvalidRequestCode,
+                ErrorMessage = Errors.InvalidRequestMessage
+            });
+        });
         services.AddEndpointsApiExplorer();
         services.AddHealthChecks();
 
@@ -101,6 +118,20 @@ public static class ServiceExtensions
         services.AddHttpClient<IIdentityService, IdentityService>(client =>
         {
             client.BaseAddress = new Uri(configuration["GigyaApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
+        services.AddHttpClient<IProspectApiClient, ProspectApiClient>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["ProspectApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
+        services.AddHttpClient<IRegistryProspectClient, RegistryProspectClient>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["RegistryApiUri"]!);
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
@@ -215,6 +246,7 @@ public static class ServiceExtensions
             optional: false,
             reloadOnChange: true);
     }
+
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     {
         return HttpPolicyExtensions

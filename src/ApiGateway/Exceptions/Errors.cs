@@ -82,5 +82,17 @@
 
         public static readonly string ApprovedPlatformDisabledCode = "GTW028";
         public static readonly string ApprovedPlatformDisabledMessage = "L'abonnement Plateforme agréée est désactivé.";
+
+        public static readonly string ProspectOrchestrationFailedCode = "GTW029";
+        public static readonly string ProspectOrchestrationFailedMessage = "L'orchestration de création du prospect a échoué à l'étape {0}.";
+
+        public static readonly string ProspectSiretAlreadyExistsCode = "GTW030";
+        public static readonly string ProspectSiretAlreadyExistsMessage = "Un account existe déjà dans Akuiteo pour le SIRET {0}.";
+
+        public static readonly string ProspectBadRequestCode = "GTW031";
+        public static readonly string ProspectBadRequestMessage = "La requête de création du prospect est invalide.";
+
+        public static readonly string InvalidRequestCode = "GTW032";
+        public static readonly string InvalidRequestMessage = "La requête est invalide.";
     }
 }
