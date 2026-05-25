@@ -107,9 +107,6 @@ stages:
       - deployment: deploy
         displayName: 'Updating REC01 config'
         environment: REC01
-        variables:
-        - name: hubEnvironment
-          value: rec01
         strategy:
           runOnce:
             deploy:
@@ -119,7 +116,7 @@ stages:
 
               - template: update-config.yaml
                 parameters:
-                  environment: $(hubEnvironment)
+                  environment: rec01
                   subscription: ceg-corp-pulse-rec
                   serviceConnection: Rydge-rec
   # - stage: PPR01
@@ -159,9 +156,6 @@ stages:
       - deployment: deploy
         displayName: 'Updating PRD01 config'
         environment: PRD01
-        variables:
-        - name: hubEnvironment
-          value: prd01
         strategy:
           runOnce:
             deploy:
@@ -171,6 +165,6 @@ stages:
 
               - template: update-config.yaml
                 parameters:
-                  environment: $(hubEnvironment)
+                  environment: prd01
                   subscription: ceg-corp-pulse-prd
                   serviceConnection: Rydge-prd
