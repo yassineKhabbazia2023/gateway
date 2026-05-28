@@ -51,9 +51,28 @@ stages:
   - job: build
     displayName: 'Build'
     steps:
+    - pwsh: |
+        if("$Env:squad" -ne 'none')
+        {
+          $buildName = "[$($Env:versionNumber)] 🧑‍🧑🏼‍🧒🏾 $($Env:squad) 🚀 $(Build.SourceBranchName) "
+        }
+        else
+        {
+          $buildName = "[$($Env:versionNumber)] 🚀 $(Build.SourceBranchName) "
+        }
+        Write-Host "##vso[build.updatebuildnumber]$buildName"
+
+      env:
+        versionNumber: $(Build.BuildNumber)
+        squad: ${{ parameters.squad }}
+      displayName: '[Build] Set name'
+
     - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
+      displayName: '[Build] Copy ocelot.json to artifact staging directory'
+
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module
+      displayName: '[Build] Publish artifact'
 
 # - ${{ if parameters.deployToDev }}:
 #   - stage: DEV
