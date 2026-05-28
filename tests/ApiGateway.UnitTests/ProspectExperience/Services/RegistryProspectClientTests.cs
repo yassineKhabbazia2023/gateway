@@ -69,7 +69,8 @@ public class RegistryProspectClientTests
         ZipCode = "75001",
         City = "Paris",
         LegalForm = "SARL",
-        ShareCapital = 10000
+        ShareCapital = 10000,
+        RegionCode = "11"
     };
 
     [Fact]
@@ -146,6 +147,29 @@ public class RegistryProspectClientTests
         root.GetProperty("countryCode").GetString().Should().Be("FR");
         root.GetProperty("caseManagerContactId").GetInt32().Should().Be(100);
         root.GetProperty("accountManagerContactId").GetInt32().Should().Be(200);
+    }
+
+    [Fact]
+    public async Task CreateAkuiteoCustomerAsync_UsesRegionCodeFromInpiNotRequest()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create(new { accountNumber = "AK-002" }, options: CamelCase)
+        };
+        string? body = null;
+        var (client, _) = CreateClient(response, req =>
+        {
+            body = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        var inpi = BuildInpi();
+        inpi.RegionCode = "84";
+        var request = BuildRequest();
+
+        await client.CreateAkuiteoCustomerAsync(request, inpi, CancellationToken.None);
+
+        using var json = JsonDocument.Parse(body!);
+        json.RootElement.GetProperty("regionCode").GetString().Should().Be("84");
     }
 
     [Fact]

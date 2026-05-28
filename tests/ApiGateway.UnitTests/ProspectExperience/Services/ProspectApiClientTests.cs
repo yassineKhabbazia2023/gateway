@@ -67,7 +67,8 @@ public class ProspectApiClientTests
         City = "Paris",
         LegalForm = "SARL",
         NafCode = "6201Z",
-        ShareCapital = 10000
+        ShareCapital = 10000,
+        RegionCode = "11"
     };
 
     [Fact]
@@ -108,6 +109,7 @@ public class ProspectApiClientTests
         result.Address.Should().Be(expected.Address.Line1);
         result.ZipCode.Should().Be(expected.Address.PostalCode);
         result.City.Should().Be(expected.Address.City);
+        result.RegionCode.Should().Be(expected.Address.RegionCode);
     }
 
     [Fact]
@@ -203,6 +205,31 @@ public class ProspectApiClientTests
         root.GetProperty("accountId").GetInt32().Should().Be(10);
         root.GetProperty("signatoryContactId").GetInt32().Should().Be(20);
         root.TryGetProperty("contactId", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateProspectAsync_UsesRegionCodeFromInpiNotRequest()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create(new { prospectId = 1 }, options: CamelCase)
+        };
+        string? bodyJson = null;
+        var (client, _) = CreateClient(response, req =>
+        {
+            bodyJson = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        var inpi = BuildInpi();
+        inpi.RegionCode = "84";
+        var request = BuildRequest();
+
+        await client.CreateProspectAsync(request, inpi, CancellationToken.None);
+
+        using var json = JsonDocument.Parse(bodyJson!);
+        var root = json.RootElement;
+        root.GetProperty("region").GetString().Should().Be("84");
+        root.TryGetProperty("regionCode", out _).Should().BeFalse();
     }
 
     /// <summary>

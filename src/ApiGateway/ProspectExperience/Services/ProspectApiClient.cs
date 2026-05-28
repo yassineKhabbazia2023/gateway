@@ -30,14 +30,15 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             ZipCode = address.PostalCode,
             Address = address.Line1,
             City = address.City,
-            NafCode = company.ApeCode
+            NafCode = company.ApeCode,
+            RegionCode = address.RegionCode
         };
     }
 
     public async Task<int> CreateProspectAsync(CreateProspectRequest request, InpiCompanyInfo inpi, CancellationToken ct)
     {
         logger.LogInformation("Creating prospect for SIRET {Siret} with legal name {LegalName}", inpi.Siret, inpi.LegalName);
-
+        var Region = !string.IsNullOrWhiteSpace(inpi.RegionCode) ? inpi.RegionCode : request.Region;
         var payload = new
         {
             inpi.LegalName,
@@ -49,7 +50,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             inpi.ZipCode,
             inpi.City,
             request.Department,
-            request.Region,
+            Region,
             request.Country,
             request.CaseManagerContactId,
             request.AccountManagerContactId,

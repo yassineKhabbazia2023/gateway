@@ -40,7 +40,7 @@ public class RegistryProspectClient(HttpClient httpClient) : IRegistryProspectCl
             inpi.ZipCode,
             inpi.City,
             DepartmentCode = request.Department,
-            RegionCode = request.Region,
+            RegionCode = inpi.RegionCode,
             CountryCode = request.Country,
             request.CaseManagerContactId,
             request.AccountManagerContactId

@@ -11,4 +11,6 @@ public class InpiCompanyInfo
     public string LegalForm { get; set; } = default!;
     public string NafCode { get; set; } = default!;
     public decimal ShareCapital { get; set; }
+    public string RegionCode { get; set; } = string.Empty;
+
 }
