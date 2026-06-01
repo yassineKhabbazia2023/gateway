@@ -157,11 +157,12 @@ namespace ApiGateway.UnitTests.Identity.Handlers
         public void CreateErrorDescription_ReturnsCorrectErrorMessages()
         {
             // Arrange
+            var expiredDate = new DateTime(2024, 01, 15, 10, 30, 00, DateTimeKind.Utc);
             var aggregateException = new AggregateException(new Exception[]
             {
                 new SecurityTokenInvalidAudienceException("Invalid audience.") { InvalidAudience = "TestAudience" },
                 new SecurityTokenInvalidIssuerException("Invalid issuer.") { InvalidIssuer = "TestIssuer" },
-                new SecurityTokenExpiredException { Expires = DateTime.UtcNow.AddMinutes(-5) }
+                new SecurityTokenExpiredException { Expires = expiredDate }
             });
 
             var methodInfo = typeof(PulseJwtBearerHandler)
@@ -176,7 +177,7 @@ namespace ApiGateway.UnitTests.Identity.Handlers
             Assert.NotNull(errorDescription);
             Assert.Contains("The audience 'TestAudience' is invalid", errorDescription);
             Assert.Contains("The issuer 'TestIssuer' is invalid", errorDescription);
-            Assert.Contains($"The token expired at '{DateTime.UtcNow.AddMinutes(-5).ToString(CultureInfo.InvariantCulture)}'", errorDescription);
+            Assert.Contains($"The token expired at '{expiredDate.ToString(CultureInfo.InvariantCulture)}'", errorDescription);
         }
 
         [Fact]

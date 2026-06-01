@@ -1342,47 +1342,7 @@
         "POST"
       ],
       "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/currentuser",
-      "DownstreamPathTemplate": "/api/delegations/requests",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Account",
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/sent/currentuser",
-      "DownstreamPathTemplate": "/api/delegations/requests/sent",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
-          "Port": 443
-        }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKeys": [
-          "AAD"
-        ]
-      }
-    },
-    {
-      "SwaggerKey": "Account",
-      "UpstreamHttpMethod": [
-        "GET"
-      ],
-      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/received/currentuser",
-      "DownstreamPathTemplate": "/api/delegations/requests/received",
+      "DownstreamPathTemplate": "/api/delegations/requests/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1404,8 +1364,8 @@
       "UpstreamHttpMethod": [
         "GET"
       ],
-      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/eligibility/currentuser?accountId={accountId}",
-      "DownstreamPathTemplate": "/api/delegations/requests/eligibility?accountId={accountId}",
+      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/sent/currentuser",
+      "DownstreamPathTemplate": "/api/delegations/requests/sent/currentuser",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -1417,7 +1377,56 @@
         "AuthenticationProviderKeys": [
           "AAD"
         ]
-      }
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/received/currentuser",
+      "DownstreamPathTemplate": "/api/delegations/requests/received/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/eligibility/currentuser?accountId={requestedAccountId}",
+      "DownstreamPathTemplate": "/api/delegations/requests/eligibility/currentuser?accountId={requestedAccountId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
     },
     {
       "SwaggerKey": "Account",
