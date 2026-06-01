@@ -138,6 +138,53 @@ public class ProspectApiClientTests
     }
 
     [Fact]
+    public async Task GetIncompleteProspectBySiretAsync_WhenProspectExists_ReturnsPayload()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new
+            {
+                prospectId = 42,
+                legalName = "ACME SARL",
+                creationStatus = 2,
+                lastCompletedStep = 6,
+                completedMilestone = "RydgeAccountCreated",
+                akuiteoAccountNumber = "AK-123",
+                pendingAccountId = 99,
+                pendingSignatoryContactId = 77,
+                resumeRequestFingerprint = "fingerprint"
+            }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.GetIncompleteProspectBySiretAsync("12345678901234", CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/incomplete-by-siret/12345678901234");
+        result.Should().NotBeNull();
+        result!.ProspectId.Should().Be(42);
+        result.LegalName.Should().Be("ACME SARL");
+        result.LastCompletedStep.Should().Be(6);
+        result.CompletedMilestone.Should().Be(ProspectCreationMilestone.RydgeAccountCreated);
+        result.AkuiteoAccountNumber.Should().Be("AK-123");
+        result.PendingAccountId.Should().Be(99);
+        result.PendingSignatoryContactId.Should().Be(77);
+        result.ResumeRequestFingerprint.Should().Be("fingerprint");
+    }
+
+    [Fact]
+    public async Task GetIncompleteProspectBySiretAsync_WhenProspectDoesNotExist_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetIncompleteProspectBySiretAsync("12345678901234", CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public async Task CreateProspectAsync_SendsCurrentUserHeaderAndFlatPayload()
     {
         var response = new HttpResponseMessage(HttpStatusCode.Created)
@@ -184,7 +231,7 @@ public class ProspectApiClientTests
     [Fact]
     public async Task UpdateProspectIdsAsync_IssuesPatchWithSignatoryContactIdAndHeader()
     {
-        var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
         HttpRequestMessage? captured = null;
         string? bodyJson = null;
         var (client, _) = CreateClient(response, req =>
@@ -193,8 +240,9 @@ public class ProspectApiClientTests
             bodyJson = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
         });
 
-        await client.UpdateProspectIdsAsync(42, "AK-123", 10, 20, CancellationToken.None);
+        var result = await client.UpdateProspectIdsAsync(42, "AK-123", 10, 20, CancellationToken.None);
 
+        result.Should().Be(FinalizeProspectOutcome.Updated);
         captured!.Method.Should().Be(HttpMethod.Patch);
         captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("20");
@@ -205,6 +253,22 @@ public class ProspectApiClientTests
         root.GetProperty("accountId").GetInt32().Should().Be(10);
         root.GetProperty("signatoryContactId").GetInt32().Should().Be(20);
         root.TryGetProperty("contactId", out _).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Conflict, FinalizeProspectOutcome.SynchronizationPending)]
+    [InlineData(HttpStatusCode.NotFound, FinalizeProspectOutcome.ProspectNotFound)]
+    [InlineData(HttpStatusCode.UnprocessableEntity, FinalizeProspectOutcome.InvalidCreationStatus)]
+    public async Task UpdateProspectIdsAsync_WhenProspectReturnsKnownStatus_MapsOutcome(
+        HttpStatusCode statusCode,
+        FinalizeProspectOutcome expectedOutcome)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.UpdateProspectIdsAsync(42, "AK-123", 10, 20, CancellationToken.None);
+
+        result.Should().Be(expectedOutcome);
     }
 
     [Fact]
@@ -236,9 +300,43 @@ public class ProspectApiClientTests
     /// Verifies that the role client sends a single batch payload without a CurrentUser header.
     /// </summary>
     [Fact]
-    public async Task CreateRoleAsync_IssuesPostWithBatchRolePayloadAndNoCurrentUserHeader()
+    public async Task PrepareCreationResumeAsync_IssuesPatchWithCurrentUserHeader()
     {
-        var response = new HttpResponseMessage(HttpStatusCode.Created);
+        var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.PrepareCreationResumeAsync(42, 100, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Patch);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/prepare-creation-resume");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NoContent, ProspectRoleSynchronizationOutcome.Synchronized)]
+    [InlineData(HttpStatusCode.Conflict, ProspectRoleSynchronizationOutcome.SynchronizationPending)]
+    [InlineData(HttpStatusCode.NotFound, ProspectRoleSynchronizationOutcome.ProspectNotFound)]
+    public async Task GetCreationRoleSynchronizationOutcomeAsync_WhenProspectReturnsKnownStatus_MapsOutcome(
+        HttpStatusCode statusCode,
+        ProspectRoleSynchronizationOutcome expected)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.GetCreationRoleSynchronizationOutcomeAsync(42, CancellationToken.None);
+
+        result.Should().Be(expected);
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/creation-role-synchronization");
+    }
+
+    [Fact]
+    public async Task UpdateCreationProgressAsync_IssuesPatchWithHeaderAndBody()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NoContent);
         HttpRequestMessage? captured = null;
         string? bodyJson = null;
         var (client, _) = CreateClient(response, req =>
@@ -247,37 +345,93 @@ public class ProspectApiClientTests
             bodyJson = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
         });
 
-        var requests = new[]
-        {
-            new CreateRoleAssignmentRequest
+        var result = await client.UpdateCreationProgressAsync(
+            42,
+            100,
+            new UpdateProspectCreationProgressRequest
             {
-                ContactId = 20,
-                AccountId = 10,
-                IsSignatory = true
+                CompletedMilestone = ProspectCreationMilestone.RydgeAccountCreated,
+                AkuiteoAccountNumber = "AK-123",
+                PendingAccountId = 10,
+                PendingSignatoryContactId = 20
             },
-            new CreateRoleAssignmentRequest
-            {
-                ContactId = 30,
-                AccountId = 10,
-                IsSignatory = false
-            }
-        };
+            CancellationToken.None);
 
-        await client.CreateRoleAsync(requests, CancellationToken.None);
-
-        captured!.Method.Should().Be(HttpMethod.Post);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/roles");
-        captured.Headers.Contains("CurrentUser").Should().BeFalse();
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Patch);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/creation-progress");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
 
         using var json = JsonDocument.Parse(bodyJson!);
-        var root = json.RootElement;
-        root.ValueKind.Should().Be(JsonValueKind.Array);
-        root.GetArrayLength().Should().Be(2);
-        root[0].GetProperty("contactId").GetInt32().Should().Be(20);
-        root[0].GetProperty("accountId").GetInt32().Should().Be(10);
-        root[0].GetProperty("isSignatory").GetBoolean().Should().BeTrue();
-        root[1].GetProperty("contactId").GetInt32().Should().Be(30);
-        root[1].GetProperty("accountId").GetInt32().Should().Be(10);
-        root[1].GetProperty("isSignatory").GetBoolean().Should().BeFalse();
+        json.RootElement.GetProperty("completedMilestone").GetString().Should().Be("RydgeAccountCreated");
+        json.RootElement.GetProperty("akuiteoAccountNumber").GetString().Should().Be("AK-123");
+        json.RootElement.GetProperty("pendingAccountId").GetInt32().Should().Be(10);
+        json.RootElement.GetProperty("pendingSignatoryContactId").GetInt32().Should().Be(20);
+    }
+
+    [Fact]
+    public async Task UpdateCreationProgressAsync_WhenProspectIsMissing_DoesNotThrow()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.UpdateCreationProgressAsync(
+            42,
+            100,
+            new UpdateProspectCreationProgressRequest { CompletedMilestone = ProspectCreationMilestone.AkuiteoCustomerCreated },
+            CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task MarkProspectCreationFailedAsync_IssuesPatchWithCurrentUserHeader()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+        HttpRequestMessage? captured = null;
+        string? bodyJson = null;
+        var (client, _) = CreateClient(response, req =>
+        {
+            captured = req;
+            bodyJson = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        var result = await client.MarkProspectCreationFailedAsync(
+            42,
+            100,
+            new MarkProspectCreationFailedRequest
+            {
+                CompletedMilestone = ProspectCreationMilestone.RydgeContactCreated,
+                AkuiteoAccountNumber = "AK-123",
+                PendingAccountId = 10,
+                PendingSignatoryContactId = 20
+            },
+            CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Patch);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/creation-failure");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+
+        using var json = JsonDocument.Parse(bodyJson!);
+        json.RootElement.GetProperty("completedMilestone").GetString().Should().Be("RydgeContactCreated");
+        json.RootElement.GetProperty("akuiteoAccountNumber").GetString().Should().Be("AK-123");
+        json.RootElement.GetProperty("pendingAccountId").GetInt32().Should().Be(10);
+        json.RootElement.GetProperty("pendingSignatoryContactId").GetInt32().Should().Be(20);
+    }
+
+    [Fact]
+    public async Task MarkProspectCreationFailedAsync_WhenProspectIsMissing_DoesNotThrow()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.MarkProspectCreationFailedAsync(
+            42,
+            100,
+            new MarkProspectCreationFailedRequest { CompletedMilestone = ProspectCreationMilestone.RydgeContactCreated },
+            CancellationToken.None);
+
+        result.Should().BeFalse();
     }
 }

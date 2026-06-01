@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Contracts;
@@ -14,6 +15,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    /// <inheritdoc />
     public async Task<InpiCompanyInfo> GetInpiCompanyInfoAsync(string siret, CancellationToken ct)
     {
         var response = await httpClient.GetAsync($"api/accounts/external-companies/{Uri.EscapeDataString(siret)}", ct);
@@ -35,6 +37,21 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         };
     }
 
+    /// <inheritdoc />
+    public async Task<IncompleteProspectCreationState?> GetIncompleteProspectBySiretAsync(string siret, CancellationToken ct)
+    {
+        var response = await httpClient.GetAsync($"api/prospects/incomplete-by-siret/{Uri.EscapeDataString(siret)}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IncompleteProspectCreationState>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Incomplete prospect state response for SIRET {siret} was empty.");
+    }
+
+    /// <inheritdoc />
     public async Task<int> CreateProspectAsync(CreateProspectRequest request, InpiCompanyInfo inpi, CancellationToken ct)
     {
         logger.LogInformation("Creating prospect for SIRET {Siret} with legal name {LegalName}", inpi.Siret, inpi.LegalName);
@@ -76,23 +93,8 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         return created.ProspectId;
     }
 
-    /// <inheritdoc/>
-    public async Task CreateRoleAsync(IReadOnlyCollection<CreateRoleAssignmentRequest> requests, CancellationToken ct)
-    {
-        logger.LogInformation("Creating {RoleCount} prospect roles", requests.Count);
-
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/roles")
-        {
-            Content = JsonContent.Create(requests, options: JsonOptions)
-        };
-
-        var response = await httpClient.SendAsync(httpRequest, ct);
-        response.EnsureSuccessStatusCode();
-
-        logger.LogInformation("Prospect roles created or already existed for {RoleCount} assignments", requests.Count);
-    }
-
-    public async Task UpdateProspectIdsAsync(int prospectId, string accountNumber, int accountId, int contactId, CancellationToken ct)
+    /// <inheritdoc />
+    public async Task<FinalizeProspectOutcome> UpdateProspectIdsAsync(int prospectId, string accountNumber, int accountId, int contactId, CancellationToken ct)
     {
         var payload = new
         {
@@ -108,7 +110,83 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         httpRequest.Headers.Add("CurrentUser", contactId.ToString());
 
         var response = await httpClient.SendAsync(httpRequest, ct);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.OK => FinalizeProspectOutcome.Updated,
+            HttpStatusCode.Conflict => FinalizeProspectOutcome.SynchronizationPending,
+            HttpStatusCode.NotFound => FinalizeProspectOutcome.ProspectNotFound,
+            HttpStatusCode.UnprocessableEntity => FinalizeProspectOutcome.InvalidCreationStatus,
+            _ => throw new HttpRequestException(
+                $"Unexpected status {(int)response.StatusCode} while finalizing prospect {prospectId}.")
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> PrepareCreationResumeAsync(int prospectId, int currentUserId, CancellationToken ct)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}/prepare-creation-resume");
+        httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        var response = await httpClient.SendAsync(httpRequest, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
         response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<ProspectRoleSynchronizationOutcome> GetCreationRoleSynchronizationOutcomeAsync(int prospectId, CancellationToken ct)
+    {
+        var response = await httpClient.GetAsync($"api/prospects/{prospectId}/creation-role-synchronization", ct);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.NoContent => ProspectRoleSynchronizationOutcome.Synchronized,
+            HttpStatusCode.Conflict => ProspectRoleSynchronizationOutcome.SynchronizationPending,
+            HttpStatusCode.NotFound => ProspectRoleSynchronizationOutcome.ProspectNotFound,
+            _ => throw new HttpRequestException(
+                $"Unexpected status {(int)response.StatusCode} while checking role synchronization for prospect {prospectId}.")
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateCreationProgressAsync(int prospectId, int currentUserId, UpdateProspectCreationProgressRequest request, CancellationToken ct)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}/creation-progress")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+        httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        var response = await httpClient.SendAsync(httpRequest, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> MarkProspectCreationFailedAsync(int prospectId, int currentUserId, MarkProspectCreationFailedRequest request, CancellationToken ct)
+    {
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}/creation-failure")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+        httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        var response = await httpClient.SendAsync(httpRequest, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
     }
 
     private static object BuildSignatoryPayload(SignatoryDto signatory) => new

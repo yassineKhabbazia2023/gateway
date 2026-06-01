@@ -14,9 +14,10 @@ public class ProspectOrchestrationException : GatewayException
         [5] = "CreateAkuiteoContact",
         [6] = "CreateRydgeAccount",
         [7] = "CreateRydgeContact",
-        [8] = "AssignAccountRoles",
-        [9] = "PatchProspectIds",
-        [10] = "AssignProspectRoles"
+        [8] = "PatchProspectIds",
+        [9] = "AssignAccountRoles",
+        [10] = "PrepareCreationResume",
+        [11] = "ConfirmRoleSynchronization"
     };
 
     public int Step { get; }

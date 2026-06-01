@@ -817,7 +817,8 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
-          "AAD"
+          "AAD",
+          "GIGYA MyPulse v2"
         ]
       },
       "RouteClaimsRequirement": {
