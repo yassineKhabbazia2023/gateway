@@ -1932,6 +1932,27 @@
     },
     {
       "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}?entityType={entityType}",
+      "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}?entityType={entityType}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}",
       "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}",
       "DownstreamScheme": "https",
