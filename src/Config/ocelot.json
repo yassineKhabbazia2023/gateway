@@ -1430,6 +1430,52 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/accept/currentuser",
+      "DownstreamPathTemplate": "/api/delegations/requests/accept/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "UpstreamPathTemplate": "/gtw/account/api/delegations/requests/refuse/currentuser",
+      "DownstreamPathTemplate": "/api/delegations/requests/refuse/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/customer-wallet/api/customers/currentuser",
       "DownstreamPathTemplate": "/api/accounts/contacts/currentuser",
       "DownstreamScheme": "https",
