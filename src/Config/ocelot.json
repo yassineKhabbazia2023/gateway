@@ -871,6 +871,27 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/prospects/{accountId}/contacts",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/widget",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/contacts/{everything}",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/{everything}",
       "DownstreamScheme": "https",
