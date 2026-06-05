@@ -160,4 +160,18 @@ public class AccountService : IAccountService
                      ?? throw new HttpRequestException("Bulk roles creation response was empty.");
         return result;
     }
+
+    /// <inheritdoc />
+    public async Task<ProspectOnlyContactResult> GetProspectOnlyContactResultAsync(int contactId, CancellationToken ct)
+    {
+        var response = await _httpClient.GetAsync($"api/accounts/contacts/{contactId}/is-prospect-only", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return ProspectOnlyContactResult.NotFound;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var isProspectOnly = await response.Content.ReadFromJsonAsync<bool>(_jsonSerializerOptions, ct);
+        return isProspectOnly ? ProspectOnlyContactResult.ProspectOnly : ProspectOnlyContactResult.NotProspectOnly;
+    }
 }

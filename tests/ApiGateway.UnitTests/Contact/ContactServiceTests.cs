@@ -4,7 +4,9 @@ using ApiGateway.Contact;
 using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
+using ApiGateway.ProspectExperience.Models.Requests;
 using Moq.Protected;
+using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -523,5 +525,80 @@ public class ContactServiceTests
 
         // Assert
         result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Ensures the Contact client forwards the create-new-password payload without entityType by default.
+    /// </summary>
+    [Fact]
+    public async Task CreateNewPasswordAsync_WithoutEntityType_CallsAuthenticationEndpointWithoutQueryAndForwardsPayload()
+    {
+        // Arrange
+        var request = new CreateNewPasswordRequest("reset-token", "NewPassword123", true);
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        string? bodyJson = null;
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+            {
+                req.Method.Should().Be(HttpMethod.Post);
+                req.RequestUri?.PathAndQuery.Should().Be("/authentication/createNewPassword");
+                bodyJson = req.Content?.ReadAsStringAsync(c).GetAwaiter().GetResult();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.CreateNewPasswordAsync(request, entityType: null, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var json = JsonDocument.Parse(bodyJson!);
+        json.RootElement.GetProperty("token").GetString().Should().Be(request.token);
+        json.RootElement.GetProperty("newPassword").GetString().Should().Be(request.newPassword);
+        json.RootElement.GetProperty("isCreatePasswordAction").GetBoolean().Should().BeTrue();
+        json.RootElement.TryGetProperty("contactId", out _).Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Ensures the Contact client sends the entityType query value when the Prospect flow is selected.
+    /// </summary>
+    [Fact]
+    public async Task CreateNewPasswordAsync_WithEntityType_CallsAuthenticationEndpointWithEntityTypeQuery()
+    {
+        // Arrange
+        var request = new CreateNewPasswordRequest("reset-token", "NewPassword123", true);
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+            {
+                req.Method.Should().Be(HttpMethod.Post);
+                req.RequestUri?.PathAndQuery.Should().Be("/authentication/createNewPassword?entityType=PROSPECT");
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.CreateNewPasswordAsync(request, "PROSPECT", CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

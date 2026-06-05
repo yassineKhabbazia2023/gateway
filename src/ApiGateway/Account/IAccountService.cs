@@ -20,4 +20,12 @@ public interface IAccountService
     Task<AccountCreated> CreateAccountForProspectAsync(CreateAccountRequest request, int? currentUserId, CancellationToken ct);
 
     Task<CreateRolesBulkResult> CreateRolesAsync(int accountId, IReadOnlyCollection<CreateRolesBulkItem> contacts, int? currentUserId, CancellationToken ct);
+
+    /// <summary>
+    /// Checks whether the contact exists and only has roles on prospect accounts.
+    /// </summary>
+    /// <param name="contactId">The contact identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The prospect-only check result.</returns>
+    Task<ProspectOnlyContactResult> GetProspectOnlyContactResultAsync(int contactId, CancellationToken ct);
 }

@@ -5,6 +5,7 @@ using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Models.Requests;
 
 namespace ApiGateway.Contact;
 
@@ -88,6 +89,16 @@ public class ContactService : IContactService
         var created = await response.Content.ReadFromJsonAsync<ContactCreated>(jsonOptions, ct)
                       ?? throw new HttpRequestException("Contact creation response was empty.");
         return created;
+    }
+
+    /// <inheritdoc />
+    public async Task<HttpResponseMessage> CreateNewPasswordAsync(CreateNewPasswordRequest request, string? entityType, CancellationToken ct)
+    {
+        var url = string.IsNullOrWhiteSpace(entityType)
+            ? "authentication/createNewPassword"
+            : $"authentication/createNewPassword?entityType={Uri.EscapeDataString(entityType)}";
+
+        return await httpClient.PostAsJsonAsync(url, request, cancellationToken: ct);
     }
 
     private string ContactUrl(string userEmail)

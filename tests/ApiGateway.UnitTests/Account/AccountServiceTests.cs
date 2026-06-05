@@ -4,6 +4,7 @@ using System.Text.Json;
 using ApiGateway.Account;
 using ApiGateway.Authorization;
 using ApiGateway.Models;
+using ApiGateway.ProspectExperience.Models.Internal;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.Authorization;
@@ -237,5 +238,94 @@ public class AccountServiceTests
         var result = await _accountService.GetSummaryAsync(accountId, contactId);
         result.Should().BeEquivalentTo(account);
     }
-}
 
+    /// <summary>
+    /// Ensures the Account client maps the downstream prospect-only boolean response.
+    /// </summary>
+    /// <param name="isProspectOnly">The downstream boolean response.</param>
+    /// <param name="expectedResult">The expected gateway result.</param>
+    [Theory]
+    [InlineData(true, ProspectOnlyContactResult.ProspectOnly)]
+    [InlineData(false, ProspectOnlyContactResult.NotProspectOnly)]
+    public async Task GetProspectOnlyContactResultAsync_WhenAccountReturnsBoolean_MapsResult(
+        bool isProspectOnly,
+        ProspectOnlyContactResult expectedResult)
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(isProspectOnly)
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+            {
+                request.Method.Should().Be(HttpMethod.Get);
+                request.RequestUri.Should().Be("http://local.account/api/accounts/contacts/42/is-prospect-only");
+            })
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetProspectOnlyContactResultAsync(42, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expectedResult);
+    }
+
+    /// <summary>
+    /// Ensures the Account client maps downstream 404 to the NotFound result.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectOnlyContactResultAsync_WhenAccountReturnsNotFound_MapsNotFound()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.NotFound
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetProspectOnlyContactResultAsync(42, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(ProspectOnlyContactResult.NotFound);
+    }
+
+    /// <summary>
+    /// Ensures unexpected Account downstream status codes are propagated as HTTP failures.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectOnlyContactResultAsync_WhenAccountReturnsUnexpectedStatus_Throws()
+    {
+        // Arrange
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.BadGateway
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        Func<Task> act = () => _accountService.GetProspectOnlyContactResultAsync(42, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+}
