@@ -329,7 +329,7 @@ public class ProspectOrchestrationService(
     {
         try
         {
-            var payload = CreateContactRequest.FromSignatory(request.Signatory, request.OfficeCode);
+            var payload = CreateContactRequest.FromSignatory(request.Signatory, request.OfficeCode, accountNumber);
             var result = await contactService.CreateContactForProspectAsync(payload, ct);
 
             return result.ContactId;

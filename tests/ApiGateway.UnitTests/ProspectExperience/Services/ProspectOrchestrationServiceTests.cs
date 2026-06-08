@@ -115,8 +115,12 @@ public class ProspectOrchestrationServiceTests
         var contactId = 99;
         IReadOnlyCollection<CreateRolesBulkItem>? capturedAccountRoleItems = null;
         int? capturedAccountRolesAccountId = null;
+        CreateContactRequest? capturedContactRequest = null;
         var executedSteps = new List<string>();
         SetupHappyPath(prospectId, accountNumber, accountId, contactId);
+        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateContactRequest, CancellationToken>((request, _) => capturedContactRequest = request)
+            .ReturnsAsync(new ContactCreated { ContactId = contactId });
         _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
             .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((id, items, _, _) =>
             {
@@ -144,6 +148,8 @@ public class ProspectOrchestrationServiceTests
         result.Signatory.Email.Should().Be("jean.dupont@test.fr");
         executedSteps.Should().Equal("patch", "accountRoles");
         capturedAccountRolesAccountId.Should().Be(accountId);
+        capturedContactRequest.Should().NotBeNull();
+        capturedContactRequest!.AccountNumber.Should().Be(accountNumber);
         capturedAccountRoleItems.Should().NotBeNull();
         capturedAccountRoleItems.Should().BeEquivalentTo(new[]
         {

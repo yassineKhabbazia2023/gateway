@@ -13,7 +13,19 @@ public class CreateContactRequest
     public string? JobDescription { get; set; }
     public Guid OldId { get; set; }
 
-    public static CreateContactRequest FromSignatory(SignatoryDto signatory, string? officeCode) => new()
+    /// <summary>
+    /// Gets or sets the account number used to prepare the Prospect customer in Gigya.
+    /// </summary>
+    public string AccountNumber { get; set; } = default!;
+
+    /// <summary>
+    /// Creates the Contact request used by Prospect orchestration.
+    /// </summary>
+    /// <param name="signatory">The Prospect signatory.</param>
+    /// <param name="officeCode">The optional office code.</param>
+    /// <param name="accountNumber">The Prospect account number.</param>
+    /// <returns>The Contact creation request.</returns>
+    public static CreateContactRequest FromSignatory(SignatoryDto signatory, string? officeCode, string accountNumber) => new()
     {
         Email = signatory.Email,
         FirstName = signatory.FirstName,
@@ -21,6 +33,7 @@ public class CreateContactRequest
         MobilePhone = signatory.MobilePhone,
         OfficeCode = officeCode,
         JobDescription = signatory.JobTitle,
-        OldId = Guid.NewGuid()
+        OldId = Guid.NewGuid(),
+        AccountNumber = accountNumber
     };
 }

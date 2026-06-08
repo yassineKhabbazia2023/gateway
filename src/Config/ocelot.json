@@ -1999,8 +1999,8 @@
     },
     {
       "SwaggerKey": "Contact",
-      "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}?entityType={entityType}",
-      "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}?entityType={entityType}",
+      "UpstreamPathTemplate": "/gtw/contact/api/customers/bulk-invite/{accountNumber}?entityType={invitationEntityType}",
+      "DownstreamPathTemplate": "/api/customers/bulk-invite/{accountNumber}?entityType={invitationEntityType}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -2016,7 +2016,11 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-      }
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ],
+      "Priority": 2
     },
     {
       "SwaggerKey": "Contact",
@@ -2040,7 +2044,8 @@
       },
       "RouteClaimsRequirement": {
         "POST": "COADMI004, COOFF001"
-      }
+      },
+      "Priority": 1
     },
     {
       "SwaggerKey": "Contact",
