@@ -619,4 +619,71 @@ public class ProspectOrchestrationServiceTests
         _prospect.Verify(p => p.UpdateCreationProgressAsync(42, 100, It.Is<UpdateProspectCreationProgressRequest>(r => r.CompletedMilestone == ProspectCreationMilestone.RolesAssigned), It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.PrepareCreationResumeAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    /// <summary>
+    /// Verifies that a signatory with COFFRE_FORT_NUMERIQUE contact type gets ContactFlagPortailFactures set to true in the role bulk.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WhenSignatoryHasCoffreFortNumerique_SetsContactFlagPortailFacturesToTrue()
+    {
+        var contactId = 99;
+        IReadOnlyCollection<CreateRolesBulkItem>? capturedItems = null;
+        SetupHappyPath(42, "AK-001", 43, contactId);
+        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((_, items, _, _) => capturedItems = items)
+            .ReturnsAsync(new CreateRolesBulkResult());
+
+        var request = BuildRequest();
+        request.Signatory.ContactTypes = ["COFFRE_FORT_NUMERIQUE"];
+
+        await _service.CreateAsync(request, CancellationToken.None);
+
+        capturedItems.Should().NotBeNull();
+        capturedItems!.Single(i => i.ContactId == contactId).ContactFlagPortailFactures.Should().BeTrue();
+        capturedItems!.Where(i => i.ContactId != contactId).Should().AllSatisfy(i => i.ContactFlagPortailFactures.Should().BeNull());
+    }
+
+    /// <summary>
+    /// Verifies that COFFRE_FORT_NUMERIQUE detection is case-insensitive.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WhenSignatoryHasCoffreFortNumeriqueInLowercase_SetsContactFlagPortailFacturesToTrue()
+    {
+        var contactId = 99;
+        IReadOnlyCollection<CreateRolesBulkItem>? capturedItems = null;
+        SetupHappyPath(42, "AK-001", 43, contactId);
+        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((_, items, _, _) => capturedItems = items)
+            .ReturnsAsync(new CreateRolesBulkResult());
+
+        var request = BuildRequest();
+        request.Signatory.ContactTypes = ["coffre_fort_numerique"];
+
+        await _service.CreateAsync(request, CancellationToken.None);
+
+        capturedItems.Should().NotBeNull();
+        capturedItems!.Single(i => i.ContactId == contactId).ContactFlagPortailFactures.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Verifies that ContactFlagPortailFactures stays null when COFFRE_FORT_NUMERIQUE is absent from contact types.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WhenSignatoryDoesNotHaveCoffreFortNumerique_LeavesContactFlagPortailFacturesNull()
+    {
+        var contactId = 99;
+        IReadOnlyCollection<CreateRolesBulkItem>? capturedItems = null;
+        SetupHappyPath(42, "AK-001", 43, contactId);
+        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((_, items, _, _) => capturedItems = items)
+            .ReturnsAsync(new CreateRolesBulkResult());
+
+        var request = BuildRequest();
+        request.Signatory.ContactTypes = ["SIGNATAIRE", "RECOUVREMENT"];
+
+        await _service.CreateAsync(request, CancellationToken.None);
+
+        capturedItems.Should().NotBeNull();
+        capturedItems!.Should().AllSatisfy(i => i.ContactFlagPortailFactures.Should().BeNull());
+    }
 }

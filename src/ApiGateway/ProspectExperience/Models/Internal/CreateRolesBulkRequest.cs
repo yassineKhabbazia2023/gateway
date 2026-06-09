@@ -17,5 +17,7 @@ public sealed class CreateRolesBulkItem
 
     public bool? IncludePennylaneAccess { get; set; }
 
+    public bool? ContactFlagPortailFactures { get; set; }
+
     public string? RoleCode { get; set; }
 }

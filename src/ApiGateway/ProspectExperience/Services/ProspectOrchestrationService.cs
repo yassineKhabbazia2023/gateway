@@ -342,7 +342,7 @@ public class ProspectOrchestrationService(
     }
 
     private async Task AssignAccountRolesAsync(
-        int signatoryContactId,
+        SignatoryAssignment signatory,
         int? caseManagerContactId,
         int accountManagerContactId,
         int accountId,
@@ -352,7 +352,7 @@ public class ProspectOrchestrationService(
     {
         try
         {
-            var contacts = BuildAccountRoleItems(signatoryContactId, caseManagerContactId, accountManagerContactId);
+            var contacts = BuildAccountRoleItems(signatory.ContactId, caseManagerContactId, accountManagerContactId, signatory.ContactTypes);
 
             logger.LogInformation(
                 "[Orchestration]: assigning {RoleCount} account roles - [Step]: {Step} - [Siret]: {Siret} - [ProspectId]: {ProspectId} - [AccountId]: {AccountId}",
@@ -592,7 +592,7 @@ public class ProspectOrchestrationService(
         };
 
         await AssignAccountRolesAsync(
-            runtimeState.ContactId!.Value,
+            new SignatoryAssignment(runtimeState.ContactId!.Value, request.Signatory.ContactTypes),
             request.CaseManagerContactId,
             request.AccountManagerContactId,
             runtimeState.AccountId!.Value,
@@ -718,11 +718,15 @@ public class ProspectOrchestrationService(
     private static IReadOnlyCollection<CreateRolesBulkItem> BuildAccountRoleItems(
         int signatoryContactId,
         int? caseManagerContactId,
-        int accountManagerContactId)
+        int accountManagerContactId,
+        IEnumerable<string> signatoryContactTypes)
     {
+        var contactTypes = signatoryContactTypes.ToList();
+        var isDigitalVault = contactTypes.Any(v => string.Equals(v, "COFFRE_FORT_NUMERIQUE", StringComparison.OrdinalIgnoreCase));
+
         var items = new List<CreateRolesBulkItem>
         {
-            new() { ContactId = signatoryContactId, IsSignatory = true },
+            new() { ContactId = signatoryContactId, IsSignatory = true, ContactFlagPortailFactures = isDigitalVault ? true : null },
             new() { ContactId = accountManagerContactId, IsSignatory = false, RoleCode = RoleCodes.AccountManager }
         };
         if (caseManagerContactId.HasValue)
@@ -741,8 +745,11 @@ public class ProspectOrchestrationService(
             {
                 ContactId = group.Key,
                 IsSignatory = group.Any(item => item.IsSignatory == true),
+                ContactFlagPortailFactures = group.Any(item => item.ContactFlagPortailFactures == true) ? true : null,
                 RoleCode = group.Select(item => item.RoleCode).FirstOrDefault(code => code is not null)
             })
             .ToArray();
     }
+
+    private sealed record SignatoryAssignment(int ContactId, IEnumerable<string> ContactTypes);
 }
