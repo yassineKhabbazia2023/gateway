@@ -781,6 +781,29 @@
       }
     },
     {
+      "SwaggerKey": "Offer",
+      "UpstreamPathTemplate": "/gtw/offer/api/subscription/{subscriptionId}/confirm-transfer",
+      "DownstreamPathTemplate": "/api/subscription/{subscriptionId}/confirm-transfer",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseoff#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "PUT": "COOFF002"
+      }
+    },
+    {
       "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/accounts/currentuser",
       "DownstreamPathTemplate": "/api/accounts/currentuser",
