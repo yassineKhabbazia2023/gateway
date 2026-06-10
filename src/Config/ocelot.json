@@ -801,7 +801,10 @@
       },
       "RouteClaimsRequirement": {
         "PUT": "COOFF002"
-      }
+      },
+      "DelegatingHandlers": [
+        "ContactHandler"
+      ]
     },
     {
       "SwaggerKey": "Account",
