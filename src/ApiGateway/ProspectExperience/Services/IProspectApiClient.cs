@@ -59,6 +59,14 @@ public interface IProspectApiClient
     Task<ProspectRoleSynchronizationOutcome> GetCreationRoleSynchronizationOutcomeAsync(int prospectId, CancellationToken ct);
 
     /// <summary>
+    /// Requests Prospect to retrieve and persist the active INPI beneficiaries.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when Prospect synchronized the beneficiaries; otherwise false when the prospect was not found.</returns>
+    Task<bool> PersistBeneficiariesAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
     /// Persists the current Gateway creation progress checkpoint in Prospect.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>

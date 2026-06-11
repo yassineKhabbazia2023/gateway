@@ -19,7 +19,7 @@ public static class ProspectResumePolicy
         return state is not null
             && state.CompletedMilestone is not null
             && (state.CreationStatus != ProspectCreationStatus.Completed
-                || state.CompletedMilestone != ProspectCreationMilestone.RolesAssigned);
+                || state.CompletedMilestone != ProspectCreationMilestone.BeneficiariesPersisted);
     }
 
     /// <summary>

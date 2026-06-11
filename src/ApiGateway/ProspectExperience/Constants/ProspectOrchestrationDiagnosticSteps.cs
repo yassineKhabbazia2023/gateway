@@ -60,4 +60,9 @@ public static class ProspectOrchestrationDiagnosticSteps
     /// Gets the diagnostic-only step identifier for the post-role-assignment synchronization confirmation call.
     /// </summary>
     public const int ConfirmRoleSynchronization = 11;
+
+    /// <summary>
+    /// Gets the diagnostic step identifier for active INPI beneficiary persistence.
+    /// </summary>
+    public const int PersistBeneficiaries = 12;
 }

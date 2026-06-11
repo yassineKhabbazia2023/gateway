@@ -384,6 +384,37 @@ public class ProspectApiClientTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that beneficiary persistence calls the dedicated Prospect endpoint.
+    /// </summary>
+    [Fact]
+    public async Task PersistBeneficiariesAsync_IssuesPostToProspectEndpoint()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.PersistBeneficiariesAsync(42, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/beneficiaries/42");
+    }
+
+    /// <summary>
+    /// Verifies that a missing prospect is returned as a false persistence result.
+    /// </summary>
+    [Fact]
+    public async Task PersistBeneficiariesAsync_WhenProspectIsMissing_ReturnsFalse()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.PersistBeneficiariesAsync(42, CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
     [Fact]
     public async Task MarkProspectCreationFailedAsync_IssuesPatchWithCurrentUserHeader()
     {

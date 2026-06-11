@@ -17,7 +17,8 @@ public class ProspectOrchestrationException : GatewayException
         [8] = "PatchProspectIds",
         [9] = "AssignAccountRoles",
         [10] = "PrepareCreationResume",
-        [11] = "ConfirmRoleSynchronization"
+        [11] = "ConfirmRoleSynchronization",
+        [12] = "PersistBeneficiaries"
     };
 
     public int Step { get; }

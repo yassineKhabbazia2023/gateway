@@ -109,6 +109,7 @@ public class ProspectOrchestrationService(
                 runtimeState.FinalizationCompleted = true;
 
                 await AssignRolesAndPersistAsync(request, runtimeState, auditUserId, siret, sanitizedPayload, ct);
+                await PersistBeneficiariesAndCheckpointAsync(runtimeState, auditUserId, siret, sanitizedPayload, ct);
 
                 return BuildCreatedProspect(runtimeState.AccountId.Value, runtimeState.AccountNumber, runtimeState.LegalName, request.Signatory, runtimeState.ContactId.Value);
             }
@@ -214,7 +215,12 @@ public class ProspectOrchestrationService(
                 runtimeState.FinalizationCompleted = true;
             }
 
-            await AssignRolesAndPersistAsync(request, runtimeState, auditUserId, siret, sanitizedPayload, ct);
+            if (runtimeState.LastCompletedMilestone != ProspectCreationMilestone.RolesAssigned)
+            {
+                await AssignRolesAndPersistAsync(request, runtimeState, auditUserId, siret, sanitizedPayload, ct);
+            }
+
+            await PersistBeneficiariesAndCheckpointAsync(runtimeState, auditUserId, siret, sanitizedPayload, ct);
 
             return BuildCreatedProspect(runtimeState.AccountId.Value, runtimeState.AccountNumber, runtimeState.LegalName, request.Signatory, runtimeState.ContactId.Value);
         }
@@ -616,6 +622,63 @@ public class ProspectOrchestrationService(
             siret,
             sanitizedPayload,
             ct);
+    }
+
+    /// <summary>
+    /// Persists active INPI beneficiaries and records the terminal orchestration checkpoint.
+    /// </summary>
+    /// <param name="runtimeState">The current orchestration runtime state.</param>
+    /// <param name="currentUserId">The audit user identifier.</param>
+    /// <param name="siret">The target SIRET.</param>
+    /// <param name="sanitizedPayload">The sanitized payload used for diagnostic logs.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task PersistBeneficiariesAndCheckpointAsync(
+        ProspectCreationRuntimeState runtimeState,
+        int currentUserId,
+        string siret,
+        string sanitizedPayload,
+        CancellationToken ct)
+    {
+        try
+        {
+            var persisted = await prospectClient.PersistBeneficiariesAsync(runtimeState.ProspectId!.Value, ct);
+            if (!persisted)
+            {
+                throw new InvalidOperationException(
+                    $"Prospect {runtimeState.ProspectId.Value} could not persist beneficiaries because it was not found.");
+            }
+
+            runtimeState.LastCompletedMilestone = ProspectCreationMilestone.BeneficiariesPersisted;
+            await PersistRuntimeStateAsync(
+                runtimeState,
+                currentUserId,
+                ProspectCreationMilestone.BeneficiariesPersisted,
+                ProspectOrchestrationDiagnosticSteps.PersistBeneficiaries,
+                siret,
+                sanitizedPayload,
+                ct);
+        }
+        catch (ProspectOrchestrationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LogStepFailure(
+                ProspectOrchestrationDiagnosticSteps.PersistBeneficiaries,
+                siret,
+                runtimeState.ProspectId,
+                runtimeState.AccountNumber,
+                sanitizedPayload,
+                ex);
+            throw new ProspectOrchestrationException(
+                ProspectOrchestrationDiagnosticSteps.PersistBeneficiaries,
+                siret: siret,
+                prospectId: runtimeState.ProspectId,
+                accountNumber: runtimeState.AccountNumber,
+                inner: ex);
+        }
     }
 
     private async Task TryMarkProspectCreationFailedAsync(

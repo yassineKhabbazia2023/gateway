@@ -52,8 +52,9 @@ The final solution combines:
    - `ResumeRequestFingerprint`
 4. a bounded finalization retry in Gateway
 5. a resume preparation endpoint that restores a failed pre-finalization prospect to a finalizable state
-6. a bounded role-synchronization confirmation retry in Gateway before persisting the terminal checkpoint
+6. a bounded role-synchronization confirmation retry in Gateway before persisting the role checkpoint
 7. an idempotent role retry behavior in Gateway that ignores downstream `ACC021` duplicate-role failures
+8. a final idempotent beneficiary synchronization step that persists active INPI beneficial owners in Prospect
 
 ## Technical step numbering
 
@@ -68,14 +69,15 @@ The full orchestration runtime order is:
 7. `7` = Create Rydge contact
 8. `8` = Finalize Prospect
 9. `9` = Assign account roles
+10. `12` = Persist active INPI beneficiaries
 
 Only persisted Prospect checkpoints use `LastCompletedStep`, and they start at `3`.
-`LastCompletedStep = 9` is the terminal successful state.
+`LastCompletedStep = 12` is the terminal successful state.
 
 Gateway uses diagnostic-only steps that are never persisted in `LastCompletedStep`:
 
 10. `10` = Prepare creation resume before a pre-finalization retry
-11. `11` = Confirm role synchronization in Prospect before persisting terminal step `9`
+11. `11` = Confirm role synchronization in Prospect before persisting role checkpoint step `9`
 
 Gateway no longer sends these numeric step values back to Prospect for checkpoint persistence.
 For shared checkpoint updates, Gateway sends a semantic `CompletedMilestone` value and Prospect maps it internally to its persisted `LastCompletedStep`.
@@ -112,8 +114,9 @@ For the shared orchestration checkpoints, Gateway reports the following semantic
 - `RydgeAccountCreated`
 - `RydgeContactCreated`
 - `RolesAssigned`
+- `BeneficiariesPersisted`
 
-Prospect then maps these milestones internally to persisted steps `4`, `5`, `6`, `7`, and `9`.
+Prospect then maps these milestones internally to persisted steps `4`, `5`, `6`, `7`, `9`, and `12`.
 Steps `3` and `8` remain owned directly by Prospect because they are persisted inside Prospect's own aggregate transitions.
 When Prospect later returns an incomplete checkpoint to Gateway, it also returns the corresponding `CompletedMilestone` so Gateway can resume and mark failures without re-deriving milestones from persisted numeric steps.
 
@@ -180,7 +183,7 @@ If finalization has already succeeded and role assignment fails afterward:
 - Gateway does not mark Prospect as `Failed`
 - Prospect stays `Completed`
 - `LastCompletedStep` stays `8`
-- the incomplete same-SIRET lookup still returns this Prospect because it has not reached terminal step `9`
+- the incomplete same-SIRET lookup still returns this Prospect because it has not reached terminal step `12`
 - the next user retry resumes directly at role assignment
 
 If Account role creation succeeds but Prospect has not consumed the corresponding role events yet:
@@ -190,6 +193,21 @@ If Account role creation succeeds but Prospect has not consumed the correspondin
 - Prospect stays `Completed`
 - `LastCompletedStep` stays `8`
 - the next user retry still resumes directly at role assignment / role-synchronization confirmation
+
+### Post-role beneficiary persistence
+
+After role assignment and role synchronization succeed:
+
+- Gateway persists `RolesAssigned` as checkpoint step `9`
+- Gateway calls `POST /api/beneficiaries/:prospectId`
+- Prospect retrieves the company from INPI by the prospect SIRET
+- Prospect extracts only beneficiaries where INPI `actif == true`
+- beneficiaries from both `personneMorale` and `personnePhysique` are supported
+- Prospect replaces the persisted set and deduplicates by `(ProspectId, ExternalId)`
+- Gateway persists `BeneficiariesPersisted` as terminal checkpoint step `12`
+
+If beneficiary persistence fails, Prospect remains `Completed` at step `9`. The next retry skips all
+creation and role steps and retries only beneficiary persistence.
 
 ## Prospect read behavior
 
@@ -222,7 +240,8 @@ Gateway now does this:
 4. retry Prospect finalization only against Prospect when synchronized stale-data rows are still not ready
 5. assign roles only after finalization succeeds
 6. confirm in Prospect that the expected synchronized role rows exist locally
-7. persist `LastCompletedStep = 9` only after both role assignment and Prospect role synchronization confirmation succeed
+7. persist `LastCompletedStep = 9` after role assignment and Prospect role synchronization confirmation succeed
+8. persist active INPI beneficiaries and then persist terminal `LastCompletedStep = 12`
 
 ## Full orchestration flow
 
@@ -296,13 +315,16 @@ flowchart TD
 
     S --> AA{LastCompletedStep < 9?}
     AA -->|Yes| AB[Step 9: Assign account roles]
-    AA -->|No| AC[Return success]
+    AA -->|No| AH
     AB -->|Failure| AD[Do not mark Failed if finalization already succeeded]
     AD --> AE[Throw step 9]
     AB -->|Success| AF[Diagnostic step 11: confirm Prospect role sync]
     AF -->|Pending| AG[Keep Completed plus step 8 and throw step 11]
-    AF -->|Confirmed| AH[Persist terminal step 9]
-    AH --> AC
+    AF -->|Confirmed| AH[Persist role checkpoint step 9]
+    AH --> AI[Step 12: Persist active INPI beneficiaries]
+    AI -->|Failure| AJ[Keep Completed plus step 9 and throw step 12]
+    AI -->|Success| AK[Persist terminal step 12]
+    AK --> AC[Return success]
 ```
 
 ## Prospect-side finalization decision logic
@@ -334,7 +356,7 @@ stateDiagram-v2
     PendingCreation --> Completed: Finalization succeeds
     Failed --> PendingCreation: Prepare creation resume
     Completed --> Completed: Role assignment fails after finalization
-    Completed --> [*]: Terminal once step 9 is persisted
+    Completed --> [*]: Terminal once step 12 is persisted
     Failed --> [*]
 ```
 
@@ -344,7 +366,7 @@ stateDiagram-v2
 - `Failed` means a pre-finalization stop was recorded together with a resumable checkpoint.
 - `Completed` means Prospect finalization succeeded.
 - `Completed` does not automatically mean the full Gateway orchestration is terminal.
-- The full workflow becomes terminal only after role assignment succeeds and Gateway persists `LastCompletedStep = 9`.
+- The full workflow becomes terminal only after beneficiary persistence succeeds and Gateway persists `LastCompletedStep = 12`.
 
 ## Exact behavior by failure point
 
@@ -453,7 +475,22 @@ Behavior:
 - duplicate role failures with downstream code `ACC021` are ignored during the retry
 - on success, Gateway first confirms local role synchronization in Prospect, then persists `LastCompletedStep = 9`
 
-### Case 8: retry payload changed after step 4
+### Case 8: beneficiary persistence fails after roles are assigned
+
+This covers:
+
+- step 9 succeeded
+- step 12 failed while calling Prospect or persisting its terminal checkpoint
+
+Behavior:
+
+- Prospect stays `Completed`
+- `LastCompletedStep` stays `9`
+- Gateway does not mark Prospect as `Failed`
+- the next click resumes directly at beneficiary persistence
+- the endpoint replaces the beneficiary set, so retrying after a partial success does not create duplicates
+
+### Case 9: retry payload changed after step 4
 
 This covers:
 
@@ -475,6 +512,7 @@ Behavior:
 - `PATCH /api/prospects/{prospectId}/creation-progress`
 - `PATCH /api/prospects/{prospectId}/creation-failure`
 - `PATCH /api/prospects/{prospectId}`
+- `POST /api/beneficiaries/{prospectId}`
 
 The Mermaid diagrams in this document intentionally use `:prospectId` and `:siret` placeholder syntax because Mermaid does not parse `{...}` placeholders reliably inside node labels.
 
@@ -486,6 +524,7 @@ The Mermaid diagrams in this document intentionally use `:prospectId` and `:sire
 - `creation-failure` stores the last known checkpoint together with `CreationStatus = Failed`.
 - `creation-failure` also receives the last successfully completed semantic milestone when that checkpoint is Gateway-owned, and omits it when the latest persisted checkpoint is still owned directly by Prospect.
 - `PATCH /api/prospects/:prospectId` finalizes Prospect only when synchronized stale-data rows are ready.
+- `POST /api/beneficiaries/:prospectId` replaces the prospect beneficiary set with active INPI owners and is safe to retry.
 
 ## Important technical decisions
 
@@ -496,6 +535,16 @@ The Mermaid diagrams in this document intentionally use `:prospectId` and `:sire
 - retry after partial success is a resume, not a full replay
 - retry after step 4 requires the same business payload
 - role retry after finalization is tolerated because Gateway ignores downstream duplicate-role code `ACC021`
+- beneficiary retry after role assignment is tolerated because Prospect replaces and deduplicates the active set
+
+### INPI beneficiary mapping assumptions
+
+- `actif` is the source-of-truth active flag; only `true` rows are persisted.
+- `beneficiairesEffectifs` is read from both `personneMorale` and `personnePhysique`.
+- `beneficiaireId` is required for persistence and becomes `ExternalId`; rows without it are ignored because they cannot be safely deduplicated.
+- The requested persistence mapping is intentionally `nom -> FirstName`.
+- `prenoms` can be a string or a list. It is normalized to a list and only the first value is persisted as `LastName` while the final business rule remains under discussion.
+- Synchronization replaces the full persisted set so inactive or removed INPI beneficiaries are deleted locally.
 
 ## Files to inspect when the flow evolves
 

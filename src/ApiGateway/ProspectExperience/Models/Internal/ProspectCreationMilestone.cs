@@ -31,5 +31,10 @@ public enum ProspectCreationMilestone
     /// <summary>
     /// The account role assignment and synchronization confirmation completed successfully.
     /// </summary>
-    RolesAssigned
+    RolesAssigned,
+
+    /// <summary>
+    /// The active INPI beneficiaries were persisted successfully.
+    /// </summary>
+    BeneficiariesPersisted
 }
