@@ -99,6 +99,8 @@ public class ContactHandlerTests
 
         request.Headers.Contains("currentUser").Should().BeTrue("the header 'currentUser' should be present");
         request.Headers.GetValues("currentUser").FirstOrDefault().Should().Be(contactId.ToString(), "the 'currentUser' header should match the specified contactId");
+        request.Headers.Contains("ContactEmail").Should().BeTrue("the uploader email must be forwarded downstream");
+        request.Headers.GetValues("ContactEmail").Single().Should().Be(userEmail);
     }
 
     [Fact]

@@ -125,4 +125,104 @@ public class ProspectExperienceHandlerTests
             s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    /// <summary>
+    /// Verifies that enabled Prospect routes forward multipart content unchanged and return downstream success.
+    /// </summary>
+    [Fact]
+    public async Task Should_Forward_Multipart_Request_And_Downstream_Success_Response()
+    {
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(service => service.IsEnabledAsync(
+                FeatureFlagKeys.IsProspectExperienceEnabled,
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        HttpRequestMessage? capturedRequest = null;
+        var downstreamResponse = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create(new
+            {
+                beneficiaryId = Guid.NewGuid(),
+                documentType = "PASSPORT",
+                documents = Array.Empty<object>()
+            })
+        };
+        var innerMock = new Mock<HttpMessageHandler>();
+        innerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((request, _) => capturedRequest = request)
+            .ReturnsAsync(downstreamResponse);
+        var handler = new ProspectExperienceHandler(
+            featureFlagService.Object,
+            NullLogger<ProspectExperienceHandler>.Instance)
+        {
+            InnerHandler = innerMock.Object
+        };
+        using var invoker = new HttpMessageInvoker(handler);
+        using var multipart = new MultipartFormDataContent("identity-boundary");
+        multipart.Add(new StringContent("PASSPORT"), "documentType");
+        var fileContent = new ByteArrayContent("%PDF-"u8.ToArray());
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+        multipart.Add(fileContent, "files", "passport.pdf");
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.test.com/api/prospects/123/beneficiaries/148cf2c3-ccfa-44d0-addd-1b46a4a6f2f9/identity-documents")
+        {
+            Content = multipart
+        };
+
+        var result = await invoker.SendAsync(request, CancellationToken.None);
+
+        result.StatusCode.Should().Be(HttpStatusCode.Created);
+        result.Should().BeSameAs(downstreamResponse);
+        capturedRequest.Should().BeSameAs(request);
+        capturedRequest!.Content.Should().BeSameAs(multipart);
+        capturedRequest.Content.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
+        capturedRequest.Content.Headers.ContentType.Parameters
+            .Single(parameter => parameter.Name == "boundary")
+            .Value.Trim('"')
+            .Should()
+            .Be("identity-boundary");
+    }
+
+    /// <summary>
+    /// Verifies that enabled Prospect routes propagate downstream problem responses unchanged.
+    /// </summary>
+    [Fact]
+    public async Task Should_Propagate_Downstream_Problem_Response()
+    {
+        const string problemJson =
+            "{\"title\":\"Only PDF, JPEG, and PNG files are supported.\",\"status\":415}";
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(service => service.IsEnabledAsync(
+                FeatureFlagKeys.IsProspectExperienceEnabled,
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var downstreamResponse = new HttpResponseMessage(HttpStatusCode.UnsupportedMediaType)
+        {
+            Content = new StringContent(
+                problemJson,
+                System.Text.Encoding.UTF8,
+                "application/problem+json")
+        };
+        var (invoker, _) = CreateHandler(featureFlagService, downstreamResponse);
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.test.com/api/prospects/123/beneficiaries/148cf2c3-ccfa-44d0-addd-1b46a4a6f2f9/identity-documents");
+
+        var result = await invoker.SendAsync(request, CancellationToken.None);
+
+        result.Should().BeSameAs(downstreamResponse);
+        result.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
+        result.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        (await result.Content.ReadAsStringAsync()).Should().Be(problemJson);
+    }
 }
