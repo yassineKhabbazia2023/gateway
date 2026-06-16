@@ -199,7 +199,7 @@ If Account role creation succeeds but Prospect has not consumed the correspondin
 After role assignment and role synchronization succeed:
 
 - Gateway persists `RolesAssigned` as checkpoint step `9`
-- Gateway calls `POST /api/beneficiaries/:prospectId`
+- Gateway calls `POST /api/prospects/:prospectId/beneficiaries`
 - Prospect retrieves the company from INPI by the prospect SIRET
 - Prospect extracts only beneficiaries where INPI `actif == true`
 - beneficiaries from both `personneMorale` and `personnePhysique` are supported
@@ -512,7 +512,7 @@ Behavior:
 - `PATCH /api/prospects/{prospectId}/creation-progress`
 - `PATCH /api/prospects/{prospectId}/creation-failure`
 - `PATCH /api/prospects/{prospectId}`
-- `POST /api/beneficiaries/{prospectId}`
+- `POST /api/prospects/{prospectId}/beneficiaries`
 
 The Mermaid diagrams in this document intentionally use `:prospectId` and `:siret` placeholder syntax because Mermaid does not parse `{...}` placeholders reliably inside node labels.
 
@@ -524,7 +524,7 @@ The Mermaid diagrams in this document intentionally use `:prospectId` and `:sire
 - `creation-failure` stores the last known checkpoint together with `CreationStatus = Failed`.
 - `creation-failure` also receives the last successfully completed semantic milestone when that checkpoint is Gateway-owned, and omits it when the latest persisted checkpoint is still owned directly by Prospect.
 - `PATCH /api/prospects/:prospectId` finalizes Prospect only when synchronized stale-data rows are ready.
-- `POST /api/beneficiaries/:prospectId` replaces the prospect beneficiary set with active INPI owners and is safe to retry.
+- `POST /api/prospects/:prospectId/beneficiaries` replaces the prospect beneficiary set with active INPI owners and is safe to retry.
 
 ## Important technical decisions
 

@@ -155,7 +155,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     public async Task<bool> PersistBeneficiariesAsync(int prospectId, CancellationToken ct)
     {
         using var response = await httpClient.PostAsync(
-            $"api/beneficiaries/{prospectId}",
+            $"api/prospects/{prospectId}/beneficiaries",
             content: null,
             ct);
         if (response.StatusCode == HttpStatusCode.NotFound)

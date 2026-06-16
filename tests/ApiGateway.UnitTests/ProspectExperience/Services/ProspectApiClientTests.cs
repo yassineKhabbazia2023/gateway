@@ -398,7 +398,7 @@ public class ProspectApiClientTests
 
         result.Should().BeTrue();
         captured!.Method.Should().Be(HttpMethod.Post);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/beneficiaries/42");
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/beneficiaries");
     }
 
     /// <summary>
