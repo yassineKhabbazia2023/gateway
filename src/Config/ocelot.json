@@ -567,6 +567,30 @@
       ]
     },
     {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/prospects/{prospectId}/onboarding/steps",
+      "DownstreamPathTemplate": "/api/prospects/{prospectId}/steps",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+    },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/prospect/api/contacts",
       "DownstreamPathTemplate": "/api/contacts?Type=Collaborator",
