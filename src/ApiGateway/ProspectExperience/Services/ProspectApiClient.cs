@@ -4,6 +4,7 @@ using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
+using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -203,6 +204,20 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         response.EnsureSuccessStatusCode();
         return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<int?> GetProspectIdByAccountIdAsync(int accountId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/prospects/account/{accountId}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<GetProspectByAccountIdResponse>(JsonOptions, ct);
+        return result?.ProspectId;
     }
 
     private static object BuildSignatoryPayload(SignatoryDto signatory) => new

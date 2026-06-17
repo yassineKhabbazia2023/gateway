@@ -85,4 +85,12 @@ public interface IProspectApiClient
     /// <param name="request">The latest known checkpoint data to keep resumable after the failure.</param>
     /// <returns>True when Prospect acknowledged the failed status update; otherwise false.</returns>
     Task<bool> MarkProspectCreationFailedAsync(int prospectId, int currentUserId, MarkProspectCreationFailedRequest request, CancellationToken ct);
+
+    /// <summary>
+    /// Gets the prospect identifier for a given account identifier.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The prospect identifier, or null if no active prospect is linked to this account.</returns>
+    Task<int?> GetProspectIdByAccountIdAsync(int accountId, CancellationToken ct);
 }

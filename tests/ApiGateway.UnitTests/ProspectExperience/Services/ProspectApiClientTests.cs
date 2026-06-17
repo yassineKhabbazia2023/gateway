@@ -465,4 +465,41 @@ public class ProspectApiClientTests
 
         result.Should().BeFalse();
     }
+
+    /// <summary>
+    /// Verifies that GetProspectIdByAccountIdAsync sends the correct HTTP request and returns the prospect identifier.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectIdByAccountIdAsync_WhenProspectFound_ReturnsProspectId()
+    {
+        const int accountId = 42;
+        const int prospectId = 123;
+        var responsePayload = new { prospectId };
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(responsePayload, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.GetProspectIdByAccountIdAsync(accountId, CancellationToken.None);
+
+        result.Should().Be(prospectId);
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/account/42");
+    }
+
+    /// <summary>
+    /// Verifies that GetProspectIdByAccountIdAsync returns null when no prospect is linked to the account.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectIdByAccountIdAsync_WhenNotFound_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetProspectIdByAccountIdAsync(999, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
 }

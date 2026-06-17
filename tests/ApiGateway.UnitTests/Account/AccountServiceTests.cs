@@ -5,6 +5,7 @@ using ApiGateway.Account;
 using ApiGateway.Authorization;
 using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Services;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.Authorization;
@@ -12,6 +13,7 @@ namespace ApiGateway.UnitTests.Authorization;
 public class AccountServiceTests
 {
     private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
+    private readonly Mock<IProspectApiClient> _mockProspectApiClient;
     private readonly HttpClient _httpClient;
     private readonly AccountService _accountService;
     private readonly Fixture _fixture;
@@ -19,9 +21,10 @@ public class AccountServiceTests
     public AccountServiceTests()
     {
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        _mockProspectApiClient = new Mock<IProspectApiClient>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         _httpClient.BaseAddress = new Uri("http://local.account/api");
-        _accountService = new AccountService(_httpClient);
+        _accountService = new AccountService(_httpClient, _mockProspectApiClient.Object);
         _fixture = new Fixture();
     }
 
@@ -327,5 +330,140 @@ public class AccountServiceTests
 
         // Assert
         await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that GetSummaryAsync enriches Summary with prospectId when AccountType is PROSPECT.
+    /// </summary>
+    [Fact]
+    public async Task GetSummaryAsync_WhenAccountTypeIsProspect_EnrichesWithProspectId()
+    {
+        // Arrange
+        const int accountId = 42;
+        const int contactId = 100;
+        const int prospectId = 123;
+
+        var summary = new Summary
+        {
+            AccountId = accountId,
+            AccountType = "PROSPECT",
+            LegalName = "Test Company"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(summary)
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        _mockProspectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(prospectId);
+
+        // Act
+        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.ProspectId.Should().Be(prospectId);
+        _mockProspectApiClient.Verify(
+            client => client.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that GetSummaryAsync does NOT call ProspectApiClient when AccountType is not PROSPECT.
+    /// </summary>
+    [Fact]
+    public async Task GetSummaryAsync_WhenAccountTypeIsNotProspect_DoesNotCallProspectApi()
+    {
+        // Arrange
+        const int accountId = 42;
+        const int contactId = 100;
+
+        var summary = new Summary
+        {
+            AccountId = accountId,
+            AccountType = "CUSTOMER",
+            LegalName = "Test Company"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(summary)
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.ProspectId.Should().BeNull();
+        _mockProspectApiClient.Verify(
+            client => client.GetProspectIdByAccountIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that GetSummaryAsync sets prospectId to null when ProspectApiClient returns null.
+    /// </summary>
+    [Fact]
+    public async Task GetSummaryAsync_WhenProspectNotLinked_SetsProspectIdToNull()
+    {
+        // Arrange
+        const int accountId = 42;
+        const int contactId = 100;
+
+        var summary = new Summary
+        {
+            AccountId = accountId,
+            AccountType = "PROSPECT",
+            LegalName = "Test Company"
+        };
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(summary)
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        _mockProspectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        // Act
+        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.ProspectId.Should().BeNull();
+        _mockProspectApiClient.Verify(
+            client => client.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

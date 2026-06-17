@@ -1,5 +1,7 @@
 using ApiGateway.Models;
+using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Services;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -10,14 +12,16 @@ namespace ApiGateway.Account;
 public class AccountService : IAccountService
 {
     private readonly HttpClient _httpClient;
+    private readonly IProspectApiClient _prospectApiClient;
     private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true,
     };
 
-    public AccountService(HttpClient httpClient)
+    public AccountService(HttpClient httpClient, IProspectApiClient prospectApiClient)
     {
         _httpClient = httpClient;
+        _prospectApiClient = prospectApiClient;
     }
     public async Task<Paging<Models.Account>> GetContactRolesAsync(int contactId)
     {
@@ -117,7 +121,14 @@ public class AccountService : IAccountService
         var response = await _httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
-            return await response.Content.ReadFromJsonAsync<Summary>();
+            var summary = await response.Content.ReadFromJsonAsync<Summary>();
+
+            if (summary?.AccountType == AccountType.PROSPECT.ToString())
+            {
+                summary.ProspectId = await _prospectApiClient.GetProspectIdByAccountIdAsync(accountId, CancellationToken.None);
+            }
+
+            return summary;
         }
 
         return null;

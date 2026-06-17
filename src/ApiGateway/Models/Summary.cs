@@ -38,4 +38,9 @@ public class Summary
     public Hub? Hub { get; set; }
 
     public SubscriptionStatus[] Subscriptions { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the prospect identifier when AccountType is "PROSPECT".
+    /// </summary>
+    public int? ProspectId { get; set; }
 }
