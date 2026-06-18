@@ -1,5 +1,6 @@
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
+using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -20,6 +21,48 @@ public interface IProspectApiClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The incomplete prospect state, or null when no resumable state exists.</returns>
     Task<IncompleteProspectCreationState?> GetIncompleteProspectBySiretAsync(string siret, CancellationToken ct);
+
+    /// <summary>
+    /// Retrieves the documents that still need to be uploaded to an external service for an onboarding step.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The public onboarding step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The upload plan, or null when the prospect does not exist.</returns>
+    Task<DocumentsToUploadToExternalServiceResponse?> GetDocumentsToUploadToExternalServiceAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Downloads one beneficiary identity document together with the metadata required for downstream upload.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="documentId">The document identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The document content and metadata, or null when the document does not exist.</returns>
+    Task<ProspectDocumentContentResponse?> GetDocumentAsync(int prospectId, int documentId, CancellationToken ct);
+
+    /// <summary>
+    /// Persists the consolidated document upload result in Prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="request">The upload result payload.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The consolidated upload result, or null when the prospect does not exist.</returns>
+    Task<DocumentUploadResultResponse?> RegisterDocumentUploadResultAsync(
+        int prospectId,
+        DocumentUploadResultRequest request,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Completes a named Prospect onboarding step.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The public onboarding step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct);
 
     /// <summary>
     /// Creates the prospect aggregate in Prospect.

@@ -53,6 +53,77 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task<DocumentsToUploadToExternalServiceResponse?> GetDocumentsToUploadToExternalServiceAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct)
+    {
+        var response = await httpClient.GetAsync(
+            $"api/prospects/{prospectId}/documents/to-upload?stepName={Uri.EscapeDataString(stepName)}",
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<DocumentsToUploadToExternalServiceResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Document upload plan response for prospect {prospectId} and step {stepName} was empty.");
+    }
+
+    /// <inheritdoc />
+    public async Task<ProspectDocumentContentResponse?> GetDocumentAsync(int prospectId, int documentId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync(
+            $"api/prospects/{prospectId}/documents/{documentId}",
+            HttpCompletionOption.ResponseHeadersRead,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsByteArrayAsync(ct);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+        var fileName = ExtractFileName(response);
+
+        return new ProspectDocumentContentResponse(content, contentType, fileName);
+    }
+
+    /// <inheritdoc />
+    public async Task<DocumentUploadResultResponse?> RegisterDocumentUploadResultAsync(
+        int prospectId,
+        DocumentUploadResultRequest request,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/prospects/{prospectId}/documents/upload-result",
+            request,
+            JsonOptions,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<DocumentUploadResultResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Document upload result response for prospect {prospectId} was empty.");
+    }
+
+    /// <inheritdoc />
+    public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct)
+    {
+        using var response = await httpClient.PutAsync(
+            $"api/prospects/{prospectId}/onboarding/steps/{Uri.EscapeDataString(stepName)}/complete",
+            content: null,
+            ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <inheritdoc />
     public async Task<int> CreateProspectAsync(CreateProspectRequest request, InpiCompanyInfo inpi, CancellationToken ct)
     {
         logger.LogInformation("Creating prospect for SIRET {Siret} with legal name {LegalName}", inpi.Siret, inpi.LegalName);
@@ -232,6 +303,13 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         signatory.MobilePhone,
         ContactTypes = signatory.ContactTypes ?? []
     };
+
+    private static string ExtractFileName(HttpResponseMessage response)
+    {
+        var contentDisposition = response.Content.Headers.ContentDisposition;
+        var fileName = contentDisposition?.FileNameStar ?? contentDisposition?.FileName;
+        return fileName?.Trim('"') ?? string.Empty;
+    }
 
     private sealed class CreateProspectApiResponse
     {

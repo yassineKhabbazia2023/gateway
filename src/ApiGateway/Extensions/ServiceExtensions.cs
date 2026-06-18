@@ -58,6 +58,8 @@ public static class ServiceExtensions
         services.AddScoped<IPennylaneAuthorizationService, PennylaneAuthorizationService>();
         services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
         services.AddScoped<IProspectService, ProspectOrchestrationService>();
+        services.AddScoped<IProspectStepCompletionStrategy, BeneficiaryStepCompletionStrategy>();
+        services.AddScoped<IProspectStepCompletionStrategy, DefaultStepCompletionStrategy>();
         services.AddScoped<ICreatePasswordExperienceService, CreatePasswordExperienceService>();
         services.AddValidatorsFromAssemblyContaining<CreateProspectRequestValidator>();
         services.RegisterOpenTelemetry(configuration);

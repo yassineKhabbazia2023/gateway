@@ -2,6 +2,7 @@ using ApiGateway.Account;
 using ApiGateway.Account.Constants;
 using ApiGateway.Configuration;
 using ApiGateway.Contact;
+using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Exceptions;
 using ApiGateway.ProspectExperience.Constants;
@@ -9,6 +10,7 @@ using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Policies;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace ApiGateway.ProspectExperience.Services;
@@ -16,10 +18,38 @@ namespace ApiGateway.ProspectExperience.Services;
 public class ProspectOrchestrationService(
     IRegistryProspectClient registryClient,
     IProspectApiClient prospectClient,
+    IEnumerable<IProspectStepCompletionStrategy> stepCompletionStrategies,
     IAccountService accountService,
     IContactService contactService,
     ILogger<ProspectOrchestrationService> logger) : IProspectService
 {
+    /// <inheritdoc />
+    public async Task<DocumentUploadResultResponse> CompleteStepAsync(
+        int prospectId,
+        CompleteStepRequest request,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        logger.LogInformation(
+            "Starting onboarding step completion for prospect {ProspectId} and step {StepName}",
+            prospectId,
+            request.StepName);
+
+        var strategy = stepCompletionStrategies
+            .OrderByDescending(candidate => candidate.Priority)
+            .FirstOrDefault(candidate => candidate.CanHandle(request.StepName));
+        if (strategy is null)
+        {
+            throw new GatewayException(StatusCodes.Status404NotFound, Errors.NullArgumentCode, "Onboarding step was not found.");
+        }
+
+        var uploadResult = await strategy.CompleteAsync(prospectId, request.StepName, ct);
+        return new DocumentUploadResultResponse(
+            uploadResult.SucceededDocumentIds,
+            uploadResult.FailedDocumentIds);
+    }
+
     public async Task<ProspectListItem> CreateAsync(CreateProspectRequest request, CancellationToken ct)
     {
         var siret = request.Siret;

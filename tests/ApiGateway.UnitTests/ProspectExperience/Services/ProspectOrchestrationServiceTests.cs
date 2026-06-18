@@ -1,5 +1,6 @@
 using ApiGateway.Account;
 using ApiGateway.Contact;
+using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Constants;
 using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Exceptions;
@@ -20,6 +21,7 @@ public class ProspectOrchestrationServiceTests
     private readonly Mock<IAccountService> _accountService;
     private readonly Mock<IContactService> _contactService;
     private readonly Mock<ILogger<ProspectOrchestrationService>> _logger;
+    private readonly List<IProspectStepCompletionStrategy> _stepCompletionStrategies;
     private readonly ProspectOrchestrationService _service;
 
     public ProspectOrchestrationServiceTests()
@@ -29,9 +31,20 @@ public class ProspectOrchestrationServiceTests
         _accountService = new Mock<IAccountService>();
         _contactService = new Mock<IContactService>();
         _logger = new Mock<ILogger<ProspectOrchestrationService>>();
+        _stepCompletionStrategies =
+        [
+            new BeneficiaryStepCompletionStrategy(
+                _registry.Object,
+                _prospect.Object,
+                Mock.Of<ILogger<BeneficiaryStepCompletionStrategy>>()),
+            new DefaultStepCompletionStrategy(
+                _prospect.Object,
+                Mock.Of<ILogger<DefaultStepCompletionStrategy>>())
+        ];
         _service = new ProspectOrchestrationService(
             _registry.Object,
             _prospect.Object,
+            _stepCompletionStrategies,
             _accountService.Object,
             _contactService.Object,
             _logger.Object);
@@ -136,7 +149,7 @@ public class ProspectOrchestrationServiceTests
             .Callback(() => executedSteps.Add("patch"))
             .ReturnsAsync(FinalizeProspectOutcome.Updated);
         _prospect.Setup(p => p.PersistBeneficiariesAsync(prospectId, It.IsAny<CancellationToken>()))
-            .Callback(() => executedSteps.Add("beneficiaries"))
+            .Callback(() => executedSteps.Add("Beneficiary"))
             .ReturnsAsync(true);
 
         var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
@@ -152,7 +165,7 @@ public class ProspectOrchestrationServiceTests
         result.Signatory.FirstName.Should().Be("Jean");
         result.Signatory.LastName.Should().Be("Dupont");
         result.Signatory.Email.Should().Be("jean.dupont@test.fr");
-        executedSteps.Should().Equal("patch", "accountRoles", "beneficiaries");
+        executedSteps.Should().Equal("patch", "accountRoles", "Beneficiary");
         capturedAccountRolesAccountId.Should().Be(accountId);
         capturedContactRequest.Should().NotBeNull();
         capturedContactRequest!.AccountNumber.Should().Be(accountNumber);
@@ -751,5 +764,356 @@ public class ProspectOrchestrationServiceTests
 
         capturedItems.Should().NotBeNull();
         capturedItems!.Should().AllSatisfy(i => i.ContactFlagPortailFactures.Should().BeNull());
+    }
+
+    /// <summary>
+    /// Verifies that the beneficiary completion flow short-circuits when Prospect returns no documents to upload.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenNoDocumentsArePending_ReturnsEmptyResultWithoutRegistryCalls()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [],
+                DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+        _prospect.Verify(p => p.GetDocumentAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(It.IsAny<int>(), It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that the beneficiary completion flow short-circuits when the step is already completed.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenStepIsAlreadyCompleted_ReturnsEmptyResultWithoutSideEffects()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [],
+                DocumentsToUploadToExternalServiceStatus.StepAlreadyCompleted));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+        _prospect.Verify(p => p.GetDocumentAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(It.IsAny<int>(), It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that the orchestrator downloads each document, uploads it to Registry, persists the result in Prospect, and finalizes the step.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenDocumentsAreUploadedSuccessfully_ConsolidatesAndCompletesStep()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"));
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request => request.StepName == "Beneficiary" && request.SucceededDocumentIds.Count == 1 && request.SucceededDocumentIds[0] == 7 && request.FailedDocumentIds.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([7], []));
+        _prospect.Setup(p => p.CompleteStepAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEquivalentTo([7]);
+        result.FailedDocumentIds.Should().BeEmpty();
+        _prospect.Verify(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()), Times.Once);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(42, It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(42, "Beneficiary", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that each successful document upload is persisted before processing the next document.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenMultipleDocumentsSucceed_PersistsEachSuccessImmediately()
+    {
+        var operations = new List<string>();
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7, 8],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "doc-7.pdf"));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 8, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([4, 5, 6], "application/pdf", "doc-8.pdf"));
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "doc-7.pdf"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => operations.Add("upload-7"))
+            .ReturnsAsync(true);
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "doc-8.pdf"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => operations.Add("upload-8"))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.SucceededDocumentIds.SequenceEqual(new[] { 7 })
+                    && request.FailedDocumentIds.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => operations.Add("persist-7"))
+            .ReturnsAsync(new DocumentUploadResultResponse([7], []));
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.SucceededDocumentIds.SequenceEqual(new[] { 8 })
+                    && request.FailedDocumentIds.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => operations.Add("persist-8"))
+            .ReturnsAsync(new DocumentUploadResultResponse([8], []));
+        _prospect.Setup(p => p.CompleteStepAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .Callback(() => operations.Add("complete"))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().Equal(7, 8);
+        result.FailedDocumentIds.Should().BeEmpty();
+        operations.Should().Equal("upload-7", "persist-7", "upload-8", "persist-8", "complete");
+    }
+
+    /// <summary>
+    /// Verifies that beneficiary step matching is case-insensitive and still uses the specialized upload strategy.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenBeneficiaryStepNameUsesDifferentCasing_UsesBeneficiaryStrategy()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [],
+                DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+        _prospect.Verify(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "beneficiary", It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a missing upload plan from Prospect stops the beneficiary flow with a 404.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenUploadPlanIsMissing_Throws404WithoutSideEffects()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentsToUploadToExternalServiceResponse?)null);
+
+        Func<Task> act = () => _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        _prospect.Verify(p => p.GetDocumentAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(It.IsAny<int>(), It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a missing Akuitéo account number stops before any document download.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenAkuiteoAccountNumberIsMissing_Throws400WithoutDownloadingDocuments()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                " ",
+                [7],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+
+        Func<Task> act = () => _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        _prospect.Verify(p => p.GetDocumentAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(It.IsAny<int>(), It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a document download failure is collected as failed and does not stop remaining document uploads.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenOneDocumentCannotBeDownloaded_RegistersFailureAndContinues()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7, 8],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProspectDocumentContentResponse?)null);
+        _prospect.Setup(p => p.GetDocumentAsync(42, 8, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"));
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.StepName == "Beneficiary"
+                    && request.SucceededDocumentIds.SequenceEqual(new[] { 8 })
+                    && request.FailedDocumentIds.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([8], []));
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.StepName == "Beneficiary"
+                    && request.SucceededDocumentIds.Count == 0
+                    && request.FailedDocumentIds.SequenceEqual(new[] { 7 })),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([], [7]));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().Equal(8);
+        result.FailedDocumentIds.Should().Equal(7);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(42, It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that Registry upload failures are collected and prevent final step completion.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenRegistryUploadFails_RegistersFailureAndDoesNotCompleteStep()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"));
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.SucceededDocumentIds.Count == 0
+                    && request.FailedDocumentIds.SequenceEqual(new[] { 7 })),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([], [7]));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().Equal(7);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a mixed Registry result immediately persists successes, persists failures at the end, and prevents step completion.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenSomeDocumentsFail_RegistersSuccessImmediatelyAndDoesNotCompleteStep()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7, 8],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"));
+        _registry.SetupSequence(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true)
+            .ReturnsAsync(false);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.SucceededDocumentIds.SequenceEqual(new[] { 7 })
+                    && request.FailedDocumentIds.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([7], []));
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.Is<DocumentUploadResultRequest>(request =>
+                    request.SucceededDocumentIds.Count == 0
+                    && request.FailedDocumentIds.SequenceEqual(new[] { 8 })),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentUploadResultResponse([], [8]));
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().Equal(7);
+        result.FailedDocumentIds.Should().Equal(8);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.RegisterDocumentUploadResultAsync(42, It.IsAny<DocumentUploadResultRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that the beneficiary flow fails if Prospect cannot persist the consolidated upload result.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenUploadResultCannotBePersisted_Throws404AndDoesNotCompleteStep()
+    {
+        _prospect.Setup(p => p.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
+                "AK-001",
+                [7],
+                DocumentsToUploadToExternalServiceStatus.PendingDocuments));
+        _prospect.Setup(p => p.GetDocumentAsync(42, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"));
+        _registry.Setup(r => r.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.RegisterDocumentUploadResultAsync(
+                42,
+                It.IsAny<DocumentUploadResultRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentUploadResultResponse?)null);
+
+        Func<Task> act = () => _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a non-specialized step is completed through the fallback strategy without document uploads.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenStepHasNoSpecializedStrategy_CompletesStepWithoutDocumentUpload()
+    {
+        _prospect.Setup(p => p.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "SupportingDocuments" }, CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+        _prospect.Verify(p => p.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentsToUploadToExternalServiceAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

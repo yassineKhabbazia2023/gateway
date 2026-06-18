@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Internal;
@@ -71,6 +72,22 @@ public class RegistryProspectClient(HttpClient httpClient) : IRegistryProspectCl
 
         var response = await httpClient.PostAsJsonAsync("api/akuiteo/contacts", payload, JsonOptions, ct);
         response.EnsureSuccessStatusCode();
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UploadAkuiteoDocumentAsync(string accountNumber, ProspectDocumentContentResponse document, CancellationToken ct)
+    {
+        using var multipartContent = new MultipartFormDataContent();
+        using var fileContent = new ByteArrayContent(document.Content);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(document.ContentType);
+        multipartContent.Add(fileContent, "document", document.FileName);
+
+        using var response = await httpClient.PostAsync(
+            $"api/akuiteo/account/{Uri.EscapeDataString(accountNumber)}/documents",
+            multipartContent,
+            ct);
+
+        return response.StatusCode == HttpStatusCode.Created;
     }
 
     private static object BuildContactTypes(IEnumerable<string>? contactTypes)

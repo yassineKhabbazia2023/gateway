@@ -4,6 +4,7 @@ using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
+using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
@@ -184,6 +185,252 @@ public class ProspectApiClientTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that the document upload plan endpoint is called with the escaped step name and deserialized.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentsToUploadToExternalServiceAsync_WhenPlanExists_ReturnsPlan()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new
+            {
+                akuiteoAccountNumber = "AK-001",
+                documentIds = new[] { 1, 2 },
+                status = "PendingDocuments"
+            }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary Step", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.AkuiteoAccountNumber.Should().Be("AK-001");
+        result.DocumentIds.Should().Equal(1, 2);
+        result.Status.Should().Be(DocumentsToUploadToExternalServiceStatus.PendingDocuments);
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.PathAndQuery.Should().Be("/api/prospects/42/documents/to-upload?stepName=Beneficiary%20Step");
+    }
+
+    /// <summary>
+    /// Verifies that a missing upload plan returns null.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentsToUploadToExternalServiceAsync_WhenPlanIsMissing_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that an empty upload plan response throws a transport exception.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentsToUploadToExternalServiceAsync_WhenResponseIsEmpty_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create((DocumentsToUploadToExternalServiceResponse?)null, options: CamelCase)
+        };
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.GetDocumentsToUploadToExternalServiceAsync(42, "Beneficiary", CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that document content and download metadata are mapped from Prospect.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentAsync_WhenDocumentExists_ReturnsContentAndMetadata()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1, 2, 3])
+        };
+        response.Content.Headers.ContentType = new("application/pdf");
+        response.Content.Headers.ContentDisposition = new("attachment")
+        {
+            FileNameStar = "PASSEPORT_DUPONT_Jean"
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.GetDocumentAsync(42, 7, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Content.Should().Equal(1, 2, 3);
+        result.ContentType.Should().Be("application/pdf");
+        result.FileName.Should().Be("PASSEPORT_DUPONT_Jean");
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/documents/7");
+    }
+
+    /// <summary>
+    /// Verifies that missing document metadata uses empty-string fallbacks.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentAsync_WhenMetadataIsMissing_ReturnsEmptyMetadata()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1])
+        };
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetDocumentAsync(42, 7, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.ContentType.Should().BeEmpty();
+        result.FileName.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that quoted content disposition file names are unquoted.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentAsync_WhenFileNameIsQuoted_ReturnsUnquotedFileName()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1])
+        };
+        response.Content.Headers.ContentDisposition = new("attachment")
+        {
+            FileName = "\"document.pdf\""
+        };
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetDocumentAsync(42, 7, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.FileName.Should().Be("document.pdf");
+    }
+
+    /// <summary>
+    /// Verifies that a missing document returns null.
+    /// </summary>
+    [Fact]
+    public async Task GetDocumentAsync_WhenDocumentIsMissing_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetDocumentAsync(42, 7, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that document upload results are posted and deserialized.
+    /// </summary>
+    [Fact]
+    public async Task RegisterDocumentUploadResultAsync_WhenPersisted_ReturnsResponse()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new
+            {
+                succeededDocumentIds = new[] { 1 },
+                failedDocumentIds = new[] { 2 }
+            }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        string? bodyJson = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            bodyJson = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        var result = await client.RegisterDocumentUploadResultAsync(
+            42,
+            new DocumentUploadResultRequest("Beneficiary", [1], [2]),
+            CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.SucceededDocumentIds.Should().Equal(1);
+        result.FailedDocumentIds.Should().Equal(2);
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/documents/upload-result");
+        bodyJson.Should().Contain("\"stepName\":\"Beneficiary\"");
+    }
+
+    /// <summary>
+    /// Verifies that a missing document upload-result target returns null.
+    /// </summary>
+    [Fact]
+    public async Task RegisterDocumentUploadResultAsync_WhenTargetIsMissing_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.RegisterDocumentUploadResultAsync(
+            42,
+            new DocumentUploadResultRequest("Beneficiary", [], []),
+            CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that empty document upload-result responses throw a transport exception.
+    /// </summary>
+    [Fact]
+    public async Task RegisterDocumentUploadResultAsync_WhenResponseIsEmpty_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create((DocumentUploadResultResponse?)null, options: CamelCase)
+        };
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.RegisterDocumentUploadResultAsync(
+            42,
+            new DocumentUploadResultRequest("Beneficiary", [], []),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that complete-step calls the generic Prospect endpoint with an escaped step name.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenProspectAcceptsCompletion_IssuesPut()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        await client.CompleteStepAsync(42, "Commercial Proposal", CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Put);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/onboarding/steps/Commercial%20Proposal/complete");
+        captured.Content.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that complete-step propagates unsuccessful Prospect responses.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenProspectRejectsCompletion_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.CompleteStepAsync(42, "Unknown", CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<HttpRequestException>();
+        exception.Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     [Fact]
     public async Task CreateProspectAsync_SendsCurrentUserHeaderAndFlatPayload()
     {
@@ -271,6 +518,21 @@ public class ProspectApiClientTests
         result.Should().Be(expectedOutcome);
     }
 
+    /// <summary>
+    /// Verifies that unexpected finalize statuses throw.
+    /// </summary>
+    [Fact]
+    public async Task UpdateProspectIdsAsync_WhenProspectReturnsUnexpectedStatus_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.BadGateway);
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.UpdateProspectIdsAsync(42, "AK-123", 10, 20, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*Unexpected status 502*");
+    }
+
     [Fact]
     public async Task CreateProspectAsync_UsesRegionCodeFromInpiNotRequest()
     {
@@ -331,6 +593,21 @@ public class ProspectApiClientTests
         result.Should().Be(expected);
         captured!.Method.Should().Be(HttpMethod.Get);
         captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/creation-role-synchronization");
+    }
+
+    /// <summary>
+    /// Verifies that unexpected role synchronization statuses throw.
+    /// </summary>
+    [Fact]
+    public async Task GetCreationRoleSynchronizationOutcomeAsync_WhenProspectReturnsUnexpectedStatus_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.BadGateway);
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.GetCreationRoleSynchronizationOutcomeAsync(42, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*Unexpected status 502*");
     }
 
     [Fact]

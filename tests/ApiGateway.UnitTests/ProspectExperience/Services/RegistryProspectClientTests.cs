@@ -217,4 +217,50 @@ public class RegistryProspectClientTests
         types.GetProperty("isDebtCollectionContact").GetBoolean().Should().BeFalse();
         types.GetProperty("isMandateSignatory").GetBoolean().Should().BeTrue();
     }
+
+    /// <summary>
+    /// Verifies that document uploads are sent as multipart form-data using the Registry contract.
+    /// </summary>
+    [Fact]
+    public async Task UploadAkuiteoDocumentAsync_WhenRegistryCreatesDocument_ReturnsTrueAndSendsMultipartDocument()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created);
+        HttpRequestMessage? captured = null;
+        string? body = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        var result = await client.UploadAkuiteoDocumentAsync(
+            "AK/001",
+            new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "PASSEPORT_DUPONT_Jean"),
+            CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://registry.test/api/akuiteo/account/AK%2F001/documents");
+        captured.Content.Should().BeOfType<MultipartFormDataContent>();
+        body.Should().Contain("name=document");
+        body.Should().Contain("filename=PASSEPORT_DUPONT_Jean");
+        body.Should().Contain("Content-Type: application/pdf");
+    }
+
+    /// <summary>
+    /// Verifies that non-created Registry document upload responses are reported as failures.
+    /// </summary>
+    [Fact]
+    public async Task UploadAkuiteoDocumentAsync_WhenRegistryDoesNotCreateDocument_ReturnsFalse()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Conflict);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.UploadAkuiteoDocumentAsync(
+            "AK-001",
+            new ProspectDocumentContentResponse([1], "image/png", "CNI_Recto_DUPONT_Jean"),
+            CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
 }
