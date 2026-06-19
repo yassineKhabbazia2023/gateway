@@ -53,15 +53,15 @@ public sealed class DefaultStepCompletionStrategyTests
     public async Task CompleteAsync_WhenProspectCompletesStep_ReturnsEmptyUploadBatch()
     {
         _prospectClient
-            .Setup(client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>()))
+            .Setup(client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>(), 7))
             .Returns(Task.CompletedTask);
 
-        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None, 7);
 
         result.SucceededDocumentIds.Should().BeEmpty();
         result.FailedDocumentIds.Should().BeEmpty();
         _prospectClient.Verify(
-            client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>()),
+            client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>(), 7),
             Times.Once);
     }
 
@@ -72,10 +72,10 @@ public sealed class DefaultStepCompletionStrategyTests
     public async Task CompleteAsync_WhenProspectReturnsNotFound_ThrowsGatewayNotFound()
     {
         _prospectClient
-            .Setup(client => client.CompleteStepAsync(42, "Unknown", It.IsAny<CancellationToken>()))
+            .Setup(client => client.CompleteStepAsync(42, "Unknown", It.IsAny<CancellationToken>(), 7))
             .ThrowsAsync(new HttpRequestException("not found", null, HttpStatusCode.NotFound));
 
-        Func<Task> act = () => _strategy.CompleteAsync(42, "Unknown", CancellationToken.None);
+        Func<Task> act = () => _strategy.CompleteAsync(42, "Unknown", CancellationToken.None, 7);
 
         var exception = await act.Should().ThrowAsync<GatewayException>();
         exception.Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
@@ -88,10 +88,10 @@ public sealed class DefaultStepCompletionStrategyTests
     public async Task CompleteAsync_WhenProspectReturnsUnexpectedError_PropagatesHttpRequestException()
     {
         _prospectClient
-            .Setup(client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>()))
+            .Setup(client => client.CompleteStepAsync(42, "SupportingDocuments", It.IsAny<CancellationToken>(), 7))
             .ThrowsAsync(new HttpRequestException("bad gateway", null, HttpStatusCode.BadGateway));
 
-        Func<Task> act = () => _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+        Func<Task> act = () => _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None, 7);
 
         var exception = await act.Should().ThrowAsync<HttpRequestException>();
         exception.Which.StatusCode.Should().Be(HttpStatusCode.BadGateway);

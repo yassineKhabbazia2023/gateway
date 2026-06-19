@@ -46,4 +46,31 @@ public sealed class DefaultStepCompletionStrategy(
 
         return new DocumentExternalUploadBatchResult([], []);
     }
+
+    /// <inheritdoc />
+    public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct,
+        int? currentUserId)
+    {
+        logger.LogInformation(
+            "Completing onboarding step {StepName} for prospect {ProspectId} without external document upload",
+            stepName,
+            prospectId);
+
+        try
+        {
+            await prospectClient.CompleteStepAsync(prospectId, stepName, ct, currentUserId);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new GatewayException(
+                StatusCodes.Status404NotFound,
+                Errors.NullArgumentCode,
+                "Onboarding step was not found.");
+        }
+
+        return new DocumentExternalUploadBatchResult([], []);
+    }
 }

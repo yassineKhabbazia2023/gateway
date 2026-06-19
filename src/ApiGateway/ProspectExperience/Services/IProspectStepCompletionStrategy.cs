@@ -25,9 +25,24 @@ public interface IProspectStepCompletionStrategy
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="stepName">The public onboarding step name.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="currentUserId">The current collaborator contact identifier.</param>
     /// <returns>The external document upload result.</returns>
     Task<DocumentExternalUploadBatchResult> CompleteAsync(
         int prospectId,
         string stepName,
         CancellationToken ct);
+
+    /// <summary>
+    /// Completes the supported onboarding step with completion audit metadata.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The public onboarding step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <param name="currentUserId">The current collaborator contact identifier.</param>
+    /// <returns>The external document upload result.</returns>
+    Task<DocumentExternalUploadBatchResult> CompleteAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct,
+        int? currentUserId);
 }

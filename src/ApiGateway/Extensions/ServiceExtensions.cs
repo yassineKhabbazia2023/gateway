@@ -58,6 +58,7 @@ public static class ServiceExtensions
         services.AddScoped<IPennylaneAuthorizationService, PennylaneAuthorizationService>();
         services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
         services.AddScoped<IProspectService, ProspectOrchestrationService>();
+        services.AddScoped<IPaymentPreferencesOrchestrationService, PaymentPreferencesOrchestrationService>();
         services.AddScoped<IProspectStepCompletionStrategy, BeneficiaryStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, DefaultStepCompletionStrategy>();
         services.AddScoped<ICreatePasswordExperienceService, CreatePasswordExperienceService>();
@@ -136,6 +137,13 @@ public static class ServiceExtensions
         services.AddHttpClient<IRegistryProspectClient, RegistryProspectClient>(client =>
         {
             client.BaseAddress = new Uri(configuration["RegistryApiUri"]!);
+        })
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
+
+        services.AddHttpClient<IMandatePaymentPreferencesClient, MandatePaymentPreferencesClient>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["MandateApiUri"]!);
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());

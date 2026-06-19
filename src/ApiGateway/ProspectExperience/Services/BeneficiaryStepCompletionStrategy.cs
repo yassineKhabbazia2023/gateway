@@ -30,6 +30,33 @@ public sealed class BeneficiaryStepCompletionStrategy(
         string stepName,
         CancellationToken ct)
     {
+        return await CompleteAsync(
+            prospectId,
+            stepName,
+            ct,
+            completeStepAsync: () => prospectClient.CompleteStepAsync(prospectId, stepName, ct));
+    }
+
+    /// <inheritdoc />
+    public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct,
+        int? currentUserId)
+    {
+        return await CompleteAsync(
+            prospectId,
+            stepName,
+            ct,
+            completeStepAsync: () => prospectClient.CompleteStepAsync(prospectId, stepName, ct, currentUserId));
+    }
+
+    private async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+        int prospectId,
+        string stepName,
+        CancellationToken ct,
+        Func<Task> completeStepAsync)
+    {
         logger.LogInformation(
             "Starting beneficiary onboarding step completion for prospect {ProspectId}",
             prospectId);
@@ -84,7 +111,7 @@ public sealed class BeneficiaryStepCompletionStrategy(
 
         if (uploadResult.FailedDocumentIds.Count == 0)
         {
-            await prospectClient.CompleteStepAsync(prospectId, stepName, ct);
+            await completeStepAsync();
         }
 
         return uploadResult;

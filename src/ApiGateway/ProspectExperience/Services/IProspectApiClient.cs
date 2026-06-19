@@ -56,6 +56,15 @@ public interface IProspectApiClient
         CancellationToken ct);
 
     /// <summary>
+    /// Gets the prospect account information needed by Gateway onboarding flows.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <param name="currentUserId">The optional current collaborator contact identifier.</param>
+    /// <returns>The prospect account information, or null when not found.</returns>
+    Task<ProspectAccountResponse?> GetProspectAccountAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
     /// Completes a named Prospect onboarding step.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
@@ -63,6 +72,25 @@ public interface IProspectApiClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct);
+
+    /// <summary>
+    /// Completes a named Prospect onboarding step with completion audit metadata.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The public onboarding step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <param name="currentUserId">The optional current collaborator contact identifier.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct, int? currentUserId);
+
+    /// <summary>
+    /// Resets a named Prospect onboarding step to TODO.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The public onboarding step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task ResetStepAsync(int prospectId, string stepName, CancellationToken ct);
 
     /// <summary>
     /// Creates the prospect aggregate in Prospect.

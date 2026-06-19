@@ -432,6 +432,95 @@ public class ProspectApiClientTests
         exception.Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// Verifies that GetProspectAccountAsync calls the Prospect account details endpoint.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectAccountAsync_WhenProspectExists_ReturnsAccount()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { prospectId = 10, accountId = 42 }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.GetProspectAccountAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.ProspectId.Should().Be(10);
+        result.AccountId.Should().Be(42);
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/10");
+    }
+
+    /// <summary>
+    /// Verifies that GetProspectAccountAsync returns null when Prospect returns not found.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectAccountAsync_WhenProspectDoesNotExist_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetProspectAccountAsync(10, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that GetProspectAccountAsync throws when the successful response is empty.
+    /// </summary>
+    [Fact]
+    public async Task GetProspectAccountAsync_WhenResponseIsEmpty_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create((ProspectAccountResponse?)null, options: CamelCase)
+        };
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.GetProspectAccountAsync(10, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that reset-step sends the compatibility request body expected by Prospect.
+    /// </summary>
+    [Fact]
+    public async Task ResetStepAsync_WhenProspectAcceptsReset_IssuesPost()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        HttpRequestMessage? captured = null;
+        string? bodyJson = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            bodyJson = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+
+        await client.ResetStepAsync(10, "PAYMENT_METHOD", CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/onboarding/10/reset-step");
+        bodyJson.Should().Contain("\"step\":\"PAYMENT_METHOD\"");
+    }
+
+    /// <summary>
+    /// Verifies that reset-step propagates unsuccessful Prospect responses.
+    /// </summary>
+    [Fact]
+    public async Task ResetStepAsync_WhenProspectRejectsReset_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        Func<Task> act = () => client.ResetStepAsync(10, "PAYMENT_METHOD", CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
     [Fact]
     public async Task CreateProspectAsync_SendsCurrentUserHeaderAndFlatPayload()
     {

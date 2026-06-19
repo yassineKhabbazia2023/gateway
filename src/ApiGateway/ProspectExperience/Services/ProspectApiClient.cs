@@ -115,11 +115,47 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task<ProspectAccountResponse?> GetProspectAccountAsync(int prospectId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/prospects/{prospectId}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ProspectAccountResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Prospect account response for prospect {prospectId} was empty.");
+    }
+
+    /// <inheritdoc />
     public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct)
     {
-        using var response = await httpClient.PutAsync(
-            $"api/prospects/{prospectId}/onboarding/steps/{Uri.EscapeDataString(stepName)}/complete",
-            content: null,
+        await this.CompleteStepAsync(prospectId, stepName, ct, null);
+    }
+
+    /// <inheritdoc />
+    public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct, int? currentUserId)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"api/prospects/{prospectId}/onboarding/steps/{Uri.EscapeDataString(stepName)}/complete");
+        if (currentUserId.HasValue)
+        {
+            request.Headers.Add("CurrentUser", currentUserId.Value.ToString());
+        }
+
+        using var response = await httpClient.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <inheritdoc />
+    public async Task ResetStepAsync(int prospectId, string stepName, CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/onboarding/{prospectId}/reset-step",
+            new { Step = stepName },
+            JsonOptions,
             ct);
         response.EnsureSuccessStatusCode();
     }
