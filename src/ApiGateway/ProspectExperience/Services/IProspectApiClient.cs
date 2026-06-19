@@ -136,4 +136,30 @@ public interface IProspectApiClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The prospect identifier, or null if no active prospect is linked to this account.</returns>
     Task<int?> GetProspectIdByAccountIdAsync(int accountId, CancellationToken ct);
+
+    /// <summary>
+    /// Gets the Akuiteo account number for a given active prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The Akuiteo account number, or null when the prospect is not found or has no account number yet.</returns>
+    Task<string?> GetAkuiteoAccountNumberByProspectIdAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
+    /// Checks whether the given user is allowed to send a commercial proposal for the prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The collaborator identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The eligibility response, or null when the prospect does not exist or is archived.</returns>
+    Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct);
+
+    /// <summary>
+    /// Sends the commercial proposal PDF for a prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The collaborator identifier.</param>
+    /// <param name="file">The PDF file.</param>
+    /// <param name="ct">The cancellation token.</param>
+    Task SendCommercialProposalAsync(int prospectId, int currentUserId, IFormFile file, CancellationToken ct);
 }

@@ -1,5 +1,5 @@
-using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Models.Requests;
 
 namespace ApiGateway.ProspectExperience.Services;
 

@@ -1,8 +1,10 @@
+using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.Identity;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
-using ApiGateway.Identity;
+using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
@@ -22,6 +24,8 @@ public class ProspectExperienceController(
     IIdentityService identityService,
     IProspectService prospectService,
     IValidator<CreateProspectRequest> createProspectValidator,
+    IContactService contactService,
+    ICommercialProposalOrchestrationService commercialProposalOrchestrationService,
     ILogger<ProspectExperienceController> logger) : ControllerBase
 {
     [HttpPost("currentuser")]
@@ -74,13 +78,6 @@ public class ProspectExperienceController(
         return StatusCode(StatusCodes.Status201Created, prospect);
     }
 
-    /// <summary>
-    /// Completes a prospect onboarding step by orchestrating Prospect document retrieval and Registry uploads.
-    /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
-    /// <param name="request">The step completion request.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>The consolidated upload result.</returns>
     [HttpPut("{prospectId}/onboarding/steps/complete")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentUploadResultResponse))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -136,5 +133,63 @@ public class ProspectExperienceController(
 
         var result = await prospectService.CompleteStepAsync(prospectId, request, ct);
         return Ok(result);
+    }
+
+    private const string PdfContentType = "application/pdf";
+    private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
+
+    [HttpPost("{prospectId}/onboarding/commercial-proposal/currentUser")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SendCommercialProposalAsync(
+        int prospectId,
+        IFormFile file,
+        CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = Errors.InvalidRequestCode,
+                ErrorMessage = "A non-empty file is required."
+            });
+        }
+
+        if (!string.Equals(file.ContentType, PdfContentType, StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status415UnsupportedMediaType, new { error = "Only PDF files are accepted." });
+        }
+
+        if (file.Length > MaxFileSizeBytes)
+        {
+            return StatusCode(StatusCodes.Status413PayloadTooLarge, new { error = "File size must not exceed 5 MB." });
+        }
+
+        var userEmail = userContext.User.GetEmail();
+        var contact = await contactService.GetContactAsync(userEmail);
+
+        if (contact is null)
+        {
+            logger.LogWarning("Contact not found for email {UserEmail} on commercial proposal send for prospect {ProspectId}", userEmail, prospectId);
+            return NotFound();
+        }
+
+        var outcome = await commercialProposalOrchestrationService.SendAsync(prospectId, contact.Id, file, ct);
+
+        return outcome switch
+        {
+            CommercialProposalOrchestrationOutcome.Sent => StatusCode(StatusCodes.Status201Created),
+            CommercialProposalOrchestrationOutcome.ProspectNotFound => NotFound(),
+            CommercialProposalOrchestrationOutcome.AccountNumberNotFound => NotFound(),
+            CommercialProposalOrchestrationOutcome.AlreadySent => Conflict(new { error = "The commercial proposal has already been sent." }),
+            CommercialProposalOrchestrationOutcome.NotEligible => StatusCode(StatusCodes.Status422UnprocessableEntity, new { error = "The current user is not eligible to send a commercial proposal." }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
     }
 }

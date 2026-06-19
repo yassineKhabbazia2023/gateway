@@ -61,6 +61,7 @@ public static class ServiceExtensions
         services.AddScoped<IProspectStepCompletionStrategy, BeneficiaryStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, DefaultStepCompletionStrategy>();
         services.AddScoped<ICreatePasswordExperienceService, CreatePasswordExperienceService>();
+        services.AddScoped<ICommercialProposalOrchestrationService, CommercialProposalOrchestrationService>();
         services.AddValidatorsFromAssemblyContaining<CreateProspectRequestValidator>();
         services.RegisterOpenTelemetry(configuration);
         services.AddControllers()

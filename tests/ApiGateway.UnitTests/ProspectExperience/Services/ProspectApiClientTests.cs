@@ -6,6 +6,7 @@ using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
 
@@ -779,4 +780,100 @@ public class ProspectApiClientTests
 
         result.Should().BeNull();
     }
+
+    [Fact]
+    public async Task GetAkuiteoAccountNumberByProspectIdAsync_WhenFound_ReturnsAccountNumber()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { accountNumber = "AK-999" }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.GetAkuiteoAccountNumberByProspectIdAsync(42, CancellationToken.None);
+
+        result.Should().Be("AK-999");
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/akuiteo-account-number");
+    }
+
+    [Fact]
+    public async Task GetAkuiteoAccountNumberByProspectIdAsync_WhenNotFound_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetAkuiteoAccountNumberByProspectIdAsync(42, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCommercialProposalEligibilityAsync_WhenFound_ReturnsEligibility()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { canSend = true, alreadySent = false }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.GetCommercialProposalEligibilityAsync(42, 100, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.CanSend.Should().BeTrue();
+        result.AlreadySent.Should().BeFalse();
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/commercial-proposal/eligibility");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+    }
+
+    [Fact]
+    public async Task GetCommercialProposalEligibilityAsync_WhenNotFound_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetCommercialProposalEligibilityAsync(42, 100, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SendCommercialProposalAsync_SendsMultipartRequestWithCurrentUserHeader()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("proposal.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+
+        await client.SendCommercialProposalAsync(42, 100, file.Object, CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/commercial-proposal");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+        captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
+    }
+
+    [Fact]
+    public async Task SendCommercialProposalAsync_WhenProspectRejectsRequest_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("proposal.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
+
+        Func<Task> act = () => client.SendCommercialProposalAsync(42, 100, file.Object, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
 }

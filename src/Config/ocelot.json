@@ -616,6 +616,29 @@
       ]
     },
     {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/commercial-proposal/content/currentuser",
+      "DownstreamPathTemplate": "/api/prospects/{prospectId}/commercial-proposal/content/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
       "SwaggerKey": "Contact",
       "UpstreamPathTemplate": "/gtw/prospect/api/contacts",
       "DownstreamPathTemplate": "/api/contacts?Type=Collaborator",

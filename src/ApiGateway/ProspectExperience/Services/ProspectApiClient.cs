@@ -5,6 +5,7 @@ using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
+using Microsoft.AspNetCore.Http;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -289,6 +290,55 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<GetProspectByAccountIdResponse>(JsonOptions, ct);
         return result?.ProspectId;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> GetAkuiteoAccountNumberByProspectIdAsync(int prospectId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/prospects/{prospectId}/akuiteo-account-number", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ProspectAkuiteoAccountNumberResponse>(JsonOptions, ct);
+        return result?.AccountNumber;
+    }
+
+    /// <inheritdoc />
+    public async Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/prospects/{prospectId}/commercial-proposal/eligibility");
+        request.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        using var response = await httpClient.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CommercialProposalEligibilityResponse>(JsonOptions, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task SendCommercialProposalAsync(int prospectId, int currentUserId, IFormFile file, CancellationToken ct)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream();
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+        content.Add(streamContent, "file", Path.GetFileName(file.FileName));
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/prospects/{prospectId}/commercial-proposal")
+        {
+            Content = content
+        };
+        request.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        var response = await httpClient.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
     }
 
     private static object BuildSignatoryPayload(SignatoryDto signatory) => new

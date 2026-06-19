@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
 using ApiGateway.Identity;
@@ -46,6 +47,8 @@ public class ProspectExperienceControllerTests
             _identityService.Object,
             _orchestrationService.Object,
             _validator,
+            new Mock<IContactService>().Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
             _logger.Object);
     }
 
