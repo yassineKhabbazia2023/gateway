@@ -513,6 +513,7 @@
       ],
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [
+          "AAD",
           "GIGYA MyPulse v2"
         ]
       },
@@ -592,7 +593,7 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/prospects/{prospectId}/onboarding/steps",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/steps",
       "DownstreamPathTemplate": "/api/prospects/{prospectId}/steps",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
