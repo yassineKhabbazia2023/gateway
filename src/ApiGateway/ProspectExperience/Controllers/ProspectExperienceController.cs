@@ -15,7 +15,7 @@ using Pulse.ExceptionMiddleware.Model;
 
 namespace ApiGateway.ProspectExperience.Controllers;
 
-[Route("gtw/prospect/api/prospects")]
+[Route("gtw/prospect/api/onboarding")]
 [ApiController]
 [Authorize]
 public class ProspectExperienceController(
@@ -78,7 +78,7 @@ public class ProspectExperienceController(
         return StatusCode(StatusCodes.Status201Created, prospect);
     }
 
-    [HttpPut("{prospectId}/onboarding/steps/complete")]
+    [HttpPut("{prospectId}/steps/complete")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentUploadResultResponse))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -138,7 +138,7 @@ public class ProspectExperienceController(
     private const string PdfContentType = "application/pdf";
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    [HttpPost("{prospectId}/onboarding/commercial-proposal/currentUser")]
+    [HttpPost("{prospectId}/commercial-proposal/currentUser")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
