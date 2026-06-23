@@ -200,7 +200,10 @@ namespace ApiGateway.UnitTests.Aggregator
                 dangerousAcceptAnyServerCertificateValidator: false,
                 securityOptions: null,
                 downstreamHttpMethod: null,
-                downstreamHttpVersion: null
+                downstreamHttpVersion: null,
+                downstreamHttpVersionPolicy: System.Net.Http.HttpVersionPolicy.RequestVersionOrLower,
+                upstreamHeaders: null,
+                metadataOptions: new Ocelot.Configuration.MetadataOptions(new Ocelot.Configuration.File.FileMetadataOptions())
             );
         }
 

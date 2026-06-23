@@ -1,20 +1,20 @@
 using System.Net;
 using System.Text;
 using ApiGateway.DelegatingHandlers.Mocks;
+using ApiGateway.FeatureFlags;
 using ApiGateway.Mocks;
 using ApiGateway.Mocks.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.FeatureManagement;
 
 namespace ApiGateway.UnitTests.Mocks;
 
 public class MocksControllerTests
 {
     private readonly Mock<IMockResponseRepository> _mockRepo = new();
-    private readonly Mock<IFeatureManager> _featureManager = new(MockBehavior.Strict);
+    private readonly Mock<IFeatureFlagService> _featureFlagService = new(MockBehavior.Strict);
 
-    private MocksController CreateController() => new(_mockRepo.Object, _featureManager.Object);
+    private MocksController CreateController() => new(_mockRepo.Object, _featureFlagService.Object);
 
     // ---- GET /mocks/get-mock-index ----
 
@@ -27,7 +27,7 @@ public class MocksControllerTests
             new("get:/api/contacts", "{\"name\":\"test\"}"),
             new("post:/api/users", "{}")
         };
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _mockRepo.Setup(r => r.ListAllAsync()).ReturnsAsync(mockEntries);
 
         var controller = CreateController();
@@ -45,7 +45,7 @@ public class MocksControllerTests
     public async Task GetMockIndex_WhenFeatureGate_False_ReturnsForbidden()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var controller = CreateController();
 
         // Act
@@ -61,7 +61,7 @@ public class MocksControllerTests
     public async Task ModifyMockResponse_FileIsNotJson_ReturnsBadRequest()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var controller = CreateController();
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(_ => _.FileName).Returns("invalid.txt");
@@ -81,7 +81,7 @@ public class MocksControllerTests
     public async Task ModifyMockResponse_FileContentIsNotValidJson_ReturnsBadRequest()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var controller = CreateController();
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.FileName).Returns("response.json");
@@ -103,7 +103,7 @@ public class MocksControllerTests
     public async Task ModifyMockResponse_ValidFile_CallsUpsertAndReturnsOk()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _mockRepo.Setup(r => r.UpsertAsync(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
@@ -129,7 +129,7 @@ public class MocksControllerTests
     public async Task ModifyMockResponse_WhenFeatureGate_False_ReturnsForbidden()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var controller = CreateController();
 
         var request = new MockIndexRequest { DownstreamUri = "http://example.com", HttpVerb = "GET" };
@@ -148,7 +148,7 @@ public class MocksControllerTests
     public async Task DeleteMockResponse_ExistingKey_ReturnsOk()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _mockRepo.Setup(r => r.DeleteAsync("get:/api/contacts")).ReturnsAsync(true);
         var controller = CreateController();
 
@@ -164,7 +164,7 @@ public class MocksControllerTests
     public async Task DeleteMockResponse_NonExistingKey_ReturnsNotFound()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _mockRepo.Setup(r => r.DeleteAsync("get:/api/unknown")).ReturnsAsync(false);
         var controller = CreateController();
 
@@ -179,7 +179,7 @@ public class MocksControllerTests
     public async Task DeleteMockResponse_EmptyRouteKey_ReturnsBadRequest()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(true);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var controller = CreateController();
 
         // Act
@@ -193,7 +193,7 @@ public class MocksControllerTests
     public async Task DeleteMockResponse_WhenFeatureGate_False_ReturnsForbidden()
     {
         // Arrange
-        _featureManager.Setup(f => f.IsEnabledAsync("Mocks")).ReturnsAsync(false);
+        _featureFlagService.Setup(f => f.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, It.IsAny<bool>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var controller = CreateController();
 
         // Act

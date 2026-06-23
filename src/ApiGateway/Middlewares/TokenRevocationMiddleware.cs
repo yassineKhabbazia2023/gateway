@@ -69,8 +69,8 @@ public class TokenRevocationMiddleware
                 var subClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
                 var iatClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Iat);
 
-                if (subClaim != null && !string.IsNullOrWhiteSpace(subClaim.Value) &&
-                    iatClaim != null && !string.IsNullOrWhiteSpace(iatClaim.Value))
+                if (subClaim != null && !string.IsNullOrWhiteSpace(subClaim.Value)
+                    && iatClaim != null && !string.IsNullOrWhiteSpace(iatClaim.Value))
                 {
                     // Gigya token: combine sub (user ID) + iat (issued at timestamp)
                     tokenId = $"{subClaim.Value}:{iatClaim.Value}";

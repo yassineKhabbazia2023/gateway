@@ -1,6 +1,7 @@
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq.Protected;
 using System.Net;
@@ -45,7 +46,7 @@ public class ProspectExperienceHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         var (invoker, _) = CreateHandler(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/prospect/api/some-endpoint");
@@ -69,7 +70,7 @@ public class ProspectExperienceHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var innerResponse = new HttpResponseMessage(HttpStatusCode.OK);
         var (invoker, _) = CreateHandler(featureFlagService, innerResponse);
@@ -90,7 +91,7 @@ public class ProspectExperienceHandlerTests
         const string expectedEmail = "user@test.fr";
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, expectedEmail, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var innerResponse = new HttpResponseMessage(HttpStatusCode.OK);
         var (invoker, _) = CreateHandler(featureFlagService, innerResponse);
@@ -102,7 +103,7 @@ public class ProspectExperienceHandlerTests
 
         // Assert
         featureFlagService.Verify(
-            s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, expectedEmail, It.IsAny<CancellationToken>()),
+            s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -112,7 +113,7 @@ public class ProspectExperienceHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c == null), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         var (invoker, _) = CreateHandler(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/prospect/api/some-endpoint");
@@ -122,7 +123,7 @@ public class ProspectExperienceHandlerTests
 
         // Assert
         featureFlagService.Verify(
-            s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()),
+            s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c == null), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -136,7 +137,8 @@ public class ProspectExperienceHandlerTests
         featureFlagService
             .Setup(service => service.IsEnabledAsync(
                 FeatureFlagKeys.IsProspectExperienceEnabled,
-                It.IsAny<string?>(),
+                It.IsAny<bool>(),
+                It.IsAny<FeatureContext?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -203,7 +205,8 @@ public class ProspectExperienceHandlerTests
         featureFlagService
             .Setup(service => service.IsEnabledAsync(
                 FeatureFlagKeys.IsProspectExperienceEnabled,
-                It.IsAny<string?>(),
+                It.IsAny<bool>(),
+                It.IsAny<FeatureContext?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var downstreamResponse = new HttpResponseMessage(HttpStatusCode.UnsupportedMediaType)

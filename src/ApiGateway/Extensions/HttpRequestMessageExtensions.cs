@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Web;
 using ApiGateway.Account;
 using ApiGateway.Configuration;
@@ -26,7 +26,8 @@ public static class HttpRequestMessageExtensions
         segments.Remove(fragmentToRemove);
         uriBuilder.Path = String.Join("/", segments);
 
-        if (!string.IsNullOrEmpty(paramName) && !string.IsNullOrEmpty(paramValue))
+        if (!string.IsNullOrEmpty(paramName)
+            && !string.IsNullOrEmpty(paramValue))
         {
             var query = HttpUtility.ParseQueryString(uriBuilder.Query);
             query[paramName] = paramValue;

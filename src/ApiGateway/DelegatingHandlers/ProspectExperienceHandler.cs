@@ -1,5 +1,6 @@
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Helpers;
 using System.Net;
 
@@ -12,7 +13,9 @@ public class ProspectExperienceHandler(IFeatureFlagService featureFlagService, I
         var token = JwtHelper.ExtractBearerToken(request);
         var userEmail = string.IsNullOrEmpty(token) ? null : JwtHelper.ExtractUserEmailFromToken(token);
 
-        if (await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, userEmail, cancellationToken))
+        var context = FeatureContext.FromEmail(userEmail);
+
+        if (await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: context, ct: cancellationToken))
         {
             return await base.SendAsync(request, cancellationToken);
         }

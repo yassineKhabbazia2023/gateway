@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Ocelot.Configuration;
+using Ocelot.Configuration.File;
 using Ocelot.Values;
 using System;
 using System.Collections.Generic;
@@ -94,7 +95,10 @@ namespace ApiGateway.UnitTests
                 dangerousAcceptAnyServerCertificateValidator: false,
                 securityOptions: null,
                 downstreamHttpMethod: null,
-                downstreamHttpVersion: null
+                downstreamHttpVersion: null,
+                downstreamHttpVersionPolicy: default,
+                upstreamHeaders: null,
+                metadataOptions: new MetadataOptions(new FileMetadataOptions())
             );
             return downstreamRoute;
         }

@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace ApiGateway.Helpers
 {
@@ -16,7 +16,8 @@ namespace ApiGateway.Helpers
             if (request.Headers.TryGetValue("Authorization", out var extractedToken))
             {
                 string authorizationHeader = extractedToken.ToString();
-                if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(authorizationHeader)
+                    && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     return authorizationHeader.Substring(BearerPrefix.Length).Trim();
                 }
@@ -35,7 +36,8 @@ namespace ApiGateway.Helpers
             if (request.Headers.TryGetValues("Authorization", out var headerValues))
             {
                 string? authorizationHeader = headerValues?.FirstOrDefault();
-                if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(authorizationHeader)
+                    && authorizationHeader.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     return authorizationHeader.Substring(BearerPrefix.Length).Trim();
                 }

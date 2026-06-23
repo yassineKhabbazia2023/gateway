@@ -27,21 +27,22 @@ public class LogoutRevocationHandler : DelegatingHandler
         var response = await base.SendAsync(request, cancellationToken);
 
         // Check if this is a logout request with successful response
-        if (IsLogoutRequest(request) && response.IsSuccessStatusCode)
+        if (IsLogoutRequest(request)
+            && response.IsSuccessStatusCode)
         {
             _logger.LogInformation("[TOKEN-REVOKE] Logout response received. Headers: {Headers}",
                 string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
 
             // Extract revocation headers
-            if (response.Headers.TryGetValues("X-Revoked-Jti", out var jtiValues) &&
-                response.Headers.TryGetValues("X-Revoked-Exp", out var expValues))
+            if (response.Headers.TryGetValues("X-Revoked-Jti", out var jtiValues)
+                && response.Headers.TryGetValues("X-Revoked-Exp", out var expValues))
             {
                 var jti = jtiValues.FirstOrDefault();
                 var expUnixTimestamp = expValues.FirstOrDefault();
 
-                if (!string.IsNullOrWhiteSpace(jti) &&
-                    !string.IsNullOrWhiteSpace(expUnixTimestamp) &&
-                    long.TryParse(expUnixTimestamp, out var unixTimestamp))
+                if (!string.IsNullOrWhiteSpace(jti)
+                    && !string.IsNullOrWhiteSpace(expUnixTimestamp)
+                    && long.TryParse(expUnixTimestamp, out var unixTimestamp))
                 {
                     try
                     {

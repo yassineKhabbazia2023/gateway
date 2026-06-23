@@ -51,8 +51,17 @@ public class ProspectOrchestrationException : GatewayException
     {
         properties["Step"] = Step.ToString();
         properties["StepName"] = StepName;
-        if (Siret is not null) properties["Siret"] = Siret;
-        if (ProspectId is not null) properties["ProspectId"] = ProspectId.Value.ToString();
-        if (AccountNumber is not null) properties["AccountNumber"] = AccountNumber;
+        if (Siret is not null)
+        {
+            properties["Siret"] = Siret;
+        }
+        if (ProspectId is not null)
+        {
+            properties["ProspectId"] = ProspectId.Value.ToString();
+        }
+        if (AccountNumber is not null)
+        {
+            properties["AccountNumber"] = AccountNumber;
+        }
     }
 }

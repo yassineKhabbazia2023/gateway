@@ -1,4 +1,4 @@
-﻿namespace ApiGateway.Pennylane.Mappers
+namespace ApiGateway.Pennylane.Mappers
 {
     public static class CountryCodeMapper
     {
@@ -44,7 +44,9 @@
         public static string CountryToPennylaneCountryCode(string country)
         {
             if (country == null)
+            {
                 return defaultCountryCode;
+            }
 
             return countryCodes.TryGetValue(country, out var code)
                 ? code

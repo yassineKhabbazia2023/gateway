@@ -1,23 +1,27 @@
 using System.Net;
 using System.Text;
+using ApiGateway.FeatureFlags;
 using Microsoft.Extensions.Logging;
-using Microsoft.FeatureManagement;
 
 namespace ApiGateway.DelegatingHandlers.Mocks;
 
 public class MockResponseHandler(
     IMockResponseRepository responseRepository,
-    IFeatureManager featureManager,
+    IFeatureFlagService featureFlagService,
     ILogger<MockResponseHandler> logger) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        if (!await featureManager.IsEnabledAsync("Mocks"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled, ct: cancellationToken))
+        {
             return await base.SendAsync(request, cancellationToken);
+        }
 
         if (request.RequestUri == null)
+        {
             return await base.SendAsync(request, cancellationToken);
+        }
 
         var pathAndQuery = request.RequestUri.IsAbsoluteUri
             ? request.RequestUri.PathAndQuery

@@ -22,7 +22,7 @@ public class CreatePasswordExperienceService(
     public async Task<HttpResponseMessage> CreateNewPasswordAsync(CreatePasswordExperienceRequest request, CancellationToken ct)
     {
         var contactRequest = request.ToContactRequest();
-        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, cancellationToken: ct))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, ct: ct))
         {
             return await contactService.CreateNewPasswordAsync(contactRequest, entityType: null, ct);
         }

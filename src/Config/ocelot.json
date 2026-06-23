@@ -3555,8 +3555,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3586,8 +3588,10 @@
         "POST": "CORDV001",
         "PUT": "CORDV001"
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3610,8 +3614,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3634,8 +3640,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3661,8 +3669,10 @@
       "RouteClaimsRequirement": {
         "DELETE": "CORDV001"
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3688,9 +3698,9 @@
       "RouteClaimsRequirement": {
         "GET": "CORDV001"
       },
-      "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
-      ]
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
     },
     {
       "SwaggerKey": "Booking",
@@ -3714,8 +3724,10 @@
       "RouteClaimsRequirement": {
         "GET": "CORDV001"
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3739,8 +3751,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3764,8 +3778,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3789,8 +3805,10 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
       "DelegatingHandlers": [
-        "BookingFeatureFlagHandler",
         "BookingSyncHandler"
       ]
     },
@@ -3816,9 +3834,9 @@
       "RouteClaimsRequirement": {
         "POST": "CORDV001"
       },
-      "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
-      ]
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
     },
     {
       "SwaggerKey": "Booking",
@@ -3842,9 +3860,9 @@
       "RouteClaimsRequirement": {
         "POST": "CORDV001"
       },
-      "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
-      ]
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
     },
     {
       "SwaggerKey": "Prospect",
@@ -3892,9 +3910,9 @@
       "RouteClaimsRequirement": {
         "PATCH": "CORDV001"
       },
-      "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
-      ]
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
     },
     {
       "SwaggerKey": "Booking",
@@ -3915,9 +3933,9 @@
           "GIGYA MyPulse v2"
         ]
       },
-      "DelegatingHandlers": [
-        "BookingFeatureFlagHandler"
-      ]
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
     }
   ],
   "Aggregates": [

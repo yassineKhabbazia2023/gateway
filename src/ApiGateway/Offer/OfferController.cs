@@ -4,6 +4,7 @@ using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Offer.Constants;
 using ApiGateway.Offer.Model;
 using ApiGateway.Pennylane;
@@ -100,8 +101,10 @@ public class OfferController : ControllerBase
                 string? userNumber;
                 (requestedPlanCode, userNumber) = await GetPlanInfoAsync(subscriptionRequest);
 
+                var offerUserEmail = GetUserEmail();
+                var offerContext = FeatureContext.FromEmail(offerUserEmail);
                 if (requestedPlanCode == OfferPlanCodes.ApprovedPlatform
-                    && !await _featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, GetUserEmail()))
+                    && !await _featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, context: offerContext))
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
                     {

@@ -1,4 +1,4 @@
-﻿namespace ApiGateway.Exceptions
+namespace ApiGateway.Exceptions
 {
     public static class Errors
     {
@@ -97,5 +97,9 @@
 
         public static readonly string ProspectResumePayloadMismatchCode = "GTW033";
         public static readonly string ProspectResumePayloadMismatchMessage = "Le prospect incomplet pour le SIRET {0} doit être repris avec les mêmes données de création.";
+
+        // --- Feature Flags ---
+        public static readonly string FeatureFlagDisabledCode = "GTW034";
+        public static readonly string FeatureFlagDisabledMessage = "La fonctionnalité '{0}' est désactivée.";
     }
 }

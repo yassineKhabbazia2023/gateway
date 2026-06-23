@@ -1,21 +1,21 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
+using ApiGateway.FeatureFlags;
 using ApiGateway.Helpers;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.FeatureManagement;
 
 namespace ApiGateway.Mocks;
 
 [Route("api/ocelot-config")]
 [ApiController]
 [ExcludeFromCodeCoverage]
-public class OcelotConfigurationController(IConfiguration configuration, IFeatureManager featureManager) : ControllerBase
+public class OcelotConfigurationController(IConfiguration configuration, IFeatureFlagService featureFlagService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetOcelotConfig()
     {
-        if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsOcelotConfigEnabled))
         {
             return this.StatusCode((int)HttpStatusCode.Forbidden);
         }
@@ -32,7 +32,7 @@ public class OcelotConfigurationController(IConfiguration configuration, IFeatur
     [HttpPut]
     public async Task<IActionResult> UpdateOcelotConfig(dynamic updatedConfig)
     {
-        if (!await featureManager!.IsEnabledAsync("OcelotConfigration"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsOcelotConfigEnabled))
         {
             return this.StatusCode((int)HttpStatusCode.Forbidden);
         }

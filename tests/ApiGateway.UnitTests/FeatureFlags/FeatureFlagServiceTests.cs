@@ -1,93 +1,122 @@
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
+using Microsoft.Extensions.Logging.Abstractions;
 using OpenFeature;
-using OpenFeature.Model;
+using OpenFeature.Providers.Memory;
 
 namespace ApiGateway.UnitTests.FeatureFlags;
 
-public class FeatureFlagServiceTests
+public class FeatureFlagServiceTests : IAsyncLifetime
 {
-    private readonly Mock<IFeatureClient> _featureClientMock = new();
     private readonly FeatureFlagService _sut;
 
     public FeatureFlagServiceTests()
     {
-        _sut = new FeatureFlagService(_featureClientMock.Object);
+        _sut = new FeatureFlagService(NullLogger<FeatureFlagService>.Instance);
+    }
+
+    public async Task InitializeAsync()
+    {
+        var flags = new Dictionary<string, Flag>
+        {
+            { "enabled-flag", new Flag<bool>(new Dictionary<string, bool> { { "on", true } }, "on") },
+            { "disabled-flag", new Flag<bool>(new Dictionary<string, bool> { { "off", false } }, "off") },
+            { "string-flag", new Flag<string>(new Dictionary<string, string> { { "default", "variant-a" } }, "default") },
+            { "int-flag", new Flag<int>(new Dictionary<string, int> { { "default", 42 } }, "default") }
+        };
+
+        var provider = new InMemoryProvider(flags);
+        await Api.Instance.SetProviderAsync(provider);
+    }
+
+    public async Task DisposeAsync()
+    {
+        await Api.Instance.SetProviderAsync(new InMemoryProvider(new Dictionary<string, Flag>()));
     }
 
     [Fact]
-    public async Task IsEnabledAsync_WhenFlagIsEnabled_ShouldReturnTrue()
+    public async Task IsEnabledAsync_Should_Return_True_When_Flag_Is_Enabled()
     {
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "my-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
-        var result = await _sut.IsEnabledAsync("my-flag");
+        var result = await _sut.IsEnabledAsync("enabled-flag");
 
         result.Should().BeTrue();
     }
 
     [Fact]
-    public async Task IsEnabledAsync_WhenFlagIsDisabled_ShouldReturnFalse()
+    public async Task IsEnabledAsync_Should_Return_False_When_Flag_Is_Disabled()
     {
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "my-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var result = await _sut.IsEnabledAsync("my-flag");
+        var result = await _sut.IsEnabledAsync("disabled-flag");
 
         result.Should().BeFalse();
     }
 
     [Fact]
-    public async Task IsEnabledAsync_WhenFlagDoesNotExist_ShouldReturnDefaultFalse()
+    public async Task IsEnabledAsync_Should_Return_False_For_Unknown_Flag()
     {
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "nonexistent-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var result = await _sut.IsEnabledAsync("nonexistent-flag");
+        var result = await _sut.IsEnabledAsync("unknown-flag");
 
         result.Should().BeFalse();
     }
 
     [Fact]
-    public async Task IsEnabledAsync_WithUserEmail_ShouldPassEvaluationContextWithHashedTargetingKey()
+    public async Task IsEnabledAsync_Should_Return_DefaultValue_For_Unknown_Flag()
     {
-        const string email = "user@example.com";
-        var expectedHash = FeatureFlagService.HashEmail(email);
-        EvaluationContext? capturedContext = null;
+        var result = await _sut.IsEnabledAsync("unknown-flag", defaultValue: true);
 
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "my-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<string, bool, EvaluationContext?, FlagEvaluationOptions?, CancellationToken>(
-                (_, _, ctx, _, _) => capturedContext = ctx)
-            .ReturnsAsync(true);
+        result.Should().BeTrue();
+    }
 
-        await _sut.IsEnabledAsync("my-flag", email);
+    [Fact]
+    public async Task IsEnabledAsync_Should_Accept_FeatureContext()
+    {
+        var context = new FeatureContext
+        {
+            Email = "user@test.fr"
+        };
 
-        capturedContext.Should().NotBeNull();
-        capturedContext!.TargetingKey.Should().Be(expectedHash);
-        capturedContext.Invoking(c => c.GetValue("email")).Should().Throw<KeyNotFoundException>();
+        var result = await _sut.IsEnabledAsync("enabled-flag", context: context);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsEnabledAsync_Should_Work_Without_Context()
+    {
+        var result = await _sut.IsEnabledAsync("enabled-flag", context: null);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetStringValueAsync_Should_Return_Flag_Value()
+    {
+        var result = await _sut.GetStringValueAsync("string-flag", "default");
+
+        result.Should().Be("variant-a");
+    }
+
+    [Fact]
+    public async Task GetStringValueAsync_Should_Return_Default_For_Unknown_Flag()
+    {
+        var result = await _sut.GetStringValueAsync("unknown-flag", "default");
+
+        result.Should().Be("default");
+    }
+
+    [Fact]
+    public async Task GetIntValueAsync_Should_Return_Flag_Value()
+    {
+        var result = await _sut.GetIntValueAsync("int-flag", 0);
+
+        result.Should().Be(42);
+    }
+
+    [Fact]
+    public async Task GetIntValueAsync_Should_Return_Default_For_Unknown_Flag()
+    {
+        var result = await _sut.GetIntValueAsync("unknown-flag", 99);
+
+        result.Should().Be(99);
     }
 
     [Theory]
@@ -101,47 +130,5 @@ public class FeatureFlagServiceTests
         var result = FeatureFlagService.HashEmail(email);
 
         result.Should().Be(expected);
-    }
-
-    [Fact]
-    public async Task IsEnabledAsync_WithNullEmail_ShouldPassNullContext()
-    {
-        EvaluationContext? capturedContext = EvaluationContext.Builder().Build();
-
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "my-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<string, bool, EvaluationContext?, FlagEvaluationOptions?, CancellationToken>(
-                (_, _, ctx, _, _) => capturedContext = ctx)
-            .ReturnsAsync(true);
-
-        await _sut.IsEnabledAsync("my-flag", null);
-
-        capturedContext.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task IsEnabledAsync_WithEmptyEmail_ShouldPassNullContext()
-    {
-        EvaluationContext? capturedContext = EvaluationContext.Builder().Build();
-
-        _featureClientMock
-            .Setup(x => x.GetBooleanValueAsync(
-                "my-flag",
-                false,
-                It.IsAny<EvaluationContext?>(),
-                It.IsAny<FlagEvaluationOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<string, bool, EvaluationContext?, FlagEvaluationOptions?, CancellationToken>(
-                (_, _, ctx, _, _) => capturedContext = ctx)
-            .ReturnsAsync(true);
-
-        await _sut.IsEnabledAsync("my-flag", "");
-
-        capturedContext.Should().BeNull();
     }
 }

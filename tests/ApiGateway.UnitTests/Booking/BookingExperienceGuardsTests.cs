@@ -6,8 +6,12 @@ namespace ApiGateway.UnitTests.Booking;
 
 public class BookingExperienceGuardsTests
 {
-    private static BookingExperienceGuards CreateService(bool featureFlagEnabled) =>
-        new(Options.Create(new XpBookingOptions { FeatureFlagEnabled = featureFlagEnabled }));
+    private static BookingExperienceGuards CreateService(bool featureFlagEnabled)
+    {
+        var monitor = new Mock<IOptionsMonitor<XpBookingOptions>>();
+        monitor.Setup(m => m.CurrentValue).Returns(new XpBookingOptions { FeatureFlagEnabled = featureFlagEnabled });
+        return new BookingExperienceGuards(monitor.Object);
+    }
 
     [Fact]
     public void IsFeatureFlagEnabled_WhenEnabled_ReturnsTrue()

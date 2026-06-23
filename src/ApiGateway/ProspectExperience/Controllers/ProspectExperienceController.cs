@@ -1,6 +1,7 @@
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Identity;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
@@ -62,7 +63,7 @@ public class ProspectExperienceController(
 
         var userEmail = userContext.User.GetEmail();
 
-        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, userEmail, ct))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: FeatureContext.FromEmail(userEmail), ct: ct))
         {
             logger.LogWarning("[Response]: 403 - [Controller]: ProspectExperienceController - [Function]: CreateProspect - [Reason]: Prospect experience is disabled by feature flag");
             return StatusCode(
@@ -119,7 +120,7 @@ public class ProspectExperienceController(
             });
         }
 
-        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, userEmail, ct))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: FeatureContext.FromEmail(userEmail), ct: ct))
         {
             logger.LogWarning("[Response]: 403 - [Controller]: ProspectExperienceController - [Function]: CompleteStep - [Reason]: Prospect experience is disabled by feature flag");
             return StatusCode(

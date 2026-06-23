@@ -2,6 +2,7 @@ using System.Net;
 using ApiGateway.Account;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Services;
@@ -43,7 +44,7 @@ public class CreatePasswordExperienceServiceTests
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.OK);
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         contactService
             .Setup(s => s.CreateNewPasswordAsync(
@@ -205,7 +206,7 @@ public class CreatePasswordExperienceServiceTests
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.Forbidden);
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         contactService
             .Setup(s => s.CreateNewPasswordAsync(
@@ -291,7 +292,7 @@ public class CreatePasswordExperienceServiceTests
     private void SetupFeatureFlagEnabled()
     {
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, null, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
     }
 }

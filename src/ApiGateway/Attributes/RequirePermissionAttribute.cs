@@ -42,7 +42,9 @@ public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
         _checkAccountRole = true; // Default behavior: check account role
 
         if (_permissions.Length == 0)
+        {
             throw new ArgumentException("Au moins une permission doit être spécifiée", nameof(permissions));
+        }
     }
 
     /// <summary>

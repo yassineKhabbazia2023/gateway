@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using ApiGateway.Identity.Options;
@@ -78,8 +78,8 @@ namespace ApiGateway.Identity.Extensions
         {
             var keys = authorityConfig.SigningKeys.Select(k => new JsonWebKey(k.JsonWebKey)).ToList();
 
-            if (!string.IsNullOrWhiteSpace(authorityConfig.JsonWebKeyFetchUrl) &&
-                Uri.TryCreate(authorityConfig.JsonWebKeyFetchUrl, UriKind.Absolute, out var jsonWebKeyFetchUri))
+            if (!string.IsNullOrWhiteSpace(authorityConfig.JsonWebKeyFetchUrl)
+                && Uri.TryCreate(authorityConfig.JsonWebKeyFetchUrl, UriKind.Absolute, out var jsonWebKeyFetchUri))
             {
                 var key = httpClient.GetStringAsync(jsonWebKeyFetchUri).GetAwaiter().GetResult();
                 keys.Add(new JsonWebKey(key));

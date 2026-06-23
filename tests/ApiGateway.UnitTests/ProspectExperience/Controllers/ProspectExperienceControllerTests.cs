@@ -3,6 +3,7 @@ using System.Security.Claims;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Identity;
 using ApiGateway.Identity.context;
 using ApiGateway.ProspectExperience.Enum;
@@ -98,7 +99,7 @@ public class ProspectExperienceControllerTests
     {
         // Arrange
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         // Act
@@ -139,7 +140,7 @@ public class ProspectExperienceControllerTests
         };
 
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
             .Setup(s => s.CreateAsync(request, It.IsAny<CancellationToken>()))
@@ -159,7 +160,7 @@ public class ProspectExperienceControllerTests
     {
         // Arrange
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
             .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()))
@@ -177,7 +178,7 @@ public class ProspectExperienceControllerTests
     {
         // Arrange
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
             .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()))
@@ -199,7 +200,7 @@ public class ProspectExperienceControllerTests
         var response = new DocumentUploadResultResponse([1, 2], [3]);
 
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _identityService
             .Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>()))
@@ -281,7 +282,7 @@ public class ProspectExperienceControllerTests
     public async Task CompleteStepAsync_WhenFeatureFlagDisabled_Returns403AndDoesNotCallOrchestration()
     {
         _featureFlagService
-            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, UserEmail, It.IsAny<CancellationToken>()))
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var result = await _controller.CompleteStepAsync(123, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);

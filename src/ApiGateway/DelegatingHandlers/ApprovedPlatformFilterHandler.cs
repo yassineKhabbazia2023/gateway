@@ -1,4 +1,5 @@
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Helpers;
 using ApiGateway.Offer.Constants;
 using Microsoft.AspNetCore.WebUtilities;
@@ -19,7 +20,9 @@ public class ApprovedPlatformFilterHandler(IFeatureFlagService featureFlagServic
         var token = JwtHelper.ExtractBearerToken(request);
         var userEmail = string.IsNullOrEmpty(token) ? null : JwtHelper.ExtractUserEmailFromToken(token);
 
-        if (await featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, userEmail, cancellationToken))
+        var context = FeatureContext.FromEmail(userEmail);
+
+        if (await featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, context: context, ct: cancellationToken))
         {
             return await base.SendAsync(request, cancellationToken);
         }

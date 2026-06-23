@@ -1,4 +1,4 @@
-﻿using ApiGateway.Models;
+using ApiGateway.Models;
 using ApiGateway.Offer.Model;
 
 namespace ApiGateway.Offer;
@@ -23,7 +23,10 @@ public class OfferService(HttpClient httpClient) : IOfferService
     {
         var url = $"/api/subscription/status?accountId={accountId}";
         var response = await httpClient.GetAsync(url);
-        if (!response.IsSuccessStatusCode) return null;
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
         return await response.Content.ReadFromJsonAsync<SubscriptionStatus[]>() ?? [];
     }
 
@@ -31,7 +34,10 @@ public class OfferService(HttpClient httpClient) : IOfferService
     {
         var url = $"/api/offers/{offerId}";
         var response = await httpClient.GetAsync(url);
-        if (!response.IsSuccessStatusCode) return null;
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
         return await response.Content.ReadFromJsonAsync<OfferDetails>();
     }
 }

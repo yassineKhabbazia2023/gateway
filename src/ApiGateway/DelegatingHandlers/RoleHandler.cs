@@ -1,4 +1,4 @@
-﻿using ApiGateway.Helpers;
+using ApiGateway.Helpers;
 using System.Web;
 using System.Net;
 using ApiGateway.Exceptions;
@@ -77,11 +77,15 @@ namespace ApiGateway.DelegatingHandlers
 
                 // Case 1: If the logged-in user is accessing their own info, skip the role check.
                 if (contactId == currentUserId)
+                {
                     return await base.SendAsync(request, cancellationToken);
+                }
 
                 // Case 2: If the logged-in user is a super admin, skip the role check.
                 if (await AuthorizationHelper.SkipRoleCheck(accountId, currentUserId, _httpContextAccessor.HttpContext!))
+                {
                     return await base.SendAsync(request, cancellationToken);
+                }
 
                 // Case 3: If accountId exists, check if the user has the role for the specified account.
                 if (accountId.HasValue)

@@ -160,10 +160,10 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<PermissionAggregator>()
             .AddTransientDefinedAggregator<SubmissionAggregator>()
             .AddTransientDefinedAggregator<WalletInfoAggregator>()
-            .AddDelegatingHandler<BookingFeatureFlagHandler>()
             .AddDelegatingHandler<BookingSyncHandler>()
             .AddDelegatingHandler<ProspectExperienceHandler>()
             .AddDelegatingHandler<ApprovedPlatformFilterHandler>()
+            .AddDelegatingHandler<FeatureFlagGateHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
 
         services.AddHttpClient("BookingClient", client =>

@@ -1,5 +1,6 @@
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Offer.Constants;
 using Moq.Protected;
 using System.Net;
@@ -43,7 +44,7 @@ public class ApprovedPlatformFilterHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         var (invoker, getCaptured) = CreateInvoker(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
@@ -63,7 +64,7 @@ public class ApprovedPlatformFilterHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var (invoker, getCaptured) = CreateInvoker(featureFlagService);
         const string originalUri = "https://api.test.com/offer/api/offers/8";
@@ -83,7 +84,7 @@ public class ApprovedPlatformFilterHandlerTests
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         var (invoker, getCaptured) = CreateInvoker(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8?foo=bar");
@@ -104,7 +105,7 @@ public class ApprovedPlatformFilterHandlerTests
         const string expectedEmail = "user@test.fr";
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, expectedEmail, It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var (invoker, _) = CreateInvoker(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
@@ -115,7 +116,7 @@ public class ApprovedPlatformFilterHandlerTests
 
         // Assert
         featureFlagService.Verify(
-            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, expectedEmail, It.IsAny<CancellationToken>()),
+            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

@@ -5,6 +5,7 @@ using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Models;
 using ApiGateway.Offer;
 using ApiGateway.Offer.Constants;
@@ -40,7 +41,7 @@ public class OfferControllerTests
         _mockContactService = new Mock<IContactService>(MockBehavior.Loose);
         _mockFeatureFlagService = new Mock<IFeatureFlagService>(MockBehavior.Loose);
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Default behavior: don't create company for any OfferId
@@ -1305,7 +1306,7 @@ public class OfferControllerTests
         _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
         _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         // Act
@@ -1345,7 +1346,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(555);
 
@@ -1374,7 +1375,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(777);
 
@@ -1409,7 +1410,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;
@@ -1448,7 +1449,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(new CreateCompanyResult { Status = pennylaneStatus });
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;
@@ -1512,7 +1513,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new HttpRequestException("Pennylane down"));
         _mockFeatureFlagService
-            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;

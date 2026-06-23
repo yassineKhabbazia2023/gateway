@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace ApiGateway.Booking;
 
-public class BookingExperienceGuards(IOptions<XpBookingOptions> options) : IBookingExperienceGuards
+public class BookingExperienceGuards(IOptionsMonitor<XpBookingOptions> options) : IBookingExperienceGuards
 {
-    public bool IsFeatureFlagEnabled() => options.Value.FeatureFlagEnabled;
+    public bool IsFeatureFlagEnabled() => options.CurrentValue.FeatureFlagEnabled;
 }

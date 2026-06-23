@@ -1,7 +1,7 @@
 using ApiGateway.DelegatingHandlers.Mocks;
+using ApiGateway.FeatureFlags;
 using ApiGateway.Mocks.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.FeatureManagement;
 using System.Net;
 
 namespace ApiGateway.Mocks;
@@ -11,18 +11,18 @@ namespace ApiGateway.Mocks;
 public class MocksController : ControllerBase
 {
     private readonly IMockResponseRepository repository;
-    private readonly IFeatureManager featureManager;
+    private readonly IFeatureFlagService featureFlagService;
 
-    public MocksController(IMockResponseRepository repository, IFeatureManager featureManager)
+    public MocksController(IMockResponseRepository repository, IFeatureFlagService featureFlagService)
     {
         this.repository = repository;
-        this.featureManager = featureManager;
+        this.featureFlagService = featureFlagService;
     }
 
     [HttpGet("get-mock-index")]
     public async Task<IActionResult> GetMockIndex()
     {
-        if (!await featureManager.IsEnabledAsync("Mocks"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled))
         {
             return StatusCode((int)HttpStatusCode.Forbidden);
         }
@@ -38,7 +38,7 @@ public class MocksController : ControllerBase
     public async Task<IActionResult> ModifyMockResponse([FromForm] MockIndexRequest? request,
         [FromForm] MockEntryFileUpdate? fileUpdate)
     {
-        if (!await featureManager.IsEnabledAsync("Mocks"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled))
         {
             return StatusCode((int)HttpStatusCode.Forbidden);
         }
@@ -78,7 +78,7 @@ public class MocksController : ControllerBase
     [HttpDelete("delete-mock-response")]
     public async Task<IActionResult> DeleteMockResponse([FromQuery] string routeKey)
     {
-        if (!await featureManager.IsEnabledAsync("Mocks"))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.AreMocksEnabled))
         {
             return StatusCode((int)HttpStatusCode.Forbidden);
         }

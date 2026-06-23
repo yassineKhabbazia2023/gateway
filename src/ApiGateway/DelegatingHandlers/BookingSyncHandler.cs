@@ -7,7 +7,8 @@ public class BookingSyncHandler(IBookingSyncTrigger syncTrigger) : DelegatingHan
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (TryExtractContactId(request, out var contactId) && syncTrigger.ShouldTriggerSync(contactId))
+        if (TryExtractContactId(request, out var contactId)
+            && syncTrigger.ShouldTriggerSync(contactId))
         {
             syncTrigger.TriggerSync(contactId);
         }

@@ -2,7 +2,6 @@ using ApiGateway.Configuration;
 using ApiGateway.Extensions;
 using ApiGateway.FeatureFlags.Extensions;
 using ApiGateway.Middlewares;
-using Microsoft.FeatureManagement;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +15,6 @@ builder.Services.AddApiGatewayServices(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddFeatureManagement();
 builder.Services.AddFeatureFlags(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<GatewayExceptionMiddleware>();
@@ -27,6 +25,7 @@ builder.Services.AddHttpLogging(o =>
 builder.Configuration.AddJsonConfiguration();
 
 var app = builder.Build();
+await app.UseFeatureFlagsAsync();
 
 app.UseHttpLogging();
 app.UseRouting();

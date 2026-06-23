@@ -2,6 +2,8 @@ using System.Net;
 using System.Security.Claims;
 using ApiGateway.Booking;
 using ApiGateway.Contact;
+using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Identity.context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +14,8 @@ namespace ApiGateway.UnitTests.Booking;
 public class BookingControllerTests
 {
     private readonly Mock<IUserContext> _userContext;
-    private readonly Mock<IBookingExperienceGuards> _bookingGuards;
     private readonly Mock<IContactService> _contactService;
+    private readonly Mock<IFeatureFlagService> _featureFlagService;
     private readonly Mock<IBookingSyncTrigger> _syncTrigger;
     private readonly Mock<ILogger<BookingController>> _logger;
     private readonly BookingController _controller;
@@ -23,15 +25,15 @@ public class BookingControllerTests
     public BookingControllerTests()
     {
         _userContext = CreateUserContext(UserEmail);
-        _bookingGuards = new Mock<IBookingExperienceGuards>();
         _contactService = new Mock<IContactService>();
+        _featureFlagService = new Mock<IFeatureFlagService>();
         _syncTrigger = new Mock<IBookingSyncTrigger>();
         _logger = new Mock<ILogger<BookingController>>();
 
         _controller = new BookingController(
             _userContext.Object,
-            _bookingGuards.Object,
             _contactService.Object,
+            _featureFlagService.Object,
             _syncTrigger.Object,
             _logger.Object
         );
@@ -47,9 +49,14 @@ public class BookingControllerTests
         return userContext;
     }
 
-    private void SetupGuardsAllowed()
+    private void SetupFeatureFlagEnabled()
     {
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
+        _featureFlagService.Setup(s => s.IsEnabledAsync(
+            FeatureFlagKeys.IsBookingEnabled,
+            It.IsAny<bool>(),
+            It.IsAny<FeatureContext?>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
     }
 
     private void SetupContactFound(int contactId = 123)
@@ -65,7 +72,7 @@ public class BookingControllerTests
     public async Task GetBookingAccess_FeatureFlagEnabled_ReturnsHasAccessTrue()
     {
         // Arrange
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(true);
+        SetupFeatureFlagEnabled();
         SetupContactFound();
 
         // Act
@@ -80,7 +87,12 @@ public class BookingControllerTests
     public async Task GetBookingAccess_FeatureFlagDisabled_ReturnsHasAccessFalse()
     {
         // Arrange
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
+        _featureFlagService.Setup(s => s.IsEnabledAsync(
+            FeatureFlagKeys.IsBookingEnabled,
+            It.IsAny<bool>(),
+            It.IsAny<FeatureContext?>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         var result = await _controller.GetBookingAccess() as ObjectResult;
@@ -94,7 +106,7 @@ public class BookingControllerTests
     public async Task GetBookingAccess_WhenHasAccess_ResolvesContactAndTriggersSyncIfNeeded()
     {
         // Arrange
-        SetupGuardsAllowed();
+        SetupFeatureFlagEnabled();
         SetupContactFound(contactId: 123);
         _syncTrigger.Setup(s => s.ShouldTriggerSync(123)).Returns(true);
 
@@ -112,7 +124,7 @@ public class BookingControllerTests
     public async Task GetBookingAccess_WhenHasAccess_AndContactNotFound_ReturnsHasAccessTrue()
     {
         // Arrange
-        SetupGuardsAllowed();
+        SetupFeatureFlagEnabled();
         _contactService
             .Setup(s => s.GetContactAsync(UserEmail))
             .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
@@ -130,7 +142,7 @@ public class BookingControllerTests
     public async Task GetBookingAccess_WhenHasAccess_AndContactResolutionFails_ReturnsHasAccessTrue()
     {
         // Arrange
-        SetupGuardsAllowed();
+        SetupFeatureFlagEnabled();
         _contactService
             .Setup(s => s.GetContactAsync(UserEmail))
             .ThrowsAsync(new Exception("Contact API down"));
@@ -147,7 +159,12 @@ public class BookingControllerTests
     public async Task GetBookingAccess_WhenFeatureFlagDisabled_DoesNotResolveContact()
     {
         // Arrange
-        _bookingGuards.Setup(s => s.IsFeatureFlagEnabled()).Returns(false);
+        _featureFlagService.Setup(s => s.IsEnabledAsync(
+            FeatureFlagKeys.IsBookingEnabled,
+            It.IsAny<bool>(),
+            It.IsAny<FeatureContext?>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         await _controller.GetBookingAccess();
@@ -161,7 +178,7 @@ public class BookingControllerTests
     public async Task GetBookingAccess_WhenShouldTriggerSyncFalse_DoesNotCallTriggerSync()
     {
         // Arrange
-        SetupGuardsAllowed();
+        SetupFeatureFlagEnabled();
         SetupContactFound(contactId: 123);
         _syncTrigger.Setup(s => s.ShouldTriggerSync(123)).Returns(false);
 

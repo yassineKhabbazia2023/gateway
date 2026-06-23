@@ -21,7 +21,8 @@ public class UserOriginController : ControllerBase
 
         var callerIp = Request.Headers["X-REAL-IP"];
 
-        if (!string.IsNullOrEmpty(rydgeIp) && rydgeIp == callerIp)
+        if (!string.IsNullOrEmpty(rydgeIp)
+            && rydgeIp == callerIp)
         {
             return Ok("COLLAB");
         }

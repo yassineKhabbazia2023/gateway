@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -91,7 +91,8 @@ namespace ApiGateway.Identity.Handlers
             }
 
             string authorization = Request.Headers[HeaderNames.Authorization];
-            if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith(JwtHelper.BearerPrefix, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(authorization)
+                || !authorization.StartsWith(JwtHelper.BearerPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -211,7 +212,8 @@ namespace ApiGateway.Identity.Handlers
 
         private void AppendChallengeResponse(JwtBearerChallengeContext eventContext)
         {
-            if (string.IsNullOrEmpty(eventContext.Error) && string.IsNullOrEmpty(eventContext.ErrorDescription) && string.IsNullOrEmpty(eventContext.ErrorUri))
+            if (string.IsNullOrEmpty(eventContext.Error) && string.IsNullOrEmpty(eventContext.ErrorDescription)
+                && string.IsNullOrEmpty(eventContext.ErrorUri))
             {
                 Response.Headers.Append(HeaderNames.WWWAuthenticate, Options.Challenge);
             }
@@ -239,7 +241,8 @@ namespace ApiGateway.Identity.Handlers
 
                 if (!string.IsNullOrEmpty(eventContext.ErrorUri))
                 {
-                    if (!string.IsNullOrEmpty(eventContext.Error) || !string.IsNullOrEmpty(eventContext.ErrorDescription))
+                    if (!string.IsNullOrEmpty(eventContext.Error)
+                        || !string.IsNullOrEmpty(eventContext.ErrorDescription))
                     {
                         builder.Append(",");
                     }

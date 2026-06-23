@@ -67,7 +67,8 @@ namespace ApiGateway.Aggregator
             try
             {
                 using var document = JsonDocument.Parse(payload);
-                if (document.RootElement.TryGetProperty(propertyName, out var property) && property.TryGetInt32(out var value))
+                if (document.RootElement.TryGetProperty(propertyName, out var property)
+                    && property.TryGetInt32(out var value))
                 {
                     return value;
                 }

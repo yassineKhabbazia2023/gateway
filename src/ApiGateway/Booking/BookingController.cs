@@ -1,4 +1,5 @@
 using ApiGateway.Contact;
+using ApiGateway.FeatureFlags;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -11,8 +12,8 @@ namespace ApiGateway.Booking;
 [Authorize]
 public class BookingController(
     IUserContext userContext,
-    IBookingExperienceGuards bookingGuards,
     IContactService contactService,
+    IFeatureFlagService featureFlagService,
     IBookingSyncTrigger syncTrigger,
     ILogger<BookingController> logger) : ControllerBase
 {
@@ -20,7 +21,7 @@ public class BookingController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetBookingAccess()
     {
-        var hasAccess = bookingGuards.IsFeatureFlagEnabled();
+        var hasAccess = await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsBookingEnabled);
 
         if (hasAccess)
         {
