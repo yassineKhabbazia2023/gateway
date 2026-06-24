@@ -2121,6 +2121,52 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/self-removal",
+      "DownstreamPathTemplate": "/api/roles/bulk-delete",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COUSER002, COADMI002"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/last-collaborator",
+      "DownstreamPathTemplate": "/api/roles/last-collaborator",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COUSER002, COADMI002"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
       "DownstreamPathTemplate": "/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}",
       "DownstreamScheme": "https",
