@@ -1,6 +1,8 @@
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
 using ApiGateway.Contact;
+using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -69,6 +71,80 @@ public sealed class PaymentPreferencesController(
 
         var saved = await paymentPreferencesService.SetOtherAsync(prospectId, contactEmail, contact.Id, ct);
         return saved ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// Generates a SEPA mandate and returns the signature URL for the connected signatory.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="request">The multipart SEPA request.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>200 with the signature URL, 403 when the connected user is not the prospect signatory, 404 when the prospect is not found, or 502 when Mandat fails.</returns>
+    [HttpPost("sepa")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SepaPaymentPreferenceResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<IActionResult> SetSepaAsync(
+        int prospectId,
+        [FromForm] SepaPaymentPreferenceRequest request,
+        CancellationToken ct)
+    {
+        if (request.File is null || request.File.Length == 0)
+        {
+            ModelState.AddModelError(nameof(request.File), "A non-empty RIB file is required.");
+            return ValidationProblem(ModelState);
+        }
+
+        var contactEmail = userContext.User.GetEmail();
+        if (string.IsNullOrWhiteSpace(contactEmail))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "InvalidRequest",
+                ErrorMessage = "The authenticated user email is required."
+            });
+        }
+
+        var contact = await contactService.GetContactAsync(contactEmail);
+        if (contact is null)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(contact.FirstName) || string.IsNullOrWhiteSpace(contact.LastName))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "InvalidRequest",
+                ErrorMessage = "The authenticated contact first name and last name are required."
+            });
+        }
+
+        var result = await paymentPreferencesService.SetSepaAsync(
+            prospectId,
+            request,
+            contactEmail,
+            contact.FirstName,
+            contact.LastName,
+            contact.Id,
+            ct);
+
+        return result.Outcome switch
+        {
+            SepaPaymentPreferenceOrchestrationOutcome.Completed =>
+                Ok(new SepaPaymentPreferenceResponse { SignatureUrl = result.SignatureUrl! }),
+            SepaPaymentPreferenceOrchestrationOutcome.Forbidden =>
+                Forbid(),
+            SepaPaymentPreferenceOrchestrationOutcome.NotFound =>
+                NotFound(),
+            SepaPaymentPreferenceOrchestrationOutcome.MandateFailed =>
+                StatusCode(StatusCodes.Status502BadGateway),
+            _ =>
+                StatusCode(StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>

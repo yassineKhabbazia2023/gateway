@@ -14,4 +14,19 @@ public sealed class ProspectAccountResponse
     /// Gets or sets the linked account identifier.
     /// </summary>
     public int AccountId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the signatory email.
+    /// </summary>
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the signatory first name.
+    /// </summary>
+    public string FirstName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the signatory last name.
+    /// </summary>
+    public string LastName { get; set; } = string.Empty;
 }

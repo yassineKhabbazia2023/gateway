@@ -2,6 +2,7 @@ using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Services;
@@ -143,6 +144,255 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
     }
 
     /// <summary>
+    /// Verifies that POST SEPA calls Prospect, Mandat, then marks payment method in progress.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenConnectedUserIsSignatory_ReturnsSignatureUrlAndMarksStepInProgress()
+    {
+        var request = CreateSepaRequest();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse
+            {
+                ProspectId = 10,
+                AccountId = 42,
+                Email = "first.signatory@test.fr",
+                FirstName = "Prospect",
+                LastName = "Signatory"
+            });
+        _prospectClient
+            .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(123);
+        _mandateClient
+            .Setup(client => client.SetSepaAsync(
+                42,
+                It.Is<MandateSepaPaymentPreferenceRequest>(candidate =>
+                    candidate.DocumentId == 123
+                    && candidate.AccountHolder == request.AccountHolder
+                    && candidate.Address == request.Address
+                    && candidate.AddressLine2 == request.AddressLine2
+                    && candidate.City == request.City
+                    && candidate.Country == request.Country
+                    && candidate.PostalCode == request.PostalCode
+                    && candidate.Iban == request.Iban
+                    && candidate.Bic == request.Bic
+                    && candidate.RecipientEmail == "user@test.fr"
+                    && candidate.RecipientFirstName == "Connected"
+                    && candidate.RecipientLastName == "User"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://signature.test");
+        _prospectClient
+            .Setup(client => client.MarkPaymentMethodInProgressAsync(10, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _service.SetSepaAsync(
+            10,
+            request,
+            "user@test.fr",
+            "Connected",
+            "User",
+            7,
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(SepaPaymentPreferenceOrchestrationOutcome.Completed);
+        result.SignatureUrl.Should().Be("https://signature.test");
+        _prospectClient.Verify(
+            client => client.GetDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _prospectClient.Verify(client => client.MarkPaymentMethodInProgressAsync(10, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that POST SEPA rejects connected users who are not the prospect signatory before any side effect.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenConnectedUserIsNotSignatory_DoesNotUploadOrCallMandat()
+    {
+        var request = CreateSepaRequest();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse
+            {
+                ProspectId = 10,
+                AccountId = 42,
+                Email = "first.signatory@test.fr"
+            });
+        _prospectClient
+            .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await _service.SetSepaAsync(
+            10,
+            request,
+            "user@test.fr",
+            "Connected",
+            "User",
+            7,
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(SepaPaymentPreferenceOrchestrationOutcome.Forbidden);
+        _prospectClient.Verify(
+            client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _prospectClient.Verify(
+            client => client.UploadDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SetSepaAsync(
+                It.IsAny<int>(),
+                It.IsAny<MandateSepaPaymentPreferenceRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _prospectClient.Verify(
+            client => client.MarkPaymentMethodInProgressAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST SEPA stops before signatory checks when the prospect cannot be resolved.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenProspectDoesNotExist_ReturnsNotFoundWithoutSideEffects()
+    {
+        var request = CreateSepaRequest();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProspectAccountResponse?)null);
+
+        var result = await _service.SetSepaAsync(
+            10,
+            request,
+            "user@test.fr",
+            "Connected",
+            "User",
+            7,
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(SepaPaymentPreferenceOrchestrationOutcome.NotFound);
+        _prospectClient.Verify(
+            client => client.IsProspectSignatoryAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _prospectClient.Verify(
+            client => client.UploadDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SetSepaAsync(
+                It.IsAny<int>(),
+                It.IsAny<MandateSepaPaymentPreferenceRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST SEPA stops when RIB upload fails.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenRibUploadFails_ReturnsNotFoundWithoutMandatCall()
+    {
+        var request = CreateSepaRequest();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _prospectClient
+            .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var result = await _service.SetSepaAsync(
+            10,
+            request,
+            "user@test.fr",
+            "Connected",
+            "User",
+            7,
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(SepaPaymentPreferenceOrchestrationOutcome.NotFound);
+        _prospectClient.Verify(
+            client => client.GetDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SetSepaAsync(
+                It.IsAny<int>(),
+                It.IsAny<MandateSepaPaymentPreferenceRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _prospectClient.Verify(
+            client => client.MarkPaymentMethodInProgressAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST SEPA does not mark the step in progress when Mandat fails.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenMandatFails_DoesNotMarkStepInProgress()
+    {
+        var request = CreateSepaRequest();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse
+            {
+                ProspectId = 10,
+                AccountId = 42,
+                Email = "user@test.fr"
+            });
+        _prospectClient
+            .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(123);
+        _mandateClient
+            .Setup(client => client.SetSepaAsync(42, It.IsAny<MandateSepaPaymentPreferenceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var result = await _service.SetSepaAsync(
+            10,
+            request,
+            "user@test.fr",
+            "Connected",
+            "User",
+            7,
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(SepaPaymentPreferenceOrchestrationOutcome.MandateFailed);
+        _prospectClient.Verify(
+            client => client.MarkPaymentMethodInProgressAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
     /// Verifies that DELETE resets the Prospect payment method step after Mandat succeeds.
     /// </summary>
     [Fact]
@@ -165,6 +415,33 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _prospectClient.Verify(
             client => client.ResetStepAsync(10, "PAYMENT_METHOD", It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    /// <summary>
+    /// Creates a valid SEPA request.
+    /// </summary>
+    /// <returns>The request.</returns>
+    private static SepaPaymentPreferenceRequest CreateSepaRequest()
+    {
+        var content = new MemoryStream([1, 2, 3]);
+        var file = new FormFile(content, 0, content.Length, "file", "rib.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+
+        return new SepaPaymentPreferenceRequest
+        {
+            File = file,
+            AccountHolder = "Jean Dupont",
+            Address = "10 rue de Paris",
+            AddressLine2 = "Batiment A",
+            City = "Paris",
+            Country = "France",
+            PostalCode = "75008",
+            Iban = "FR7630006000011234567890189",
+            Bic = "AGRIFRPP"
+        };
     }
 
     /// <summary>

@@ -44,6 +44,22 @@ public interface IProspectApiClient
     Task<ProspectDocumentContentResponse?> GetDocumentAsync(int prospectId, int documentId, CancellationToken ct);
 
     /// <summary>
+    /// Uploads a prospect document through the Prospect document endpoint.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The current user identifier.</param>
+    /// <param name="documentType">The document type.</param>
+    /// <param name="file">The file to upload.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The uploaded document identifier, or null when the prospect is not found.</returns>
+    Task<int?> UploadDocumentAsync(
+        int prospectId,
+        int currentUserId,
+        string documentType,
+        IFormFile file,
+        CancellationToken ct);
+
+    /// <summary>
     /// Persists the consolidated document upload result in Prospect.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
@@ -60,9 +76,17 @@ public interface IProspectApiClient
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <param name="currentUserId">The optional current collaborator contact identifier.</param>
     /// <returns>The prospect account information, or null when not found.</returns>
     Task<ProspectAccountResponse?> GetProspectAccountAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
+    /// Determines whether a contact is a signatory for a prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="contactId">The contact identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when the contact is a prospect signatory; otherwise false.</returns>
+    Task<bool> IsProspectSignatoryAsync(int prospectId, int contactId, CancellationToken ct);
 
     /// <summary>
     /// Completes a named Prospect onboarding step.
@@ -91,6 +115,14 @@ public interface IProspectApiClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task ResetStepAsync(int prospectId, string stepName, CancellationToken ct);
+
+    /// <summary>
+    /// Marks the Prospect payment method onboarding step as in progress.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task MarkPaymentMethodInProgressAsync(int prospectId, CancellationToken ct);
 
     /// <summary>
     /// Creates the prospect aggregate in Prospect.

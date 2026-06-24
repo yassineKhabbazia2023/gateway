@@ -329,6 +329,60 @@ public class ProspectApiClientTests
     }
 
     /// <summary>
+    /// Verifies that document upload sends multipart content, document type, and current user metadata.
+    /// </summary>
+    [Fact]
+    public async Task UploadDocumentAsync_WhenProspectAcceptsUpload_ReturnsDocumentId()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create(new { documentId = 123 }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        string? multipartBody = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            multipartBody = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+        var file = new FormFile(new MemoryStream([1, 2, 3]), 0, 3, "file", "rib.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+
+        var result = await client.UploadDocumentAsync(42, 7, "RIB", file, CancellationToken.None);
+
+        result.Should().Be(123);
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/documents");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("7");
+        captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
+        multipartBody.Should().Contain("name=documentType");
+        multipartBody.Should().Contain("RIB");
+        multipartBody.Should().Contain("filename=rib.pdf");
+    }
+
+    /// <summary>
+    /// Verifies that document upload maps missing prospects to null.
+    /// </summary>
+    [Fact]
+    public async Task UploadDocumentAsync_WhenProspectIsMissing_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+        var file = new FormFile(new MemoryStream([1]), 0, 1, "file", "rib.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+
+        var result = await client.UploadDocumentAsync(42, 7, "RIB", file, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
     /// Verifies that document upload results are posted and deserialized.
     /// </summary>
     [Fact]
@@ -483,6 +537,43 @@ public class ProspectApiClientTests
         Func<Task> act = () => client.GetProspectAccountAsync(10, CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that signatory checks call the dedicated Prospect endpoint.
+    /// </summary>
+    [Fact]
+    public async Task IsProspectSignatoryAsync_WhenProspectReturnsTrue_ReturnsTrue()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(true, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        var result = await client.IsProspectSignatoryAsync(42, 7, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/signatories/7/exists");
+    }
+
+    /// <summary>
+    /// Verifies that payment method in-progress updates call the Prospect endpoint.
+    /// </summary>
+    [Fact]
+    public async Task MarkPaymentMethodInProgressAsync_WhenProspectAcceptsRequest_IssuesPost()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+
+        await client.MarkPaymentMethodInProgressAsync(42, CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/onboarding/42/in-progress");
+        captured.Content.Should().BeNull();
     }
 
     /// <summary>

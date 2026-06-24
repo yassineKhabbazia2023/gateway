@@ -94,6 +94,40 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task<int?> UploadDocumentAsync(
+        int prospectId,
+        int currentUserId,
+        string documentType,
+        IFormFile file,
+        CancellationToken ct)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(documentType), "documentType");
+        await using var stream = file.OpenReadStream();
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+        content.Add(streamContent, "file", Path.GetFileName(file.FileName));
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/prospects/{prospectId}/documents")
+        {
+            Content = content
+        };
+        request.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        using var response = await httpClient.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var upload = await response.Content.ReadFromJsonAsync<ProspectDocumentUploadResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Document upload response for prospect {prospectId} was empty.");
+
+        return upload.DocumentId;
+    }
+
+    /// <inheritdoc />
     public async Task<DocumentUploadResultResponse?> RegisterDocumentUploadResultAsync(
         int prospectId,
         DocumentUploadResultRequest request,
@@ -129,6 +163,17 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task<bool> IsProspectSignatoryAsync(int prospectId, int contactId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync(
+            $"api/prospects/{prospectId}/signatories/{contactId}/exists",
+            ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<bool>(JsonOptions, ct);
+    }
+
+    /// <inheritdoc />
     public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct)
     {
         await this.CompleteStepAsync(prospectId, stepName, ct, null);
@@ -156,6 +201,16 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             $"api/onboarding/{prospectId}/reset-step",
             new { Step = stepName },
             JsonOptions,
+            ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <inheritdoc />
+    public async Task MarkPaymentMethodInProgressAsync(int prospectId, CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsync(
+            $"api/onboarding/{prospectId}/in-progress",
+            content: null,
             ct);
         response.EnsureSuccessStatusCode();
     }

@@ -1,4 +1,5 @@
 using ApiGateway.ProspectExperience.Models.Responses;
+using ApiGateway.ProspectExperience.Models.Internal;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -23,6 +24,18 @@ public interface IMandatePaymentPreferencesClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>True when Mandat saved the preference; otherwise false when the account is not found.</returns>
     Task<bool> SetOtherAsync(int accountId, string contactEmail, CancellationToken ct);
+
+    /// <summary>
+    /// Generates a SEPA mandate signature request for an account.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="request">The downstream Mandat request.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The signature URL, or null when the account is not found.</returns>
+    Task<string?> SetSepaAsync(
+        int accountId,
+        MandateSepaPaymentPreferenceRequest request,
+        CancellationToken ct);
 
     /// <summary>
     /// Resets the account payment preference.

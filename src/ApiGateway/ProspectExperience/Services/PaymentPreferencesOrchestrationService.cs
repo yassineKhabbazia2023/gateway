@@ -1,3 +1,4 @@
+using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
@@ -10,6 +11,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     ILogger<PaymentPreferencesOrchestrationService> logger) : IPaymentPreferencesOrchestrationService
 {
     private const string PaymentMethodStepName = "PAYMENT_METHOD";
+    private const string RibDocumentType = "RIB";
 
     /// <inheritdoc />
     public async Task<PaymentPreferenceResponse?> GetAsync(int prospectId, CancellationToken ct)
@@ -50,6 +52,83 @@ public sealed class PaymentPreferencesOrchestrationService(
             ct,
             currentUserId);
         return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<SepaPaymentPreferenceOrchestrationResult> SetSepaAsync(
+        int prospectId,
+        Models.Requests.SepaPaymentPreferenceRequest request,
+        string contactEmail,
+        string contactFirstName,
+        string contactLastName,
+        int currentUserId,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request.File);
+
+        var prospect = await prospectClient.GetProspectAccountAsync(prospectId, ct);
+        if (prospect is null)
+        {
+            logger.LogWarning("Payment preference SEPA requested for unknown prospect {ProspectId}", prospectId);
+            return SepaPaymentPreferenceOrchestrationResult.FromOutcome(
+                SepaPaymentPreferenceOrchestrationOutcome.NotFound);
+        }
+
+        var isSignatory = await prospectClient.IsProspectSignatoryAsync(prospectId, currentUserId, ct);
+        if (!isSignatory)
+        {
+            logger.LogWarning(
+                "Contact {ContactEmail} is not a signatory authorized to start SEPA signature for prospect {ProspectId}",
+                contactEmail,
+                prospectId);
+            return SepaPaymentPreferenceOrchestrationResult.FromOutcome(
+                SepaPaymentPreferenceOrchestrationOutcome.Forbidden);
+        }
+
+        var uploadedDocumentId = await prospectClient.UploadDocumentAsync(
+            prospectId,
+            currentUserId,
+            RibDocumentType,
+            request.File,
+            ct);
+        if (!uploadedDocumentId.HasValue)
+        {
+            return SepaPaymentPreferenceOrchestrationResult.FromOutcome(
+                SepaPaymentPreferenceOrchestrationOutcome.NotFound);
+        }
+
+        var signatureUrl = await mandateClient.SetSepaAsync(
+            prospect.AccountId,
+            new Models.Internal.MandateSepaPaymentPreferenceRequest
+            {
+                DocumentId = uploadedDocumentId.Value,
+                AccountHolder = request.AccountHolder,
+                Address = request.Address,
+                AddressLine2 = request.AddressLine2,
+                City = request.City,
+                Country = request.Country,
+                PostalCode = request.PostalCode,
+                Iban = request.Iban,
+                Bic = request.Bic,
+                RecipientEmail = contactEmail,
+                RecipientFirstName = contactFirstName,
+                RecipientLastName = contactLastName
+            },
+            ct);
+
+        if (string.IsNullOrWhiteSpace(signatureUrl))
+        {
+            logger.LogWarning(
+                "Mandat refused SEPA payment preference for account {AccountId} linked to prospect {ProspectId}",
+                prospect.AccountId,
+                prospectId);
+            return SepaPaymentPreferenceOrchestrationResult.FromOutcome(
+                SepaPaymentPreferenceOrchestrationOutcome.MandateFailed);
+        }
+
+        await prospectClient.MarkPaymentMethodInProgressAsync(prospectId, ct);
+        return SepaPaymentPreferenceOrchestrationResult.Completed(signatureUrl);
     }
 
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
@@ -47,6 +48,29 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
 
         response.EnsureSuccessStatusCode();
         return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> SetSepaAsync(
+        int accountId,
+        MandateSepaPaymentPreferenceRequest request,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/onboarding/{accountId}/payment-preferences/sepa",
+            request,
+            JsonOptions,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var sepaResponse = await response.Content.ReadFromJsonAsync<SepaPaymentPreferenceResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"SEPA payment preference response for account {accountId} was empty.");
+
+        return sepaResponse.SignatureUrl;
     }
 
     /// <inheritdoc />
