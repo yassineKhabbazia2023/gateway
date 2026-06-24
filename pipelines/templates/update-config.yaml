@@ -4,6 +4,7 @@ parameters:
   type: string
   values:
   - itg01
+  - itg02
   - rec01
   - prd01
 - name: subscription
