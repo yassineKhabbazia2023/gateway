@@ -941,11 +941,12 @@ public class ProspectApiClientTests
         file.Setup(f => f.ContentType).Returns("application/pdf");
         file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
 
-        await client.SendCommercialProposalAsync(42, 100, file.Object, CancellationToken.None);
+        await client.SendCommercialProposalAsync(42, 100, "collab@test.fr", file.Object, CancellationToken.None);
 
         captured!.Method.Should().Be(HttpMethod.Post);
         captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/commercial-proposal");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+        captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("collab@test.fr");
         captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
     }
 
@@ -960,7 +961,92 @@ public class ProspectApiClientTests
         file.Setup(f => f.ContentType).Returns("application/pdf");
         file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
 
-        Func<Task> act = () => client.SendCommercialProposalAsync(42, 100, file.Object, CancellationToken.None);
+        Func<Task> act = () => client.SendCommercialProposalAsync(42, 100, null, file.Object, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    [Fact]
+    public async Task GetEngagementLetterEligibilityAsync_WhenFound_ReturnsEligibility()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { canSend = true, alreadySent = false }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var result = await client.GetEngagementLetterEligibilityAsync(42, 100, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.CanSend.Should().BeTrue();
+        result.AlreadySent.Should().BeFalse();
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/engagement-letter/eligibility");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+    }
+
+    [Fact]
+    public async Task GetEngagementLetterEligibilityAsync_WhenNotFound_ReturnsNull()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var result = await client.GetEngagementLetterEligibilityAsync(42, 100, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SendEngagementLetterAsync_SendsMultipartRequestWithCurrentUserHeader()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("letter.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+
+        await client.SendEngagementLetterAsync(42, 100, "client@test.fr", file.Object, CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/engagement-letter");
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
+        captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("client@test.fr");
+        captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
+    }
+
+    [Fact]
+    public async Task SendEngagementLetterAsync_WhenContactEmailIsNull_DoesNotSendContactEmailHeader()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created);
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, req => captured = req);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("letter.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
+
+        await client.SendEngagementLetterAsync(42, 100, null, file.Object, CancellationToken.None);
+
+        captured!.Headers.Contains("ContactEmail").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SendEngagementLetterAsync_WhenProspectRejectsRequest_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+        var (client, _) = CreateClient(response);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("letter.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
+
+        Func<Task> act = () => client.SendEngagementLetterAsync(42, 100, null, file.Object, CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
     }

@@ -187,7 +187,27 @@ public interface IProspectApiClient
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
+    /// <param name="contactEmail">The collaborator email address.</param>
     /// <param name="file">The PDF file.</param>
     /// <param name="ct">The cancellation token.</param>
-    Task SendCommercialProposalAsync(int prospectId, int currentUserId, IFormFile file, CancellationToken ct);
+    Task SendCommercialProposalAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
+
+    /// <summary>
+    /// Checks whether the given user is allowed to send an engagement letter for the prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The collaborator identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The eligibility response, or null when the prospect does not exist or is archived.</returns>
+    Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct);
+
+    /// <summary>
+    /// Sends the engagement letter PDF for a prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The collaborator identifier.</param>
+    /// <param name="contactEmail">The collaborator email address.</param>
+    /// <param name="file">The PDF file.</param>
+    /// <param name="ct">The cancellation token.</param>
+    Task SendEngagementLetterAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
 }

@@ -343,36 +343,43 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
-    public async Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/prospects/{prospectId}/commercial-proposal/eligibility");
-        request.Headers.Add("CurrentUser", currentUserId.ToString());
-
-        using var response = await httpClient.SendAsync(request, ct);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return null;
-        }
-
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CommercialProposalEligibilityResponse>(JsonOptions, ct);
-    }
+    public Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
+        => GetEligibilityAsync<CommercialProposalEligibilityResponse>($"api/prospects/{prospectId}/commercial-proposal/eligibility", currentUserId, ct);
 
     /// <inheritdoc />
-    public async Task SendCommercialProposalAsync(int prospectId, int currentUserId, IFormFile file, CancellationToken ct)
+    public Task SendCommercialProposalAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+        => SendFileAsync($"api/prospects/{prospectId}/commercial-proposal", currentUserId, contactEmail, file, ct);
+
+    /// <inheritdoc />
+    public Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
+        => GetEligibilityAsync<EngagementLetterEligibilityResponse>($"api/prospects/{prospectId}/engagement-letter/eligibility", currentUserId, ct);
+
+    /// <inheritdoc />
+    public Task SendEngagementLetterAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+        => SendFileAsync($"api/prospects/{prospectId}/engagement-letter", currentUserId, contactEmail, file, ct);
+
+    private async Task<T?> GetEligibilityAsync<T>(string url, int currentUserId, CancellationToken ct) where T : class
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("CurrentUser", currentUserId.ToString());
+        using var response = await httpClient.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+    }
+
+    private async Task SendFileAsync(string url, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
     {
         using var content = new MultipartFormDataContent();
         await using var stream = file.OpenReadStream();
         var streamContent = new StreamContent(stream);
         streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
         content.Add(streamContent, "file", Path.GetFileName(file.FileName));
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/prospects/{prospectId}/commercial-proposal")
-        {
-            Content = content
-        };
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
         request.Headers.Add("CurrentUser", currentUserId.ToString());
-
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+            request.Headers.Add("ContactEmail", contactEmail);
         var response = await httpClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
     }

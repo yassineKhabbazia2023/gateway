@@ -15,9 +15,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 
-public class CommercialProposalControllerTests
+public class EngagementLetterControllerTests
 {
-    private readonly Mock<ICommercialProposalOrchestrationService> _orchestrationService;
+    private readonly Mock<IEngagementLetterOrchestrationService> _orchestrationService;
     private readonly Mock<IContactService> _contactService;
     private readonly Mock<IUserContext> _userContext;
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
@@ -27,9 +27,9 @@ public class CommercialProposalControllerTests
     private const string UserEmail = "collab@test.fr";
     private static readonly ApiGateway.Contact.Models.Contact CurrentContact = new() { Id = 7, Email = UserEmail };
 
-    public CommercialProposalControllerTests()
+    public EngagementLetterControllerTests()
     {
-        _orchestrationService = new Mock<ICommercialProposalOrchestrationService>(MockBehavior.Strict);
+        _orchestrationService = new Mock<IEngagementLetterOrchestrationService>(MockBehavior.Strict);
         _contactService = new Mock<IContactService>(MockBehavior.Strict);
         _userContext = CreateUserContext(UserEmail);
         _logger = new Mock<ILogger<ProspectExperienceController>>();
@@ -41,8 +41,8 @@ public class CommercialProposalControllerTests
             new Mock<IProspectService>().Object,
             new Mock<IValidator<CreateProspectRequest>>().Object,
             _contactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
             _orchestrationService.Object,
-            new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
     }
 
@@ -60,109 +60,105 @@ public class CommercialProposalControllerTests
     {
         var file = new Mock<IFormFile>();
         file.Setup(f => f.Length).Returns(length);
-        file.Setup(f => f.FileName).Returns("proposal.pdf");
+        file.Setup(f => f.FileName).Returns("engagement-letter.pdf");
         file.Setup(f => f.ContentType).Returns(contentType);
         file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream(new byte[length > 0 ? (int)length : 1]));
         return file.Object;
     }
 
-    // ---- SendCommercialProposalAsync ----
+    // ---- SendEngagementLetterAsync ----
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenFileIsNull_ReturnsValidationProblem()
+    public async Task SendEngagementLetterAsync_WhenFileIsNull_ReturnsValidationProblem()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, null!, CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, null!, CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenFileIsEmpty_ReturnsValidationProblem()
+    public async Task SendEngagementLetterAsync_WhenFileIsEmpty_ReturnsValidationProblem()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(length: 0), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(length: 0), CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenFileIsNotPdf_Returns415()
+    public async Task SendEngagementLetterAsync_WhenFileIsNotPdf_Returns415()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(contentType: "image/png"), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(contentType: "image/png"), CancellationToken.None);
 
-        var objectResult = result.Should().BeAssignableTo<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(415);
+        result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(415);
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenFileExceedsMaxSize_Returns413()
+    public async Task SendEngagementLetterAsync_WhenFileExceedsMaxSize_Returns413()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
 
-        var objectResult = result.Should().BeAssignableTo<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(413);
+        result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(413);
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenContactNotFound_Returns404()
+    public async Task SendEngagementLetterAsync_WhenContactNotFound_Returns404()
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenOutcomeIsSent_Returns201()
+    public async Task SendEngagementLetterAsync_WhenOutcomeIsSent_Returns201()
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommercialProposalOrchestrationOutcome.Sent);
+            .ReturnsAsync(EngagementLetterOrchestrationOutcome.Sent);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
 
-        var statusResult = result.Should().BeOfType<StatusCodeResult>().Subject;
-        statusResult.StatusCode.Should().Be((int)HttpStatusCode.Created);
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.Created);
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenOutcomeIsProspectNotFound_Returns404()
+    public async Task SendEngagementLetterAsync_WhenOutcomeIsProspectNotFound_Returns404()
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommercialProposalOrchestrationOutcome.ProspectNotFound);
+            .ReturnsAsync(EngagementLetterOrchestrationOutcome.ProspectNotFound);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenOutcomeIsAlreadySent_Returns409()
+    public async Task SendEngagementLetterAsync_WhenOutcomeIsAlreadySent_Returns409()
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommercialProposalOrchestrationOutcome.AlreadySent);
+            .ReturnsAsync(EngagementLetterOrchestrationOutcome.AlreadySent);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<ConflictObjectResult>();
     }
 
     [Fact]
-    public async Task SendCommercialProposalAsync_WhenOutcomeIsNotEligible_Returns422()
+    public async Task SendEngagementLetterAsync_WhenOutcomeIsNotEligible_Returns422()
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommercialProposalOrchestrationOutcome.NotEligible);
+            .ReturnsAsync(EngagementLetterOrchestrationOutcome.NotEligible);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
 
-        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusResult.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
     }
 }

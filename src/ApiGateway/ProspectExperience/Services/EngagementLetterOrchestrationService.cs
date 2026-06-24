@@ -3,35 +3,36 @@ using Microsoft.AspNetCore.Http;
 
 namespace ApiGateway.ProspectExperience.Services;
 
-public class CommercialProposalOrchestrationService(
+public class EngagementLetterOrchestrationService(
     IProspectApiClient prospectApiClient,
-    IRegistryProspectClient registryProspectClient) : ICommercialProposalOrchestrationService
+    IRegistryProspectClient registryProspectClient) : IEngagementLetterOrchestrationService
 {
-    public async Task<CommercialProposalOrchestrationOutcome> SendAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+    public async Task<EngagementLetterOrchestrationOutcome> SendAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
     {
-        var eligibility = await prospectApiClient.GetCommercialProposalEligibilityAsync(prospectId, currentUserId, ct);
+        var eligibility = await prospectApiClient.GetEngagementLetterEligibilityAsync(prospectId, currentUserId, ct);
 
         if (eligibility is null)
         {
-            return CommercialProposalOrchestrationOutcome.ProspectNotFound;
+            return EngagementLetterOrchestrationOutcome.ProspectNotFound;
         }
 
         if (eligibility.AlreadySent)
         {
-            return CommercialProposalOrchestrationOutcome.AlreadySent;
+            return EngagementLetterOrchestrationOutcome.AlreadySent;
         }
 
         if (!eligibility.CanSend)
         {
-            return CommercialProposalOrchestrationOutcome.NotEligible;
+            return EngagementLetterOrchestrationOutcome.NotEligible;
         }
 
         var accountNumber = await prospectApiClient.GetAkuiteoAccountNumberByProspectIdAsync(prospectId, ct);
 
         if (string.IsNullOrEmpty(accountNumber))
         {
-            return CommercialProposalOrchestrationOutcome.AccountNumberNotFound;
+            return EngagementLetterOrchestrationOutcome.AccountNumberNotFound;
         }
+
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, ct);
         var document = new ProspectDocumentContentResponse(
@@ -40,9 +41,8 @@ public class CommercialProposalOrchestrationService(
             FileName: file.FileName);
 
         await registryProspectClient.UploadAkuiteoDocumentAsync(accountNumber, document, ct);
-        await prospectApiClient.SendCommercialProposalAsync(prospectId, currentUserId, contactEmail, file, ct);
+        await prospectApiClient.SendEngagementLetterAsync(prospectId, currentUserId, contactEmail, file, ct);
 
-        return CommercialProposalOrchestrationOutcome.Sent;
+        return EngagementLetterOrchestrationOutcome.Sent;
     }
-
 }

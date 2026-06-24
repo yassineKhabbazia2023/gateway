@@ -4,27 +4,27 @@ using Microsoft.AspNetCore.Http;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Services;
 
-public class CommercialProposalOrchestrationServiceTests
+public class EngagementLetterOrchestrationServiceTests
 {
     private readonly Mock<IProspectApiClient> _prospectApiClient;
     private readonly Mock<IRegistryProspectClient> _registryProspectClient;
-    private readonly CommercialProposalOrchestrationService _service;
+    private readonly EngagementLetterOrchestrationService _service;
 
     private const int ProspectId = 42;
     private const int CurrentUserId = 7;
     private const string AccountNumber = "AK-001";
     private const string ContactEmail = "collaborator@test.fr";
 
-    public CommercialProposalOrchestrationServiceTests()
+    public EngagementLetterOrchestrationServiceTests()
     {
         _prospectApiClient = new Mock<IProspectApiClient>(MockBehavior.Strict);
         _registryProspectClient = new Mock<IRegistryProspectClient>(MockBehavior.Strict);
-        _service = new CommercialProposalOrchestrationService(
+        _service = new EngagementLetterOrchestrationService(
             _prospectApiClient.Object,
             _registryProspectClient.Object);
     }
 
-    private static Mock<IFormFile> BuildFileMock(string fileName = "proposal.pdf", string contentType = "application/pdf")
+    private static Mock<IFormFile> BuildFileMock(string fileName = "engagement-letter.pdf", string contentType = "application/pdf")
     {
         var file = new Mock<IFormFile>();
         file.Setup(f => f.FileName).Returns(fileName);
@@ -42,51 +42,51 @@ public class CommercialProposalOrchestrationServiceTests
     public async Task SendAsync_WhenProspectNotFound_ReturnsProspectNotFound()
     {
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CommercialProposalEligibilityResponse?)null);
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EngagementLetterEligibilityResponse?)null);
 
         var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
-        result.Should().Be(CommercialProposalOrchestrationOutcome.ProspectNotFound);
+        result.Should().Be(EngagementLetterOrchestrationOutcome.ProspectNotFound);
     }
 
     [Fact]
     public async Task SendAsync_WhenAlreadySent_ReturnsAlreadySent()
     {
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommercialProposalEligibilityResponse { CanSend = false, AlreadySent = true });
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = true });
 
         var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
-        result.Should().Be(CommercialProposalOrchestrationOutcome.AlreadySent);
+        result.Should().Be(EngagementLetterOrchestrationOutcome.AlreadySent);
     }
 
     [Fact]
     public async Task SendAsync_WhenNotEligible_ReturnsNotEligible()
     {
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommercialProposalEligibilityResponse { CanSend = false, AlreadySent = false });
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = false });
 
         var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
-        result.Should().Be(CommercialProposalOrchestrationOutcome.NotEligible);
+        result.Should().Be(EngagementLetterOrchestrationOutcome.NotEligible);
     }
 
     [Fact]
     public async Task SendAsync_WhenAccountNumberNotFound_ReturnsAccountNumberNotFound()
     {
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommercialProposalEligibilityResponse { CanSend = true, AlreadySent = false });
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = true, AlreadySent = false });
         _prospectApiClient
             .Setup(c => c.GetAkuiteoAccountNumberByProspectIdAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
 
         var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
-        result.Should().Be(CommercialProposalOrchestrationOutcome.AccountNumberNotFound);
+        result.Should().Be(EngagementLetterOrchestrationOutcome.AccountNumberNotFound);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class CommercialProposalOrchestrationServiceTests
     {
         var fileMock = BuildFileMock();
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommercialProposalEligibilityResponse { CanSend = true, AlreadySent = false });
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = true, AlreadySent = false });
         _prospectApiClient
             .Setup(c => c.GetAkuiteoAccountNumberByProspectIdAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(AccountNumber);
@@ -103,17 +103,17 @@ public class CommercialProposalOrchestrationServiceTests
             .Setup(c => c.UploadAkuiteoDocumentAsync(AccountNumber, It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _prospectApiClient
-            .Setup(c => c.SendCommercialProposalAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()))
+            .Setup(c => c.SendEngagementLetterAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, CancellationToken.None);
 
-        result.Should().Be(CommercialProposalOrchestrationOutcome.Sent);
+        result.Should().Be(EngagementLetterOrchestrationOutcome.Sent);
         _registryProspectClient.Verify(
             c => c.UploadAkuiteoDocumentAsync(AccountNumber, It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _prospectApiClient.Verify(
-            c => c.SendCommercialProposalAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()),
+            c => c.SendEngagementLetterAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -121,8 +121,8 @@ public class CommercialProposalOrchestrationServiceTests
     public async Task SendAsync_WhenNotEligible_DoesNotCallRegistry()
     {
         _prospectApiClient
-            .Setup(c => c.GetCommercialProposalEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommercialProposalEligibilityResponse { CanSend = false, AlreadySent = false });
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = false });
 
         await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 

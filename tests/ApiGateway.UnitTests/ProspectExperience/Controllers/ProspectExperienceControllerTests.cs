@@ -50,6 +50,7 @@ public class ProspectExperienceControllerTests
             _validator,
             new Mock<IContactService>().Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
     }
 

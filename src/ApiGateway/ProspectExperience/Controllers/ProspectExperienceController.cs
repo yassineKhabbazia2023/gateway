@@ -27,6 +27,7 @@ public class ProspectExperienceController(
     IValidator<CreateProspectRequest> createProspectValidator,
     IContactService contactService,
     ICommercialProposalOrchestrationService commercialProposalOrchestrationService,
+    IEngagementLetterOrchestrationService engagementLetterOrchestrationService,
     ILogger<ProspectExperienceController> logger) : ControllerBase
 {
     [HttpPost("currentuser")]
@@ -139,7 +140,25 @@ public class ProspectExperienceController(
     private const string PdfContentType = "application/pdf";
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    [HttpPost("{prospectId}/commercial-proposal/currentUser")]
+    private IActionResult? ValidatePdfFile(IFormFile? file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = Errors.InvalidRequestCode,
+                ErrorMessage = "A non-empty file is required."
+            });
+
+        if (!string.Equals(file.ContentType, PdfContentType, StringComparison.OrdinalIgnoreCase))
+            return StatusCode(StatusCodes.Status415UnsupportedMediaType, new { error = "Only PDF files are accepted." });
+
+        if (file.Length > MaxFileSizeBytes)
+            return StatusCode(StatusCodes.Status413PayloadTooLarge, new { error = "File size must not exceed 5 MB." });
+
+        return null;
+    }
+
+    [HttpPost("{prospectId}/commercial-proposal")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -153,24 +172,8 @@ public class ProspectExperienceController(
         IFormFile file,
         CancellationToken ct)
     {
-        if (file is null || file.Length == 0)
-        {
-            return BadRequest(new ErrorResponse
-            {
-                ErrorCode = Errors.InvalidRequestCode,
-                ErrorMessage = "A non-empty file is required."
-            });
-        }
-
-        if (!string.Equals(file.ContentType, PdfContentType, StringComparison.OrdinalIgnoreCase))
-        {
-            return StatusCode(StatusCodes.Status415UnsupportedMediaType, new { error = "Only PDF files are accepted." });
-        }
-
-        if (file.Length > MaxFileSizeBytes)
-        {
-            return StatusCode(StatusCodes.Status413PayloadTooLarge, new { error = "File size must not exceed 5 MB." });
-        }
+        if (ValidatePdfFile(file) is { } fileError)
+            return fileError;
 
         var userEmail = userContext.User.GetEmail();
         var contact = await contactService.GetContactAsync(userEmail);
@@ -181,7 +184,7 @@ public class ProspectExperienceController(
             return NotFound();
         }
 
-        var outcome = await commercialProposalOrchestrationService.SendAsync(prospectId, contact.Id, file, ct);
+        var outcome = await commercialProposalOrchestrationService.SendAsync(prospectId, contact.Id, userEmail, file, ct);
 
         return outcome switch
         {
@@ -190,6 +193,45 @@ public class ProspectExperienceController(
             CommercialProposalOrchestrationOutcome.AccountNumberNotFound => NotFound(),
             CommercialProposalOrchestrationOutcome.AlreadySent => Conflict(new { error = "The commercial proposal has already been sent." }),
             CommercialProposalOrchestrationOutcome.NotEligible => StatusCode(StatusCodes.Status422UnprocessableEntity, new { error = "The current user is not eligible to send a commercial proposal." }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    [HttpPost("{prospectId}/engagement-letter")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SendEngagementLetterAsync(
+        int prospectId,
+        IFormFile file,
+        CancellationToken ct)
+    {
+        if (ValidatePdfFile(file) is { } fileError)
+            return fileError;
+
+        var userEmail = userContext.User.GetEmail();
+        var contact = await contactService.GetContactAsync(userEmail);
+
+        if (contact is null)
+        {
+            logger.LogWarning("Contact not found for email {UserEmail} on engagement letter send for prospect {ProspectId}", userEmail, prospectId);
+            return NotFound();
+        }
+
+        var outcome = await engagementLetterOrchestrationService.SendAsync(prospectId, contact.Id, userEmail, file, ct);
+
+        return outcome switch
+        {
+            EngagementLetterOrchestrationOutcome.Sent => StatusCode(StatusCodes.Status201Created),
+            EngagementLetterOrchestrationOutcome.ProspectNotFound => NotFound(),
+            EngagementLetterOrchestrationOutcome.AccountNumberNotFound => NotFound(),
+            EngagementLetterOrchestrationOutcome.AlreadySent => Conflict(new { error = "The engagement letter has already been sent." }),
+            EngagementLetterOrchestrationOutcome.NotEligible => StatusCode(StatusCodes.Status422UnprocessableEntity, new { error = "The current user is not eligible to send an engagement letter." }),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
