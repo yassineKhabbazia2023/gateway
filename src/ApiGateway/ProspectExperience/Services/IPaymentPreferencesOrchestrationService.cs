@@ -18,6 +18,14 @@ public interface IPaymentPreferencesOrchestrationService
     Task<PaymentPreferenceResponse?> GetAsync(int prospectId, CancellationToken ct);
 
     /// <summary>
+    /// Downloads the signed SEPA mandate content for a prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The signed mandate document content, or null when unavailable.</returns>
+    Task<ProspectDocumentContentResponse?> DownloadSignedSepaMandateAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
     /// Sets a prospect payment preference to OTHER.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>

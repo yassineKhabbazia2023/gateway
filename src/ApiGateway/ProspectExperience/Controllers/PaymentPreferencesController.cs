@@ -40,6 +40,26 @@ public sealed class PaymentPreferencesController(
     }
 
     /// <summary>
+    /// Downloads the signed SEPA mandate PDF for a prospect.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>200 with the signed mandate binary stream, or 404 when the prospect or signed mandate is not found.</returns>
+    [HttpGet("sepa/content")]
+    [Produces("application/octet-stream")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadSignedSepaMandateAsync(
+        int prospectId,
+        CancellationToken ct)
+    {
+        var document = await paymentPreferencesService.DownloadSignedSepaMandateAsync(prospectId, ct);
+        return document is null
+            ? NotFound()
+            : File(document.Content, "application/octet-stream", document.FileName);
+    }
+
+    /// <summary>
     /// Sets the current payment preference to OTHER.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>

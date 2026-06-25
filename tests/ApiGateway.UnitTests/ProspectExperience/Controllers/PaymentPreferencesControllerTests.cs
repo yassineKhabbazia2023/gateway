@@ -55,6 +55,41 @@ public sealed class PaymentPreferencesControllerTests
     }
 
     /// <summary>
+    /// Verifies that signed SEPA mandate download returns the binary content as an octet stream.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenDocumentExists_ReturnsOctetStream()
+    {
+        _service
+            .Setup(service => service.DownloadSignedSepaMandateAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([4, 5, 6], "application/pdf", "signed.pdf"));
+        var controller = CreateController("user@test.fr");
+
+        var result = await controller.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+
+        var file = result.Should().BeOfType<FileContentResult>().Subject;
+        file.ContentType.Should().Be("application/octet-stream");
+        file.FileDownloadName.Should().Be("signed.pdf");
+        file.FileContents.Should().Equal([4, 5, 6]);
+    }
+
+    /// <summary>
+    /// Verifies that signed SEPA mandate download returns not found when unavailable.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenDocumentIsUnavailable_Returns404()
+    {
+        _service
+            .Setup(service => service.DownloadSignedSepaMandateAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProspectDocumentContentResponse?)null);
+        var controller = CreateController("user@test.fr");
+
+        var result = await controller.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    /// <summary>
     /// Verifies that POST OTHER returns no content after successful orchestration.
     /// </summary>
     [Fact]

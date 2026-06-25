@@ -60,6 +60,28 @@ public sealed class PaymentPreferencesOrchestrationService(
         return new PaymentPreferenceResponse { PaymentType = preference.PaymentType };
     }
 
+    /// <inheritdoc />
+    public async Task<ProspectDocumentContentResponse?> DownloadSignedSepaMandateAsync(int prospectId, CancellationToken ct)
+    {
+        var prospect = await prospectClient.GetProspectAccountAsync(prospectId, ct);
+        if (prospect is null)
+        {
+            logger.LogWarning("Signed SEPA mandate download requested for unknown prospect {ProspectId}", prospectId);
+            return null;
+        }
+
+        var signedMandateDocumentId = await mandateClient.GetSignedMandateDocumentIdAsync(prospect.AccountId, ct);
+        if (!int.TryParse(signedMandateDocumentId, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var documentId))
+        {
+            logger.LogWarning(
+                "Signed SEPA mandate download requested for prospect {ProspectId}, but Mandat did not return a valid Prospect document id",
+                prospectId);
+            return null;
+        }
+
+        return await prospectClient.GetDocumentAsync(prospectId, documentId, ct);
+    }
+
     /// <summary>
     /// Uploads the RIB and signed SEPA mandate to Akuiteo when Mandat reports a newly signed mandate.
     /// </summary>
@@ -267,7 +289,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     /// <returns>The signed mandate file name.</returns>
     private static string BuildSignedMandateFileName(string accountNumber)
     {
-        return $"{accountNumber}-signature.pdf";
+        return $"mandat-{accountNumber}-signature.pdf";
     }
 
     /// <summary>

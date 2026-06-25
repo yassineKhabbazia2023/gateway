@@ -53,6 +53,63 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
     }
 
     /// <summary>
+    /// Verifies that signed mandate download resolves the Prospect document identifier through Mandat.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenSignedDocumentExists_ReturnsProspectDocument()
+    {
+        var expected = new ProspectDocumentContentResponse([4, 5, 6], "application/pdf", "mandat-AK-001-signature.pdf");
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("456");
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 456, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await _service.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+
+        result.Should().BeSameAs(expected);
+    }
+
+    /// <summary>
+    /// Verifies that signed mandate download returns null when the prospect cannot be resolved.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenProspectDoesNotExist_ReturnsNull()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProspectAccountResponse?)null);
+
+        var result = await _service.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+
+        result.Should().BeNull();
+        _mandateClient.Verify(client => client.GetSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that signed mandate download returns null when Mandat has no signed document identifier.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenMandatHasNoSignedDocumentId_ReturnsNull()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        var result = await _service.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+
+        result.Should().BeNull();
+        _prospectClient.Verify(client => client.GetDocumentAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
     /// Verifies that GET uploads the RIB and signed mandate before marking Mandat when synchronization returned a signed PDF.
     /// </summary>
     [Fact]
@@ -89,7 +146,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _registryClient
             .Setup(client => client.UploadAkuiteoDocumentAsync(
                 "AK-001",
-                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()))
             .Callback(() => calls.Add("signed-mandate-akuiteo"))
             .ReturnsAsync(true);
@@ -99,7 +156,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 0,
                 "SIGNED_MANDATE",
                 It.Is<IFormFile>(file =>
-                    file.FileName == "AK-001-signature.pdf"
+                    file.FileName == "mandat-AK-001-signature.pdf"
                     && file.ContentType == "application/pdf"),
                 It.IsAny<CancellationToken>()))
             .Callback(() => calls.Add("signed-mandate-prospect"))
@@ -124,7 +181,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _registryClient.Verify(
             client => client.UploadAkuiteoDocumentAsync(
                 "AK-001",
-                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _prospectClient.Verify(
@@ -132,7 +189,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 10,
                 0,
                 "SIGNED_MANDATE",
-                It.Is<IFormFile>(file => file.FileName == "AK-001-signature.pdf"),
+                It.Is<IFormFile>(file => file.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
@@ -234,7 +291,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _registryClient.Verify(
             client => client.UploadAkuiteoDocumentAsync(
                 "AK-001",
-                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()),
             Times.Never);
         _mandateClient.Verify(
@@ -284,7 +341,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _registryClient
             .Setup(client => client.UploadAkuiteoDocumentAsync(
                 "AK-001",
-                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _mandateClient

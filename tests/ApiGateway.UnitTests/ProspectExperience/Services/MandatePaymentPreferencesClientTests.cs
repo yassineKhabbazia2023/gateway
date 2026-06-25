@@ -286,6 +286,39 @@ public sealed class MandatePaymentPreferencesClientTests
     }
 
     /// <summary>
+    /// Verifies that the signed mandate document identifier is read from Mandat.
+    /// </summary>
+    [Fact]
+    public async Task GetSignedMandateDocumentIdAsync_WhenMandatReturnsDocumentId_ReturnsDocumentId()
+    {
+        HttpRequestMessage? captured = null;
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create("456", options: CamelCase)
+        };
+        var client = CreateClient(response, request => captured = request);
+
+        var result = await client.GetSignedMandateDocumentIdAsync(42, CancellationToken.None);
+
+        result.Should().Be("456");
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/42/payment-preferences/sepa/signed-mandate-document-id");
+    }
+
+    /// <summary>
+    /// Verifies that a missing signed mandate document identifier is mapped to null.
+    /// </summary>
+    [Fact]
+    public async Task GetSignedMandateDocumentIdAsync_WhenMandatReturnsNotFound_ReturnsNull()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await client.GetSignedMandateDocumentIdAsync(42, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
     /// Creates the tested Mandat payment preferences client.
     /// </summary>
     /// <param name="response">The HTTP response to return.</param>

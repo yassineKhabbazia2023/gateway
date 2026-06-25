@@ -65,6 +65,22 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
     }
 
     /// <inheritdoc />
+    public async Task<string?> GetSignedMandateDocumentIdAsync(int accountId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync(
+            $"api/onboarding/{accountId}/payment-preferences/sepa/signed-mandate-document-id",
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<string>(JsonOptions, ct)
+            ?? throw new HttpRequestException($"Signed mandate document identifier response for account {accountId} was empty.");
+    }
+
+    /// <inheritdoc />
     public async Task<bool> SetOtherAsync(int accountId, string contactEmail, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(

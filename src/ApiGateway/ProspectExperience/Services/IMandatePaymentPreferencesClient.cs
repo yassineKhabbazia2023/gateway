@@ -33,6 +33,14 @@ public interface IMandatePaymentPreferencesClient
     Task<bool> SaveSignedMandateDocumentIdAsync(int accountId, CancellationToken ct, string signedMandateDocumentId);
 
     /// <summary>
+    /// Gets the uploaded signed mandate Prospect document identifier.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The Prospect document identifier, or null when unavailable.</returns>
+    Task<string?> GetSignedMandateDocumentIdAsync(int accountId, CancellationToken ct);
+
+    /// <summary>
     /// Sets the account payment preference to OTHER.
     /// </summary>
     /// <param name="accountId">The account identifier.</param>

@@ -126,15 +126,17 @@ public class ExperienceServicesTests
         var expectedSummary = new Fixture().Create<Summary>();
         var expectedSubscriptions = new[] { new SubscriptionStatus { OfferCode = "SUB1" } };
 
-        var summaryCallTime = DateTime.MinValue;
-        var subscriptionsCallTime = DateTime.MinValue;
+        var summaryStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var subscriptionsStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCalls = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         _accountMock
             .Setup(s => s.GetSummaryAsync(accountId, contactId))
             .Returns(async () =>
             {
-                summaryCallTime = DateTime.UtcNow;
-                await Task.Delay(50); // Simulate network latency
+                summaryStarted.SetResult(true);
+                await subscriptionsStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+                await releaseCalls.Task;
                 return expectedSummary;
             });
 
@@ -142,15 +144,19 @@ public class ExperienceServicesTests
             .Setup(s => s.GetSubscriptionsAsync(accountId))
             .Returns(async () =>
             {
-                subscriptionsCallTime = DateTime.UtcNow;
-                await Task.Delay(50); // Simulate network latency
+                subscriptionsStarted.SetResult(true);
+                await summaryStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+                await releaseCalls.Task;
                 return expectedSubscriptions;
             });
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetSummaryAsync(accountId, contactId);
+        var resultTask = service.GetSummaryAsync(accountId, contactId);
+        await Task.WhenAll(summaryStarted.Task, subscriptionsStarted.Task).WaitAsync(TimeSpan.FromSeconds(1));
+        releaseCalls.SetResult(true);
+        var result = await resultTask;
 
         // Assert
         result.Should().NotBeNull();
@@ -160,9 +166,9 @@ public class ExperienceServicesTests
         _accountMock.Verify(s => s.GetSummaryAsync(accountId, contactId), Times.Once);
         _offerMock.Verify(s => s.GetSubscriptionsAsync(accountId), Times.Once);
 
-        // Verify calls were made in parallel (within 20ms of each other)
-        var timeDifference = Math.Abs((summaryCallTime - subscriptionsCallTime).TotalMilliseconds);
-        timeDifference.Should().BeLessThan(20, "Both calls should start approximately at the same time (parallel execution)");
+        // Verify calls were made in parallel by requiring both calls to start before either one can complete.
+        summaryStarted.Task.IsCompletedSuccessfully.Should().BeTrue();
+        subscriptionsStarted.Task.IsCompletedSuccessfully.Should().BeTrue();
     }
 
     [Fact]
