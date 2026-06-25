@@ -4,6 +4,7 @@ using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Services;
@@ -31,7 +32,7 @@ public class RegistryProspectClientTests
         {
             BaseAddress = new Uri("https://registry.test/")
         };
-        return (new RegistryProspectClient(httpClient), handler);
+        return (new RegistryProspectClient(httpClient, NullLogger<RegistryProspectClient>.Instance), handler);
     }
 
     private static CreateProspectRequest BuildRequest(string siret = "12345678901234") => new()
@@ -253,7 +254,10 @@ public class RegistryProspectClientTests
     [Fact]
     public async Task UploadAkuiteoDocumentAsync_WhenRegistryDoesNotCreateDocument_ReturnsFalse()
     {
-        var response = new HttpResponseMessage(HttpStatusCode.Conflict);
+        var response = new HttpResponseMessage(HttpStatusCode.Conflict)
+        {
+            Content = new StringContent("""{"title":"invalid document"}""")
+        };
         var (client, _) = CreateClient(response);
 
         var result = await client.UploadAkuiteoDocumentAsync(
@@ -263,4 +267,5 @@ public class RegistryProspectClientTests
 
         result.Should().BeFalse();
     }
+
 }

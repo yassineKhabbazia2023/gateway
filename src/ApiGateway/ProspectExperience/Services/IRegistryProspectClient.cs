@@ -19,4 +19,5 @@ public interface IRegistryProspectClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>True when Akuitéo accepted the document; otherwise false.</returns>
     Task<bool> UploadAkuiteoDocumentAsync(string accountNumber, ProspectDocumentContentResponse document, CancellationToken ct);
+
 }

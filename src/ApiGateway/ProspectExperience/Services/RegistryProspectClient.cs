@@ -7,7 +7,9 @@ using ApiGateway.ProspectExperience.Models.Requests;
 
 namespace ApiGateway.ProspectExperience.Services;
 
-public class RegistryProspectClient(HttpClient httpClient) : IRegistryProspectClient
+public class RegistryProspectClient(
+    HttpClient httpClient,
+    ILogger<RegistryProspectClient> logger) : IRegistryProspectClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -77,17 +79,41 @@ public class RegistryProspectClient(HttpClient httpClient) : IRegistryProspectCl
     /// <inheritdoc />
     public async Task<bool> UploadAkuiteoDocumentAsync(string accountNumber, ProspectDocumentContentResponse document, CancellationToken ct)
     {
+        using var response = await UploadAkuiteoDocumentCoreAsync(accountNumber, document, ct);
+        if (response.StatusCode == HttpStatusCode.Created)
+        {
+            return true;
+        }
+
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        logger.LogWarning(
+            "Registry Akuiteo document upload failed. AccountNumber: {AccountNumber}, DocumentName: {DocumentName}, ContentType: {ContentType}, StatusCode: {StatusCode}, ResponseBody: {ResponseBody}",
+            accountNumber,
+            document.FileName,
+            document.ContentType,
+            (int)response.StatusCode,
+            responseBody);
+        return false;
+    }
+
+    /// <summary>
+    /// Sends the Registry document upload request to Akuiteo.
+    /// </summary>
+    /// <param name="accountNumber">The Akuitéo account number.</param>
+    /// <param name="document">The document content and metadata.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The Registry HTTP response.</returns>
+    private async Task<HttpResponseMessage> UploadAkuiteoDocumentCoreAsync(string accountNumber, ProspectDocumentContentResponse document, CancellationToken ct)
+    {
         using var multipartContent = new MultipartFormDataContent();
         using var fileContent = new ByteArrayContent(document.Content);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(document.ContentType);
         multipartContent.Add(fileContent, "document", document.FileName);
 
-        using var response = await httpClient.PostAsync(
+        return await httpClient.PostAsync(
             $"api/akuiteo/account/{Uri.EscapeDataString(accountNumber)}/documents",
             multipartContent,
             ct);
-
-        return response.StatusCode == HttpStatusCode.Created;
     }
 
     private static object BuildContactTypes(IEnumerable<string>? contactTypes)

@@ -27,7 +27,7 @@ public sealed class MandatePaymentPreferencesClientTests
     {
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PaymentPreferenceResponse { PaymentType = "OTHER" }, options: CamelCase)
+            Content = JsonContent.Create(new MandatePaymentPreferenceResponse { PaymentType = "OTHER" }, options: CamelCase)
         };
         HttpRequestMessage? captured = null;
         var client = CreateClient(response, request => captured = request);
@@ -61,7 +61,7 @@ public sealed class MandatePaymentPreferencesClientTests
     {
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create((PaymentPreferenceResponse?)null, options: CamelCase)
+            Content = JsonContent.Create((MandatePaymentPreferenceResponse?)null, options: CamelCase)
         };
         var client = CreateClient(response);
 
@@ -225,6 +225,64 @@ public sealed class MandatePaymentPreferencesClientTests
         Func<Task> act = () => client.ResetAsync(42, CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that mark-sent-to-akuiteo sends the expected Mandat request.
+    /// </summary>
+    [Fact]
+    public async Task MarkSentToAkuiteoAsync_WhenMandatAcceptsRequest_ReturnsTrue()
+    {
+        HttpRequestMessage? captured = null;
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NoContent), request => captured = request);
+
+        var result = await client.MarkSentToAkuiteoAsync(42, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/42/payment-preferences/mark-sent-to-akuiteo");
+    }
+
+    /// <summary>
+    /// Verifies that mark-sent-to-akuiteo maps not found responses to false.
+    /// </summary>
+    [Fact]
+    public async Task MarkSentToAkuiteoAsync_WhenMandatReturnsNotFound_ReturnsFalse()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await client.MarkSentToAkuiteoAsync(42, CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that saving the signed mandate document identifier sends the expected Mandat request.
+    /// </summary>
+    [Fact]
+    public async Task SaveSignedMandateDocumentIdAsync_WhenMandatAcceptsRequest_ReturnsTrue()
+    {
+        HttpRequestMessage? captured = null;
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NoContent), request => captured = request);
+
+        var result = await client.SaveSignedMandateDocumentIdAsync(42, CancellationToken.None, "DOC/123");
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/42/payment-preferences/signed-mandate-document-id?signedMandateDocumentId=DOC%2F123");
+    }
+
+    /// <summary>
+    /// Verifies that saving the signed mandate document identifier maps not found responses to false.
+    /// </summary>
+    [Fact]
+    public async Task SaveSignedMandateDocumentIdAsync_WhenMandatReturnsNotFound_ReturnsFalse()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await client.SaveSignedMandateDocumentIdAsync(42, CancellationToken.None, "DOC-123");
+
+        result.Should().BeFalse();
     }
 
     /// <summary>

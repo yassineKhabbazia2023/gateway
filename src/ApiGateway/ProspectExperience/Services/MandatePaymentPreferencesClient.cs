@@ -16,7 +16,7 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
     };
 
     /// <inheritdoc />
-    public async Task<PaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct)
+    public async Task<MandatePaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct)
     {
         using var response = await httpClient.GetAsync(
             $"api/onboarding/{accountId}/payment-preferences",
@@ -28,8 +28,40 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<PaymentPreferenceResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<MandatePaymentPreferenceResponse>(JsonOptions, ct)
             ?? throw new HttpRequestException($"Payment preference response for account {accountId} was empty.");
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> MarkSentToAkuiteoAsync(int accountId, CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsync(
+            $"api/onboarding/{accountId}/payment-preferences/mark-sent-to-akuiteo",
+            content: null,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SaveSignedMandateDocumentIdAsync(int accountId, CancellationToken ct, string signedMandateDocumentId)
+    {
+        using var response = await httpClient.PostAsync(
+            $"api/onboarding/{accountId}/payment-preferences/signed-mandate-document-id?signedMandateDocumentId={Uri.EscapeDataString(signedMandateDocumentId)}",
+            content: null,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
     }
 
     /// <inheritdoc />

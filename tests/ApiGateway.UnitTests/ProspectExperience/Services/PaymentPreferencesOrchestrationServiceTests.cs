@@ -14,6 +14,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
 {
     private readonly Mock<IProspectApiClient> _prospectClient = new();
     private readonly Mock<IMandatePaymentPreferencesClient> _mandateClient = new();
+    private readonly Mock<IRegistryProspectClient> _registryClient = new();
     private readonly Mock<IProspectService> _prospectService = new();
     private readonly PaymentPreferencesOrchestrationService _service;
 
@@ -25,6 +26,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _service = new PaymentPreferencesOrchestrationService(
             _prospectClient.Object,
             _mandateClient.Object,
+            _registryClient.Object,
             _prospectService.Object,
             NullLogger<PaymentPreferencesOrchestrationService>.Instance);
     }
@@ -35,7 +37,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
     [Fact]
     public async Task GetAsync_WhenProspectExists_ReturnsMandatPaymentPreference()
     {
-        var expected = new PaymentPreferenceResponse { PaymentType = "OTHER" };
+        var expected = new MandatePaymentPreferenceResponse { PaymentType = "OTHER" };
         _prospectClient
             .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
@@ -45,8 +47,354 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
 
         var result = await _service.GetAsync(10, CancellationToken.None);
 
-        result.Should().BeSameAs(expected);
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("OTHER");
         _mandateClient.Verify(client => client.GetAsync(42, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that GET uploads the RIB and signed mandate before marking Mandat when synchronization returned a signed PDF.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenMandatReturnsSignedMandate_UploadsDocumentsAndMarksSent()
+    {
+        var calls = new List<string>();
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                SignedMandateContentType = "application/pdf",
+                SignedMandateFileName = "signed.pdf"
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "rib.pdf"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("rib-akuiteo"))
+            .ReturnsAsync(true);
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("signed-mandate-akuiteo"))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(
+                10,
+                0,
+                "SIGNED_MANDATE",
+                It.Is<IFormFile>(file =>
+                    file.FileName == "AK-001-signature.pdf"
+                    && file.ContentType == "application/pdf"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("signed-mandate-prospect"))
+            .ReturnsAsync(456);
+        _mandateClient
+            .Setup(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"))
+            .Callback(() => calls.Add("save-document-id"))
+            .ReturnsAsync(true);
+        _mandateClient
+            .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("mark-sent"))
+            .ReturnsAsync(true);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _prospectClient.Verify(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()), Times.Once);
+        _registryClient.Verify(
+            client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+        _registryClient.Verify(
+            client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _prospectClient.Verify(
+            client => client.UploadDocumentAsync(
+                10,
+                0,
+                "SIGNED_MANDATE",
+                It.Is<IFormFile>(file => file.FileName == "AK-001-signature.pdf"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
+        calls.Should().Equal(
+            "rib-akuiteo",
+            "signed-mandate-prospect",
+            "save-document-id",
+            "signed-mandate-akuiteo",
+            "mark-sent");
+    }
+
+    /// <summary>
+    /// Verifies that GET does not mark Mandat when one Akuiteo upload fails.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenAkuiteoUploadFails_DoesNotMarkSent()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _prospectClient.Verify(
+            client => client.UploadDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SaveSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>(), It.IsAny<string>()),
+            Times.Never);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that GET does not upload the signed mandate to Akuiteo when Prospect does not persist it.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenProspectSignedMandateUploadFails_DoesNotUploadSignedMandateToAkuiteoOrMarkSent()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(
+                10,
+                0,
+                "SIGNED_MANDATE",
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _registryClient.Verify(
+            client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SaveSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>(), It.IsAny<string>()),
+            Times.Never);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that GET saves the signed mandate document identifier when Prospect persisted it, even if the signed mandate Akuiteo upload fails.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenSignedMandateAkuiteoUploadFails_SavesDocumentIdButDoesNotMarkSent()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "rib.pdf"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(
+                10,
+                0,
+                "SIGNED_MANDATE",
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(456);
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.Is<ProspectDocumentContentResponse>(document => document.FileName == "AK-001-signature.pdf"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _mandateClient
+            .Setup(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"))
+            .ReturnsAsync(true);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that GET reuses an already persisted signed mandate document identifier on retry.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenSignedMandateDocumentIdAlreadyExists_DoesNotUploadSignedMandateToProspectAgain()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandateDocumentId = "456",
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                SignedMandateContentType = "application/pdf"
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _mandateClient
+            .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _prospectClient.Verify(
+            client => client.UploadDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.SaveSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>(), It.IsAny<string>()),
+            Times.Never);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that GET does not mark Mandat when saving the signed mandate document identifier fails.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenSignedMandateDocumentIdSaveFails_DoesNotMarkSent()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectClient
+            .Setup(client => client.UploadDocumentAsync(
+                10,
+                0,
+                "SIGNED_MANDATE",
+                It.IsAny<IFormFile>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(456);
+        _mandateClient
+            .Setup(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"))
+            .ReturnsAsync(false);
+
+        var result = await _service.GetAsync(10, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
+        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     /// <summary>

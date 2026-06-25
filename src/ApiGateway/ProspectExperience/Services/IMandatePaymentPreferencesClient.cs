@@ -1,4 +1,3 @@
-using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Models.Internal;
 
 namespace ApiGateway.ProspectExperience.Services;
@@ -14,7 +13,24 @@ public interface IMandatePaymentPreferencesClient
     /// <param name="accountId">The account identifier.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The payment preference response, or null when the account is not found.</returns>
-    Task<PaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct);
+    Task<MandatePaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct);
+
+    /// <summary>
+    /// Marks the latest account SEPA mandate as sent to Akuiteo.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when Mandat updated the mandate; otherwise false.</returns>
+    Task<bool> MarkSentToAkuiteoAsync(int accountId, CancellationToken ct);
+
+    /// <summary>
+    /// Saves the uploaded signed mandate Prospect document identifier.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <param name="signedMandateDocumentId">The uploaded signed mandate Prospect document identifier.</param>
+    /// <returns>True when Mandat updated the mandate; otherwise false.</returns>
+    Task<bool> SaveSignedMandateDocumentIdAsync(int accountId, CancellationToken ct, string signedMandateDocumentId);
 
     /// <summary>
     /// Sets the account payment preference to OTHER.
