@@ -641,8 +641,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/commercial-proposal/content/currentuser",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/commercial-proposal/content/currentuser",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/commercial-proposal/content",
+      "DownstreamPathTemplate": "/api/prospects/{prospectId}/commercial-proposal/content",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -665,8 +665,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/engagement-letter/content/currentuser",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/engagement-letter/content/currentuser",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/engagement-letter/content",
+      "DownstreamPathTemplate": "/api/prospects/{prospectId}/engagement-letter/content",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
