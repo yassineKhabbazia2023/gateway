@@ -2241,8 +2241,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/roles/customer-relation?accountId={relativeAccountId}&contactId={relativeContactId}&isCustomerRelation={isCustomerRelationNew}",
-      "DownstreamPathTemplate": "/api/roles/customer-relation?accountId={relativeAccountId}&contactId={relativeContactId}&isCustomerRelation={isCustomerRelationNew}",
+      "UpstreamPathTemplate": "/gtw/account/api/roles/customer-relation",
+      "DownstreamPathTemplate": "/api/roles/customer-relation",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {

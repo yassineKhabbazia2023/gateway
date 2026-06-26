@@ -107,6 +107,19 @@ public class RoleHandlerTests
     response.StatusCode.Should().Be(HttpStatusCode.OK); // Request should pass without role check
   }
 
+  // Test: User accessing their own customer-relation without contactId in query string (self-service)
+  [Fact]
+  public async Task ShouldSkipRoleCheck_WhenUserAccessesOwnCustomerRelation()
+  {
+    var request = new HttpRequestMessage();
+    request.Headers.Add("CurrentUser", "1");
+    request.RequestUri = new Uri("http://test.com/gtw/account/api/roles/customer-relation");
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK); // Request should pass without role check
+  }
+
   // Test: Super Admin user (skip role check)
   [Fact]
   public async Task ShouldSkipRoleCheck_WhenUserIsSuperAdmin()
