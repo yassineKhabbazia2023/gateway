@@ -12,6 +12,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 
@@ -39,6 +40,7 @@ public class CommercialProposalControllerTests
             new Mock<IFeatureFlagService>().Object,
             new Mock<IIdentityService>().Object,
             new Mock<IProspectService>().Object,
+            new Mock<IProspectApiClient>().Object,
             new Mock<IValidator<CreateProspectRequest>>().Object,
             _contactService.Object,
             _orchestrationService.Object,

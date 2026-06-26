@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ApiGateway.ProspectExperience.Constants;
 using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -151,7 +153,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     /// <inheritdoc />
     public async Task<ProspectAccountResponse?> GetProspectAccountAsync(int prospectId, CancellationToken ct)
     {
-        using var response = await httpClient.GetAsync($"api/prospects/{prospectId}", ct);
+        using var response = await httpClient.GetAsync($"api/prospects/{prospectId}/with-signatory", ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
@@ -384,6 +386,24 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task<int?> GetAccountIdByProspectIdAsync(int prospectId, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/prospects/{prospectId}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<GetDetailedProspectResponse>(JsonOptions, ct);
+        if (result is null)
+        {
+            throw new HttpRequestException($"Empty response from GET api/prospects/{prospectId}");
+        }
+        return result.AccountId;
+    }
+
+    /// <inheritdoc />
     public async Task<string?> GetAkuiteoAccountNumberByProspectIdAsync(int prospectId, CancellationToken ct)
     {
         using var response = await httpClient.GetAsync($"api/prospects/{prospectId}/akuiteo-account-number", ct);
@@ -439,6 +459,110 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         response.EnsureSuccessStatusCode();
     }
 
+    /// <inheritdoc />
+    public async Task<UploadSupportingDocumentResult> UploadSupportingDocumentAsync(
+        int prospectId,
+        int currentUserId,
+        UploadSupportingDocumentRequest request,
+        CancellationToken ct)
+    {
+        // Resolve prospectId → accountId (Prospect routes use accountId)
+        var accountId = await GetAccountIdByProspectIdAsync(prospectId, ct);
+        if (!accountId.HasValue)
+        {
+            return UploadSupportingDocumentResult.ProspectNotFound();
+        }
+
+        using var content = new MultipartFormDataContent();
+
+        // Add document type
+        content.Add(new StringContent(request.DocumentType), "documentType");
+
+        // Add file
+        await using var stream = request.File.OpenReadStream();
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(request.File.ContentType);
+        content.Add(streamContent, "file", Path.GetFileName(request.File.FileName));
+
+        using var httpRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"api/prospects/{accountId.Value}/supporting-documents")
+        {
+            Content = content
+        };
+        httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
+
+        var response = await httpClient.SendAsync(httpRequest, ct);
+
+        if (response.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(JsonOptions, ct);
+            var errorCode = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.ErrorCode, out var code)
+                ? code?.ToString() ?? ProblemDetailsKeys.DefaultFileTooLargeCode
+                : ProblemDetailsKeys.DefaultFileTooLargeCode;
+            return UploadSupportingDocumentResult.FileTooLarge(
+                errorCode,
+                problem?.Detail ?? ProblemDetailsKeys.DefaultFileTooLargeMessage);
+        }
+
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(JsonOptions, ct);
+            var field = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.Field, out var f)
+                ? f?.ToString() ?? ProblemDetailsKeys.DefaultField
+                : ProblemDetailsKeys.DefaultField;
+            var errorCode = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.ErrorCode, out var code)
+                ? code?.ToString() ?? ProblemDetailsKeys.DefaultErrorCode
+                : ProblemDetailsKeys.DefaultErrorCode;
+            return UploadSupportingDocumentResult.ValidationError(
+                field,
+                errorCode,
+                problem?.Detail ?? ProblemDetailsKeys.DefaultValidationMessage);
+        }
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return UploadSupportingDocumentResult.ProspectNotFound();
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var uploadResponse = await response.Content.ReadFromJsonAsync<UploadSupportingDocumentApiResponse>(JsonOptions, ct);
+
+        if (uploadResponse is null || uploadResponse.DocumentId == 0)
+        {
+            throw new HttpRequestException(
+                "Prospect API returned 201 but response body missing or invalid documentId");
+        }
+
+        return UploadSupportingDocumentResult.Success(uploadResponse.DocumentId);
+    }
+
+    /// <inheritdoc />
+    public async Task<DocumentRequirementsResponse?> GetDocumentRequirementsAsync(
+        int prospectId,
+        CancellationToken ct)
+    {
+        // Resolve prospectId → accountId (Prospect routes use accountId)
+        var accountId = await GetAccountIdByProspectIdAsync(prospectId, ct);
+        if (!accountId.HasValue)
+        {
+            return null;
+        }
+
+        var response = await httpClient.GetAsync(
+            $"api/prospects/{accountId.Value}/supporting-documents",
+            ct);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<DocumentRequirementsResponse>(JsonOptions, ct);
+    }
+
     private static object BuildSignatoryPayload(SignatoryDto signatory) => new
     {
         signatory.Title,
@@ -462,5 +586,10 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     private sealed class CreateProspectApiResponse
     {
         public int ProspectId { get; set; }
+    }
+
+    private sealed class UploadSupportingDocumentApiResponse
+    {
+        public required int DocumentId { get; init; }
     }
 }

@@ -17,6 +17,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 
@@ -26,6 +27,7 @@ public class ProspectExperienceControllerTests
     private readonly Mock<IFeatureFlagService> _featureFlagService;
     private readonly Mock<IIdentityService> _identityService;
     private readonly Mock<IProspectService> _orchestrationService;
+    private readonly Mock<IProspectApiClient> _prospectApiClient;
     private readonly IValidator<CreateProspectRequest> _validator;
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
@@ -38,6 +40,7 @@ public class ProspectExperienceControllerTests
         _featureFlagService = new Mock<IFeatureFlagService>();
         _identityService = new Mock<IIdentityService>();
         _orchestrationService = new Mock<IProspectService>();
+        _prospectApiClient = new Mock<IProspectApiClient>();
         _validator = new CreateProspectRequestValidator();
         _logger = new Mock<ILogger<ProspectExperienceController>>();
         _identityService.Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>())).Returns(true);
@@ -47,6 +50,7 @@ public class ProspectExperienceControllerTests
             _featureFlagService.Object,
             _identityService.Object,
             _orchestrationService.Object,
+            _prospectApiClient.Object,
             _validator,
             new Mock<IContactService>().Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
@@ -292,4 +296,301 @@ public class ProspectExperienceControllerTests
         objectResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
         _orchestrationService.Verify(service => service.CompleteStepAsync(It.IsAny<int>(), It.IsAny<CompleteStepRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    #region UploadSupportingDocumentAsync Tests
+
+    /// <summary>
+    /// Verifies that a valid request with feature flag enabled, contact found, and prospect ID resolved
+    /// returns 201 Created with no response body.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_ValidRequest_Returns201()
+    {
+        // Arrange
+        const int accountId = 456;
+        const string documentType = "KBIS";
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+        mockFile.Setup(f => f.Length).Returns(1024);
+
+        var contact = new ApiGateway.Contact.Models.Contact { Id = 789, Email = UserEmail };
+        const int prospectId = 123;
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mockContactService = new Mock<IContactService>();
+        mockContactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ReturnsAsync(contact);
+
+        var mockProspectApiClient = new Mock<IProspectApiClient>();
+        mockProspectApiClient
+            .Setup(c => c.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(prospectId);
+
+        _orchestrationService
+            .Setup(s => s.UploadSupportingDocumentAsync(
+                prospectId,
+                contact.Id,
+                It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var controller = new ProspectExperienceController(
+            _userContext.Object,
+            _featureFlagService.Object,
+            _identityService.Object,
+            _orchestrationService.Object,
+            mockProspectApiClient.Object,
+            _validator,
+            mockContactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
+            _logger.Object);
+
+        // Act
+        var result = await controller.UploadSupportingDocumentAsync(accountId, documentType, mockFile.Object, CancellationToken.None);
+
+        // Assert
+        var statusCodeResult = result.Should().BeOfType<StatusCodeResult>().Subject;
+        statusCodeResult.StatusCode.Should().Be(StatusCodes.Status201Created);
+
+        _orchestrationService.Verify(
+            s => s.UploadSupportingDocumentAsync(
+                prospectId,
+                contact.Id,
+                It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that an invalid accountId (less than or equal to zero) returns 400 Bad Request.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public async Task UploadSupportingDocumentAsync_InvalidAccountId_Returns400(int invalidAccountId)
+    {
+        // Arrange
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+
+        // Act
+        var result = await _controller.UploadSupportingDocumentAsync(invalidAccountId, "KBIS", mockFile.Object, CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        var problemDetails = objectResult.Value.Should().BeOfType<ProblemDetails>().Subject;
+        problemDetails.Title.Should().Be("AccountId must be greater than zero.");
+
+        _orchestrationService.Verify(
+            s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<UploadSupportingDocumentRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that a disabled prospect experience feature flag returns 403 Forbidden.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_FeatureFlagDisabled_Returns403()
+    {
+        // Arrange
+        const int accountId = 456;
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        objectResult.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.ProspectExperienceDisabledCode,
+            ErrorMessage = Errors.ProspectExperienceDisabledMessage
+        });
+
+        _orchestrationService.Verify(
+            s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<UploadSupportingDocumentRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that when contact is not found, the endpoint returns 404 Not Found.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_ContactNotFound_Returns404()
+    {
+        // Arrange
+        const int accountId = 456;
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mockContactService = new Mock<IContactService>();
+        mockContactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        var controller = new ProspectExperienceController(
+            _userContext.Object,
+            _featureFlagService.Object,
+            _identityService.Object,
+            _orchestrationService.Object,
+            new Mock<IProspectApiClient>().Object,
+            _validator,
+            mockContactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
+            _logger.Object);
+
+        // Act
+        var result = await controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+
+        _orchestrationService.Verify(
+            s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<UploadSupportingDocumentRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that when no active prospect is found for the given accountId, the endpoint returns 404 Not Found.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_AccountIdNotFound_Returns404()
+    {
+        // Arrange
+        const int accountId = 456;
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+
+        var contact = new ApiGateway.Contact.Models.Contact { Id = 789, Email = UserEmail };
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mockContactService = new Mock<IContactService>();
+        mockContactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ReturnsAsync(contact);
+
+        var mockProspectApiClient = new Mock<IProspectApiClient>();
+        mockProspectApiClient
+            .Setup(c => c.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var controller = new ProspectExperienceController(
+            _userContext.Object,
+            _featureFlagService.Object,
+            _identityService.Object,
+            _orchestrationService.Object,
+            mockProspectApiClient.Object,
+            _validator,
+            mockContactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
+            _logger.Object);
+
+        // Act
+        var result = await controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+
+        _orchestrationService.Verify(
+            s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<UploadSupportingDocumentRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that upload succeeds and returns 201 Created with no response body.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_ValidRequest_Returns201_NoBody()
+    {
+        // Arrange
+        const int accountId = 456;
+        const string documentType = "STATUTS";
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("statuts.pdf");
+        mockFile.Setup(f => f.Length).Returns(2048);
+
+        var contact = new ApiGateway.Contact.Models.Contact { Id = 789, Email = UserEmail };
+        const int prospectId = 123;
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var mockContactService = new Mock<IContactService>();
+        mockContactService
+            .Setup(s => s.GetContactAsync(UserEmail))
+            .ReturnsAsync(contact);
+
+        var mockProspectApiClient = new Mock<IProspectApiClient>();
+        mockProspectApiClient
+            .Setup(c => c.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(prospectId);
+
+        _orchestrationService
+            .Setup(s => s.UploadSupportingDocumentAsync(
+                prospectId,
+                contact.Id,
+                It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var controller = new ProspectExperienceController(
+            _userContext.Object,
+            _featureFlagService.Object,
+            _identityService.Object,
+            _orchestrationService.Object,
+            mockProspectApiClient.Object,
+            _validator,
+            mockContactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
+            _logger.Object);
+
+        // Act
+        var result = await controller.UploadSupportingDocumentAsync(accountId, documentType, mockFile.Object, CancellationToken.None);
+
+        // Assert
+        var statusCodeResult = result.Should().BeOfType<StatusCodeResult>().Subject;
+        statusCodeResult.StatusCode.Should().Be(StatusCodes.Status201Created);
+    }
+
+    #endregion
 }

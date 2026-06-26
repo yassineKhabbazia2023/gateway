@@ -198,6 +198,14 @@ public interface IProspectApiClient
     Task<int?> GetProspectIdByAccountIdAsync(int accountId, CancellationToken ct);
 
     /// <summary>
+    /// Gets the account identifier for a given prospect identifier.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The account identifier, or null if the prospect does not exist, is archived, or has no account.</returns>
+    Task<int?> GetAccountIdByProspectIdAsync(int prospectId, CancellationToken ct);
+
+    /// <summary>
     /// Gets the Akuiteo account number for a given active prospect.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
@@ -242,4 +250,28 @@ public interface IProspectApiClient
     /// <param name="file">The PDF file.</param>
     /// <param name="ct">The cancellation token.</param>
     Task SendEngagementLetterAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
+
+    /// <summary>
+    /// Uploads a supporting document to Prospect storage.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="currentUserId">The current user identifier.</param>
+    /// <param name="request">The upload request with document type and file.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The upload result with document ID or error details.</returns>
+    Task<UploadSupportingDocumentResult> UploadSupportingDocumentAsync(
+        int prospectId,
+        int currentUserId,
+        UploadSupportingDocumentRequest request,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Gets the document requirements for a prospect based on legal form.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The document requirements with upload status, or null if prospect not found.</returns>
+    Task<DocumentRequirementsResponse?> GetDocumentRequirementsAsync(
+        int prospectId,
+        CancellationToken ct);
 }

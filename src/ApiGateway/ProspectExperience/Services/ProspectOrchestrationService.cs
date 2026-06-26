@@ -872,5 +872,112 @@ public class ProspectOrchestrationService(
             .ToArray();
     }
 
+    public async Task UploadSupportingDocumentAsync(
+        int prospectId,
+        int currentUserId,
+        UploadSupportingDocumentRequest request,
+        CancellationToken ct)
+    {
+        logger.LogInformation(
+            "Starting supporting document upload orchestration for prospect {ProspectId}",
+            prospectId);
+
+        // 1. Upload to Prospect storage
+        var uploadResult = await prospectClient.UploadSupportingDocumentAsync(
+            prospectId,
+            currentUserId,
+            request,
+            ct);
+
+        if (uploadResult.Outcome != UploadSupportingDocumentOutcome.Success)
+        {
+            logger.LogWarning(
+                "Supporting document upload failed for prospect {ProspectId}. Outcome: {Outcome}, ErrorCode: {ErrorCode}",
+                prospectId,
+                uploadResult.Outcome,
+                uploadResult.ErrorCode ?? "n/a");
+            throw uploadResult.Outcome switch
+            {
+                UploadSupportingDocumentOutcome.ValidationError => new GatewayException(
+                    StatusCodes.Status400BadRequest,
+                    uploadResult.ErrorCode!,
+                    uploadResult.ErrorMessage!),
+                UploadSupportingDocumentOutcome.FileTooLarge => new GatewayException(
+                    StatusCodes.Status413RequestEntityTooLarge,
+                    uploadResult.ErrorCode!,
+                    uploadResult.ErrorMessage!),
+                UploadSupportingDocumentOutcome.ProspectNotFound => new GatewayException(
+                    StatusCodes.Status404NotFound,
+                    Errors.NullArgumentCode,
+                    $"Prospect {prospectId} not found"),
+                _ => new GatewayException(
+                    StatusCodes.Status500InternalServerError,
+                    Errors.UnexpectedExceptionCode,
+                    "Unexpected error during supporting document upload")
+            };
+        }
+
+        logger.LogInformation(
+            "Supporting document uploaded to storage for prospect {ProspectId}. DocumentId: {DocumentId}",
+            prospectId,
+            uploadResult.DocumentId!.Value);
+
+        // 2. Check if all mandatory documents uploaded
+        var requirements = await prospectClient.GetDocumentRequirementsAsync(prospectId, ct);
+        if (requirements is null)
+        {
+            logger.LogWarning(
+                "Could not retrieve document requirements for prospect {ProspectId}. Skipping automatic step completion.",
+                prospectId);
+            return;
+        }
+
+        var allMandatoryUploaded = requirements.Documents
+            .Where(r => !string.Equals(r.Type, "AUTRES", StringComparison.OrdinalIgnoreCase))
+            .All(r => r.Documents.Count >= r.MaxFiles);
+
+        if (!allMandatoryUploaded)
+        {
+            logger.LogInformation(
+                "Not all mandatory documents uploaded for prospect {ProspectId}. Step completion postponed.",
+                prospectId);
+            return;
+        }
+
+        // 3. Trigger Akuiteo upload + step completion (non-blocking - log errors but don't fail upload response)
+        try
+        {
+            logger.LogInformation(
+                "All mandatory documents uploaded for prospect {ProspectId}. Triggering automatic Akuiteo sync and step completion.",
+                prospectId);
+
+            var strategy = stepCompletionStrategies
+                .OrderByDescending(s => s.Priority)
+                .FirstOrDefault(s => s.CanHandle("SupportingDocuments"));
+
+            if (strategy is null)
+            {
+                logger.LogWarning(
+                    "No strategy found for SupportingDocuments step completion for prospect {ProspectId}",
+                    prospectId);
+            }
+            else
+            {
+                await strategy.CompleteAsync(prospectId, "SupportingDocuments", ct, currentUserId);
+                logger.LogInformation(
+                    "Supporting documents step completed successfully for prospect {ProspectId}",
+                    prospectId);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to complete supporting documents step for prospect {ProspectId}. Document upload succeeded but Akuiteo sync failed.",
+                prospectId);
+            // Don't rethrow - document upload already succeeded
+        }
+    }
+
     private sealed record SignatoryAssignment(int ContactId, IEnumerable<string> ContactTypes);
 }

@@ -39,6 +39,7 @@ public class EngagementLetterControllerTests
             new Mock<IFeatureFlagService>().Object,
             new Mock<IIdentityService>().Object,
             new Mock<IProspectService>().Object,
+            new Mock<IProspectApiClient>().Object,
             new Mock<IValidator<CreateProspectRequest>>().Object,
             _contactService.Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,

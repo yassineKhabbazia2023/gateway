@@ -24,6 +24,7 @@ public class ProspectExperienceController(
     IFeatureFlagService featureFlagService,
     IIdentityService identityService,
     IProspectService prospectService,
+    IProspectApiClient prospectApiClient,
     IValidator<CreateProspectRequest> createProspectValidator,
     IContactService contactService,
     ICommercialProposalOrchestrationService commercialProposalOrchestrationService,
@@ -135,6 +136,71 @@ public class ProspectExperienceController(
 
         var result = await prospectService.CompleteStepAsync(prospectId, request, ct);
         return Ok(result);
+    }
+
+    [HttpPost("{accountId}/supporting-documents/upload")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status413RequestEntityTooLarge)]
+    public async Task<IActionResult> UploadSupportingDocumentAsync(
+        int accountId,
+        [FromForm] string documentType,
+        [FromForm] IFormFile file,
+        CancellationToken ct)
+    {
+        if (accountId <= 0)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "AccountId must be greater than zero.");
+        }
+
+        var userEmail = userContext.User.GetEmail();
+
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: FeatureContext.FromEmail(userEmail), ct: ct))
+        {
+            logger.LogWarning("[Response]: 403 - [Controller]: ProspectExperienceController - [Function]: UploadSupportingDocument - [Reason]: Prospect experience is disabled by feature flag");
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    ErrorCode = Errors.ProspectExperienceDisabledCode,
+                    ErrorMessage = Errors.ProspectExperienceDisabledMessage
+                });
+        }
+
+        var contact = await contactService.GetContactAsync(userEmail);
+        if (contact is null)
+        {
+            logger.LogWarning("Contact not found for email {UserEmail} on supporting document upload for account {AccountId}", userEmail, accountId);
+            return NotFound();
+        }
+
+        var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
+        if (!prospectId.HasValue)
+        {
+            logger.LogWarning("No active prospect found for account {AccountId}", accountId);
+            return NotFound();
+        }
+
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = documentType,
+            File = file
+        };
+
+        try
+        {
+            await prospectService.UploadSupportingDocumentAsync(prospectId.Value, contact.Id, request, ct);
+            return StatusCode(StatusCodes.Status201Created);
+        }
+        catch (GatewayException ex)
+        {
+            return StatusCode(ex.StatusCode, new { errorCode = ex.ErrorCode, errorMessage = ex.Message });
+        }
     }
 
     private const string PdfContentType = "application/pdf";

@@ -523,8 +523,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/supporting-documents",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/supporting-documents",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/supporting-documents",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/supporting-documents",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {

@@ -8,6 +8,8 @@ namespace ApiGateway.Extensions;
 
 public static class HttpRequestMessageExtensions
 {
+    private static readonly char[] PathSeparator = { '/' };
+
     public static bool UriContainsFragment(this HttpRequestMessage request, string fragment)
     {
         var uriPath = request.RequestUri!.AbsolutePath;
@@ -22,7 +24,7 @@ public static class HttpRequestMessageExtensions
         }
 
         var uriBuilder = new UriBuilder(request.RequestUri!);
-        var segments = uriBuilder.Path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        var segments = uriBuilder.Path.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries).ToList();
         segments.Remove(fragmentToRemove);
         uriBuilder.Path = String.Join("/", segments);
 

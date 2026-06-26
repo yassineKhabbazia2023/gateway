@@ -1116,4 +1116,282 @@ public class ProspectOrchestrationServiceTests
         _prospect.Verify(p => p.GetDocumentsToUploadToExternalServiceAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _registry.Verify(r => r.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    #region UploadSupportingDocumentAsync Tests
+
+    /// <summary>
+    /// Verifies that when upload succeeds and all mandatory documents are uploaded, the step is completed automatically.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadSucceeds_AllMandatoryDocsUploaded_CompletesStep()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "AUTRES", MaxFiles = 3, Documents = [] }
+                ]
+            });
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that when upload succeeds but not all mandatory documents are uploaded, the step is not completed.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadSucceeds_NotAllMandatoryDocsUploaded_DoesNotCompleteStep()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [] }
+                ]
+            });
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that when upload succeeds but requirements check fails, step completed is false.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadSucceeds_RequirementsCheckFails_ReturnsStepCompletedFalse()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentRequirementsResponse?)null);
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Could not retrieve document requirements")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that when upload succeeds and all mandatory documents are uploaded but no strategy is found, step completed is false.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadSucceeds_StrategyNotFound_ReturnsStepCompletedFalse()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        var serviceWithoutSupportingDocsStrategy = new ProspectOrchestrationService(
+            _registry.Object,
+            _prospect.Object,
+            [],
+            _accountService.Object,
+            _contactService.Object,
+            _logger.Object);
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] }
+                ]
+            });
+
+        await serviceWithoutSupportingDocsStrategy.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("No strategy found for SupportingDocuments")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that when upload succeeds and strategy throws, step completed is false but document ID is still returned.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadSucceeds_StrategyThrows_ReturnsStepCompletedFalse()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] }
+                ]
+            });
+
+        _prospect.Setup(p => p.CompleteStepAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId))
+            .ThrowsAsync(new HttpRequestException("Strategy failed"));
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.CompleteStepAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Failed to complete supporting documents step")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that upload validation errors throw GatewayException with 400 status.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadFails_ValidationError_ThrowsGatewayException400()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.ValidationError("DocumentType", "INVALID_TYPE", "Invalid document type"));
+
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        exception.Which.Code.Should().Be("INVALID_TYPE");
+        exception.Which.Message.Should().Be("Invalid document type");
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that file too large errors throw GatewayException with 413 status.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadFails_FileTooLarge_ThrowsGatewayException413()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.FileTooLarge("FILE_TOO_LARGE", "File exceeds maximum size of 10MB"));
+
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status413RequestEntityTooLarge);
+        exception.Which.Code.Should().Be("FILE_TOO_LARGE");
+        exception.Which.Message.Should().Be("File exceeds maximum size of 10MB");
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that prospect not found errors throw GatewayException with 404 status.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_UploadFails_ProspectNotFound_ThrowsGatewayException404()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.ProspectNotFound());
+
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        exception.Which.Code.Should().Be(Errors.NullArgumentCode);
+        exception.Which.Message.Should().Contain($"Prospect {prospectId} not found");
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    #endregion
 }
