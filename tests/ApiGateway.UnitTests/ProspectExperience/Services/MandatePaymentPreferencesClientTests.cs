@@ -306,6 +306,23 @@ public sealed class MandatePaymentPreferencesClientTests
     }
 
     /// <summary>
+    /// Verifies that the signed mandate document identifier is read when Mandat returns plain text.
+    /// </summary>
+    [Fact]
+    public async Task GetSignedMandateDocumentIdAsync_WhenMandatReturnsPlainTextDocumentId_ReturnsDocumentId()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("456")
+        };
+        var client = CreateClient(response);
+
+        var result = await client.GetSignedMandateDocumentIdAsync(42, CancellationToken.None);
+
+        result.Should().Be("456");
+    }
+
+    /// <summary>
     /// Verifies that a missing signed mandate document identifier is mapped to null.
     /// </summary>
     [Fact]

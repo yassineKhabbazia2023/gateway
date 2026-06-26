@@ -56,7 +56,10 @@ public sealed class PaymentPreferencesController(
         var document = await paymentPreferencesService.DownloadSignedSepaMandateAsync(prospectId, ct);
         return document is null
             ? NotFound()
-            : File(document.Content, "application/octet-stream", document.FileName);
+            : File(
+                document.Content,
+                string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
+                document.FileName);
     }
 
     /// <summary>

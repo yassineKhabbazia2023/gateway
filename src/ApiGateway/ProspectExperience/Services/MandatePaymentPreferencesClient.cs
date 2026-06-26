@@ -76,7 +76,7 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<string>(JsonOptions, ct)
+        return await ReadStringResponseAsync(response, ct)
             ?? throw new HttpRequestException($"Signed mandate document identifier response for account {accountId} was empty.");
     }
 
@@ -134,5 +134,28 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
 
         response.EnsureSuccessStatusCode();
         return true;
+    }
+
+    /// <summary>
+    /// Reads a downstream string response that may be returned either as JSON or as plain text.
+    /// </summary>
+    /// <param name="response">The HTTP response.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The response string, or <see langword="null"/> when the response body is empty.</returns>
+    private static async Task<string?> ReadStringResponseAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        var content = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return null;
+        }
+
+        var trimmedContent = content.Trim();
+        if (!trimmedContent.StartsWith('"'))
+        {
+            return trimmedContent;
+        }
+
+        return JsonSerializer.Deserialize<string>(trimmedContent, JsonOptions);
     }
 }

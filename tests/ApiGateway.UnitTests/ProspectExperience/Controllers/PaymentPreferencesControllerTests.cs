@@ -55,10 +55,10 @@ public sealed class PaymentPreferencesControllerTests
     }
 
     /// <summary>
-    /// Verifies that signed SEPA mandate download returns the binary content as an octet stream.
+    /// Verifies that signed SEPA mandate download returns the binary content with its document content type.
     /// </summary>
     [Fact]
-    public async Task DownloadSignedSepaMandateAsync_WhenDocumentExists_ReturnsOctetStream()
+    public async Task DownloadSignedSepaMandateAsync_WhenDocumentExists_ReturnsDocumentContentType()
     {
         _service
             .Setup(service => service.DownloadSignedSepaMandateAsync(10, It.IsAny<CancellationToken>()))
@@ -68,7 +68,7 @@ public sealed class PaymentPreferencesControllerTests
         var result = await controller.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
 
         var file = result.Should().BeOfType<FileContentResult>().Subject;
-        file.ContentType.Should().Be("application/octet-stream");
+        file.ContentType.Should().Be("application/pdf");
         file.FileDownloadName.Should().Be("signed.pdf");
         file.FileContents.Should().Equal([4, 5, 6]);
     }
