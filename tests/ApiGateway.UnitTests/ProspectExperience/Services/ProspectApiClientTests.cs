@@ -73,6 +73,30 @@ public class ProspectApiClientTests
         RegionCode = "11"
     };
 
+    /// <summary>
+    /// Verifies that payment preference notifications are sent to the expected Prospect route with the expected payload.
+    /// </summary>
+    [Fact]
+    public async Task SendPaymentPreferenceNotificationsAsync_WhenCalled_PostsExpectedPayload()
+    {
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(new HttpResponseMessage(HttpStatusCode.NoContent), request => captured = request);
+
+        await client.SendPaymentPreferenceNotificationsAsync(
+            10,
+            "signatory@test.fr",
+            ["bs1@test.fr", "bs2@test.fr"],
+            CancellationToken.None);
+
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/10/payment-preferences/notifications");
+        var payload = JsonDocument.Parse(await captured.Content!.ReadAsStringAsync());
+        payload.RootElement.GetProperty("signatoryEmail").GetString().Should().Be("signatory@test.fr");
+        payload.RootElement.GetProperty("collabReceiversEmails").EnumerateArray()
+            .Select(element => element.GetString())
+            .Should().Equal("bs1@test.fr", "bs2@test.fr");
+    }
+
     [Fact]
     public async Task GetInpiCompanyInfoAsync_IssuesGetAndMapsExternalCompanyResponse()
     {

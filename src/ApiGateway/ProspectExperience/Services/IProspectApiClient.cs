@@ -125,6 +125,20 @@ public interface IProspectApiClient
     Task MarkPaymentMethodInProgressAsync(int prospectId, CancellationToken ct);
 
     /// <summary>
+    /// Requests Prospect to send payment preference notification emails.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="signatoryEmail">The signatory email address.</param>
+    /// <param name="collabReceiversEmails">The collaborator or BS receiver email addresses.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendPaymentPreferenceNotificationsAsync(
+        int prospectId,
+        string signatoryEmail,
+        string[] collabReceiversEmails,
+        CancellationToken ct);
+
+    /// <summary>
     /// Creates the prospect aggregate in Prospect.
     /// </summary>
     /// <param name="request">The gateway creation request.</param>

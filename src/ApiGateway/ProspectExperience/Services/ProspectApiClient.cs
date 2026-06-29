@@ -218,6 +218,26 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
+    public async Task SendPaymentPreferenceNotificationsAsync(
+        int prospectId,
+        string signatoryEmail,
+        string[] collabReceiversEmails,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/prospects/{prospectId}/payment-preferences/notifications",
+            new PaymentPreferenceNotificationRequest
+            {
+                SignatoryEmail = signatoryEmail,
+                CollabReceiversEmails = collabReceiversEmails
+            },
+            JsonOptions,
+            ct);
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <inheritdoc />
     public async Task<int> CreateProspectAsync(CreateProspectRequest request, InpiCompanyInfo inpi, CancellationToken ct)
     {
         logger.LogInformation("Creating prospect for SIRET {Siret} with legal name {LegalName}", inpi.Siret, inpi.LegalName);

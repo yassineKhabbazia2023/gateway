@@ -59,6 +59,7 @@ public static class ServiceExtensions
         services.AddScoped<IAuthorizationWorkflowService, AuthorizationWorkflowService>();
         services.AddScoped<IProspectService, ProspectOrchestrationService>();
         services.AddScoped<IPaymentPreferencesOrchestrationService, PaymentPreferencesOrchestrationService>();
+        services.AddScoped<IPaymentPreferenceNotificationService, PaymentPreferenceNotificationService>();
         services.AddScoped<IProspectStepCompletionStrategy, BeneficiaryStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, SupportingDocumentsStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, DefaultStepCompletionStrategy>();

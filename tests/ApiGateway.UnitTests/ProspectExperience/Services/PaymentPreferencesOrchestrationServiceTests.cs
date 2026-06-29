@@ -16,6 +16,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
     private readonly Mock<IMandatePaymentPreferencesClient> _mandateClient = new();
     private readonly Mock<IRegistryProspectClient> _registryClient = new();
     private readonly Mock<IProspectService> _prospectService = new();
+    private readonly Mock<IPaymentPreferenceNotificationService> _paymentPreferenceNotificationService = new();
     private readonly PaymentPreferencesOrchestrationService _service;
 
     /// <summary>
@@ -28,6 +29,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             _mandateClient.Object,
             _registryClient.Object,
             _prospectService.Object,
+            _paymentPreferenceNotificationService.Object,
             NullLogger<PaymentPreferencesOrchestrationService>.Instance);
     }
 
@@ -478,7 +480,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
     {
         _prospectClient
             .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42, Email = "signatory@test.fr" });
         _mandateClient
             .Setup(client => client.SetOtherAsync(42, "user@test.fr", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -489,6 +491,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 It.IsAny<CancellationToken>(),
                 7))
             .ReturnsAsync(new DocumentUploadResultResponse([], []));
+        _paymentPreferenceNotificationService
+            .Setup(service => service.GetCollabEmailReceivers())
+            .Returns(["bs@test.fr"]);
 
         var result = await _service.SetOtherAsync(10, "user@test.fr", 7, CancellationToken.None);
 
@@ -499,6 +504,48 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 It.Is<CompleteStepRequest>(request => request.StepName == "PAYMENT_METHOD"),
                 It.IsAny<CancellationToken>(),
                 7),
+            Times.Once);
+        _paymentPreferenceNotificationService.Verify(
+            service => service.SendAsync(
+                10,
+                "signatory@test.fr",
+                It.Is<string[]>(receivers => receivers.SequenceEqual(new[] { "bs@test.fr" })),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that POST OTHER passes the signatory and collaborator receivers to the notification service.
+    /// </summary>
+    [Fact]
+    public async Task SetOtherAsync_WhenCompletionSucceeds_PassesNotificationTargets()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42, Email = "signatory@test.fr" });
+        _mandateClient
+            .Setup(client => client.SetOtherAsync(42, "user@test.fr", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectService
+            .Setup(service => service.CompleteStepAsync(
+                10,
+                It.IsAny<CompleteStepRequest>(),
+                It.IsAny<CancellationToken>(),
+                7))
+            .ReturnsAsync(new DocumentUploadResultResponse([], []));
+        _paymentPreferenceNotificationService
+            .Setup(service => service.GetCollabEmailReceivers())
+            .Returns(["bs1@test.fr", "bs2@test.fr"]);
+
+        var result = await _service.SetOtherAsync(10, "user@test.fr", 7, CancellationToken.None);
+
+        result.Should().BeTrue();
+        _paymentPreferenceNotificationService.Verify(
+            service => service.SendAsync(
+                10,
+                "signatory@test.fr",
+                It.Is<string[]>(receivers => receivers.SequenceEqual(new[] { "bs1@test.fr", "bs2@test.fr" })),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -524,6 +571,45 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 It.IsAny<CompleteStepRequest>(),
                 It.IsAny<CancellationToken>(),
                 It.IsAny<int?>()),
+            Times.Never);
+        _paymentPreferenceNotificationService.Verify(
+            service => service.SendAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string[]>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST OTHER does not notify when completion fails.
+    /// </summary>
+    [Fact]
+    public async Task SetOtherAsync_WhenCompletionFails_DoesNotNotify()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42, Email = "signatory@test.fr" });
+        _mandateClient
+            .Setup(client => client.SetOtherAsync(42, "user@test.fr", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospectService
+            .Setup(service => service.CompleteStepAsync(
+                10,
+                It.IsAny<CompleteStepRequest>(),
+                It.IsAny<CancellationToken>(),
+                7))
+            .ThrowsAsync(new InvalidOperationException("completion failed"));
+
+        Func<Task> act = () => _service.SetOtherAsync(10, "user@test.fr", 7, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _paymentPreferenceNotificationService.Verify(
+            service => service.SendAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string[]>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

@@ -11,6 +11,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     IMandatePaymentPreferencesClient mandateClient,
     IRegistryProspectClient registryClient,
     IProspectService prospectService,
+    IPaymentPreferenceNotificationService paymentPreferenceNotificationService,
     ILogger<PaymentPreferencesOrchestrationService> logger) : IPaymentPreferencesOrchestrationService
 {
     private const int SystemUserId = 0;
@@ -336,6 +337,14 @@ public sealed class PaymentPreferencesOrchestrationService(
             new Models.Requests.CompleteStepRequest { StepName = PaymentMethodStepName },
             ct,
             currentUserId);
+
+        var collabReceivers = paymentPreferenceNotificationService.GetCollabEmailReceivers();
+        await paymentPreferenceNotificationService.SendAsync(
+            prospectId,
+            prospect.Email,
+            collabReceivers,
+            ct);
+
         return true;
     }
 
