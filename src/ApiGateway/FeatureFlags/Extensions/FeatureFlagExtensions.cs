@@ -11,6 +11,7 @@ public static class FeatureFlagExtensions
     public static IServiceCollection AddFeatureFlags(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.SectionName));
+        services.Configure<ConfigCatSettings>(configuration.GetSection("ConfigCat"));
         services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
         return services;
     }
@@ -18,19 +19,19 @@ public static class FeatureFlagExtensions
     public static async Task UseFeatureFlagsAsync(this WebApplication app)
     {
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(FeatureFlagExtensions));
-        var options = app.Configuration.GetSection(FeatureFlagOptions.SectionName).Get<FeatureFlagOptions>() ?? new FeatureFlagOptions();
+        var configCat = app.Configuration.GetSection("ConfigCat").Get<ConfigCatSettings>() ?? new ConfigCatSettings();
 
-        if (!string.IsNullOrWhiteSpace(options.ConfigCat.SdkKey))
+        if (!string.IsNullOrWhiteSpace(configCat.SdkKey))
         {
-            var provider = new ConfigCatProvider(options.ConfigCat.SdkKey, configCatOptions =>
+            var provider = new ConfigCatProvider(configCat.SdkKey, configCatOptions =>
             {
-                configCatOptions.BaseUrl = new Uri(options.ConfigCat.BaseUrl);
+                configCatOptions.BaseUrl = new Uri(configCat.BaseUrl);
                 configCatOptions.PollingMode = PollingModes.AutoPoll(
-                    pollInterval: TimeSpan.FromSeconds(options.ConfigCat.PollIntervalSeconds));
+                    pollInterval: TimeSpan.FromSeconds(configCat.PollIntervalSeconds));
             });
             await Api.Instance.SetProviderAsync(provider);
             logger.LogInformation("Feature flags: ConfigCat provider configured (BaseUrl: {BaseUrl}, PollInterval: {PollInterval}s)",
-                options.ConfigCat.BaseUrl, options.ConfigCat.PollIntervalSeconds);
+                configCat.BaseUrl, configCat.PollIntervalSeconds);
         }
         else
         {

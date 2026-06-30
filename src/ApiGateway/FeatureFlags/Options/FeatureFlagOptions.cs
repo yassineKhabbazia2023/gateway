@@ -3,8 +3,6 @@ namespace ApiGateway.FeatureFlags.Options;
 public sealed class FeatureFlagOptions
 {
     public const string SectionName = "FeatureFlags";
-
-    public ConfigCatSettings ConfigCat { get; set; } = new();
 }
 
 public sealed class ConfigCatSettings
