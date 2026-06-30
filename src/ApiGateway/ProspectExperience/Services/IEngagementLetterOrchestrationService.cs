@@ -10,10 +10,10 @@ public interface IEngagementLetterOrchestrationService
     /// checks eligibility in Prospect, uploads the file to Registry (Akuiteo),
     /// then records the engagement letter in Prospect.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
     /// <param name="contactEmail">The collaborator email address.</param>
     /// <param name="file">The PDF file to send.</param>
     /// <param name="ct">The cancellation token.</param>
-    Task<EngagementLetterOrchestrationOutcome> SendAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
+    Task<EngagementLetterOrchestrationOutcome> SendAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
 }

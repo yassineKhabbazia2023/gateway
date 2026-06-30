@@ -1,3 +1,4 @@
+using ApiGateway.Account;
 using ApiGateway.ProspectExperience.Models.Internal;
 using Microsoft.AspNetCore.Http;
 
@@ -5,11 +6,12 @@ namespace ApiGateway.ProspectExperience.Services;
 
 public class EngagementLetterOrchestrationService(
     IProspectApiClient prospectApiClient,
-    IRegistryProspectClient registryProspectClient) : IEngagementLetterOrchestrationService
+    IRegistryProspectClient registryProspectClient,
+    IAccountService accountService) : IEngagementLetterOrchestrationService
 {
-    public async Task<EngagementLetterOrchestrationOutcome> SendAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+    public async Task<EngagementLetterOrchestrationOutcome> SendAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
     {
-        var eligibility = await prospectApiClient.GetEngagementLetterEligibilityAsync(prospectId, currentUserId, ct);
+        var eligibility = await prospectApiClient.GetEngagementLetterEligibilityAsync(accountId, currentUserId, ct);
 
         if (eligibility is null)
         {
@@ -26,7 +28,8 @@ public class EngagementLetterOrchestrationService(
             return EngagementLetterOrchestrationOutcome.NotEligible;
         }
 
-        var accountNumber = await prospectApiClient.GetAkuiteoAccountNumberByProspectIdAsync(prospectId, ct);
+        var account = await accountService.GetAccountAsync(accountId);
+        var accountNumber = account?.AccountNumber;
 
         if (string.IsNullOrEmpty(accountNumber))
         {
@@ -41,8 +44,7 @@ public class EngagementLetterOrchestrationService(
             FileName: file.FileName);
 
         await registryProspectClient.UploadAkuiteoDocumentAsync(accountNumber, document, ct);
-        await prospectApiClient.SendEngagementLetterAsync(prospectId, currentUserId, contactEmail, file, ct);
-
+        await prospectApiClient.SendEngagementLetterAsync(accountId, currentUserId, contactEmail, file, ct);
         return EngagementLetterOrchestrationOutcome.Sent;
     }
 }

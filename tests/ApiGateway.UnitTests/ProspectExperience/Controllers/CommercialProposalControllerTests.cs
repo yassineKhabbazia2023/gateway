@@ -24,7 +24,7 @@ public class CommercialProposalControllerTests
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
 
-    private const int ProspectId = 42;
+    private const int AccountId = 42;
     private const string UserEmail = "collab@test.fr";
     private static readonly ApiGateway.Contact.Models.Contact CurrentContact = new() { Id = 7, Email = UserEmail };
 
@@ -73,7 +73,7 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenFileIsNull_ReturnsValidationProblem()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, null!, CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, null!, CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
@@ -81,7 +81,7 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenFileIsEmpty_ReturnsValidationProblem()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(length: 0), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(length: 0), CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
@@ -89,7 +89,7 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenFileIsNotPdf_Returns415()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(contentType: "image/png"), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(contentType: "image/png"), CancellationToken.None);
 
         var objectResult = result.Should().BeAssignableTo<ObjectResult>().Subject;
         objectResult.StatusCode.Should().Be(415);
@@ -98,7 +98,7 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenFileExceedsMaxSize_Returns413()
     {
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
 
         var objectResult = result.Should().BeAssignableTo<ObjectResult>().Subject;
         objectResult.StatusCode.Should().Be(413);
@@ -109,7 +109,7 @@ public class CommercialProposalControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -119,10 +119,10 @@ public class CommercialProposalControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.Sent);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(), CancellationToken.None);
 
         var statusResult = result.Should().BeOfType<StatusCodeResult>().Subject;
         statusResult.StatusCode.Should().Be((int)HttpStatusCode.Created);
@@ -133,10 +133,10 @@ public class CommercialProposalControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.ProspectNotFound);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -146,10 +146,10 @@ public class CommercialProposalControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.AlreadySent);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<ConflictObjectResult>();
     }
@@ -159,10 +159,10 @@ public class CommercialProposalControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.NotEligible);
 
-        var result = await _controller.SendCommercialProposalAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendCommercialProposalAsync(AccountId, BuildFile(), CancellationToken.None);
 
         var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);

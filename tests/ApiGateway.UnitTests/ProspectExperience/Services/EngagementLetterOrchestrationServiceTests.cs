@@ -1,3 +1,5 @@
+using ApiGateway.Account;
+using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Services;
 using Microsoft.AspNetCore.Http;
@@ -8,9 +10,10 @@ public class EngagementLetterOrchestrationServiceTests
 {
     private readonly Mock<IProspectApiClient> _prospectApiClient;
     private readonly Mock<IRegistryProspectClient> _registryProspectClient;
+    private readonly Mock<IAccountService> _accountService;
     private readonly EngagementLetterOrchestrationService _service;
 
-    private const int ProspectId = 42;
+    private const int AccountId = 10;
     private const int CurrentUserId = 7;
     private const string AccountNumber = "AK-001";
     private const string ContactEmail = "collaborator@test.fr";
@@ -19,9 +22,11 @@ public class EngagementLetterOrchestrationServiceTests
     {
         _prospectApiClient = new Mock<IProspectApiClient>(MockBehavior.Strict);
         _registryProspectClient = new Mock<IRegistryProspectClient>(MockBehavior.Strict);
+        _accountService = new Mock<IAccountService>(MockBehavior.Strict);
         _service = new EngagementLetterOrchestrationService(
             _prospectApiClient.Object,
-            _registryProspectClient.Object);
+            _registryProspectClient.Object,
+            _accountService.Object);
     }
 
     private static Mock<IFormFile> BuildFileMock(string fileName = "engagement-letter.pdf", string contentType = "application/pdf")
@@ -42,10 +47,10 @@ public class EngagementLetterOrchestrationServiceTests
     public async Task SendAsync_WhenProspectNotFound_ReturnsProspectNotFound()
     {
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((EngagementLetterEligibilityResponse?)null);
 
-        var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
         result.Should().Be(EngagementLetterOrchestrationOutcome.ProspectNotFound);
     }
@@ -54,10 +59,10 @@ public class EngagementLetterOrchestrationServiceTests
     public async Task SendAsync_WhenAlreadySent_ReturnsAlreadySent()
     {
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = true });
 
-        var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
         result.Should().Be(EngagementLetterOrchestrationOutcome.AlreadySent);
     }
@@ -66,10 +71,10 @@ public class EngagementLetterOrchestrationServiceTests
     public async Task SendAsync_WhenNotEligible_ReturnsNotEligible()
     {
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = false });
 
-        var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
         result.Should().Be(EngagementLetterOrchestrationOutcome.NotEligible);
     }
@@ -78,13 +83,28 @@ public class EngagementLetterOrchestrationServiceTests
     public async Task SendAsync_WhenAccountNumberNotFound_ReturnsAccountNumberNotFound()
     {
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = true, AlreadySent = false });
-        _prospectApiClient
-            .Setup(c => c.GetAkuiteoAccountNumberByProspectIdAsync(ProspectId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
+        _accountService
+            .Setup(s => s.GetAccountAsync(AccountId))
+            .ReturnsAsync((ApiGateway.Models.Account?)null);
 
-        var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+
+        result.Should().Be(EngagementLetterOrchestrationOutcome.AccountNumberNotFound);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenAccountHasNoAccountNumber_ReturnsAccountNumberNotFound()
+    {
+        _prospectApiClient
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = true, AlreadySent = false });
+        _accountService
+            .Setup(s => s.GetAccountAsync(AccountId))
+            .ReturnsAsync(new ApiGateway.Models.Account { AccountId = AccountId, AccountNumber = null });
+
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
         result.Should().Be(EngagementLetterOrchestrationOutcome.AccountNumberNotFound);
     }
@@ -94,26 +114,26 @@ public class EngagementLetterOrchestrationServiceTests
     {
         var fileMock = BuildFileMock();
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = true, AlreadySent = false });
-        _prospectApiClient
-            .Setup(c => c.GetAkuiteoAccountNumberByProspectIdAsync(ProspectId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(AccountNumber);
+        _accountService
+            .Setup(s => s.GetAccountAsync(AccountId))
+            .ReturnsAsync(new ApiGateway.Models.Account { AccountId = AccountId, AccountNumber = AccountNumber });
         _registryProspectClient
             .Setup(c => c.UploadAkuiteoDocumentAsync(AccountNumber, It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _prospectApiClient
-            .Setup(c => c.SendEngagementLetterAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()))
+            .Setup(c => c.SendEngagementLetterAsync(AccountId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var result = await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, CancellationToken.None);
+        var result = await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, fileMock.Object, CancellationToken.None);
 
         result.Should().Be(EngagementLetterOrchestrationOutcome.Sent);
         _registryProspectClient.Verify(
             c => c.UploadAkuiteoDocumentAsync(AccountNumber, It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _prospectApiClient.Verify(
-            c => c.SendEngagementLetterAsync(ProspectId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()),
+            c => c.SendEngagementLetterAsync(AccountId, CurrentUserId, ContactEmail, fileMock.Object, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -121,10 +141,10 @@ public class EngagementLetterOrchestrationServiceTests
     public async Task SendAsync_WhenNotEligible_DoesNotCallRegistry()
     {
         _prospectApiClient
-            .Setup(c => c.GetEngagementLetterEligibilityAsync(ProspectId, CurrentUserId, It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetEngagementLetterEligibilityAsync(AccountId, CurrentUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EngagementLetterEligibilityResponse { CanSend = false, AlreadySent = false });
 
-        await _service.SendAsync(ProspectId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
+        await _service.SendAsync(AccountId, CurrentUserId, ContactEmail, BuildFileMock().Object, CancellationToken.None);
 
         _registryProspectClient.Verify(
             c => c.UploadAkuiteoDocumentAsync(It.IsAny<string>(), It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()),

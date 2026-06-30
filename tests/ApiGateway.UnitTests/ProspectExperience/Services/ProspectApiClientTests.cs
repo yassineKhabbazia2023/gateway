@@ -1039,7 +1039,7 @@ public class ProspectApiClientTests
         result!.CanSend.Should().BeTrue();
         result.AlreadySent.Should().BeFalse();
         captured!.Method.Should().Be(HttpMethod.Get);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/commercial-proposal/eligibility");
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/accounts/42/commercial-proposal/eligibility");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
     }
 
@@ -1069,7 +1069,7 @@ public class ProspectApiClientTests
         await client.SendCommercialProposalAsync(42, 100, "collab@test.fr", file.Object, CancellationToken.None);
 
         captured!.Method.Should().Be(HttpMethod.Post);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/commercial-proposal");
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/accounts/42/commercial-proposal");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
         captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("collab@test.fr");
         captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
@@ -1107,7 +1107,7 @@ public class ProspectApiClientTests
         result!.CanSend.Should().BeTrue();
         result.AlreadySent.Should().BeFalse();
         captured!.Method.Should().Be(HttpMethod.Get);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/engagement-letter/eligibility");
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/accounts/42/engagement-letter/eligibility");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
     }
 
@@ -1137,7 +1137,7 @@ public class ProspectApiClientTests
         await client.SendEngagementLetterAsync(42, 100, "client@test.fr", file.Object, CancellationToken.None);
 
         captured!.Method.Should().Be(HttpMethod.Post);
-        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/engagement-letter");
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/accounts/42/engagement-letter");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
         captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("client@test.fr");
         captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");

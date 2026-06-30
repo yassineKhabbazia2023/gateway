@@ -224,7 +224,7 @@ public class ProspectExperienceController(
         return null;
     }
 
-    [HttpPost("{prospectId}/commercial-proposal")]
+    [HttpPost("{accountId}/commercial-proposal")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -234,7 +234,7 @@ public class ProspectExperienceController(
     [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SendCommercialProposalAsync(
-        int prospectId,
+        int accountId,
         IFormFile file,
         CancellationToken ct)
     {
@@ -246,11 +246,11 @@ public class ProspectExperienceController(
 
         if (contact is null)
         {
-            logger.LogWarning("Contact not found for email {UserEmail} on commercial proposal send for prospect {ProspectId}", userEmail, prospectId);
+            logger.LogWarning("Contact not found for email {UserEmail} on commercial proposal send for account {AccountId}", userEmail, accountId);
             return NotFound();
         }
 
-        var outcome = await commercialProposalOrchestrationService.SendAsync(prospectId, contact.Id, userEmail, file, ct);
+        var outcome = await commercialProposalOrchestrationService.SendAsync(accountId, contact.Id, userEmail, file, ct);
 
         return outcome switch
         {
@@ -263,7 +263,7 @@ public class ProspectExperienceController(
         };
     }
 
-    [HttpPost("{prospectId}/engagement-letter")]
+    [HttpPost("{accountId}/engagement-letter")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -273,7 +273,7 @@ public class ProspectExperienceController(
     [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SendEngagementLetterAsync(
-        int prospectId,
+        int accountId,
         IFormFile file,
         CancellationToken ct)
     {
@@ -285,11 +285,11 @@ public class ProspectExperienceController(
 
         if (contact is null)
         {
-            logger.LogWarning("Contact not found for email {UserEmail} on engagement letter send for prospect {ProspectId}", userEmail, prospectId);
+            logger.LogWarning("Contact not found for email {UserEmail} on engagement letter send for account {AccountId}", userEmail, accountId);
             return NotFound();
         }
 
-        var outcome = await engagementLetterOrchestrationService.SendAsync(prospectId, contact.Id, userEmail, file, ct);
+        var outcome = await engagementLetterOrchestrationService.SendAsync(accountId, contact.Id, userEmail, file, ct);
 
         return outcome switch
         {

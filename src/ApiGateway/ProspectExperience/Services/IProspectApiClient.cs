@@ -228,42 +228,42 @@ public interface IProspectApiClient
     Task<string?> GetAkuiteoAccountNumberByProspectIdAsync(int prospectId, CancellationToken ct);
 
     /// <summary>
-    /// Checks whether the given user is allowed to send a commercial proposal for the prospect.
+    /// Checks whether the given user is allowed to send a commercial proposal for the account.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>The eligibility response, or null when the prospect does not exist or is archived.</returns>
-    Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct);
+    /// <returns>The eligibility response, or null when no active prospect is linked to the account.</returns>
+    Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int accountId, int currentUserId, CancellationToken ct);
 
     /// <summary>
-    /// Sends the commercial proposal PDF for a prospect.
+    /// Sends the commercial proposal PDF for an account.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
     /// <param name="contactEmail">The collaborator email address.</param>
     /// <param name="file">The PDF file.</param>
     /// <param name="ct">The cancellation token.</param>
-    Task SendCommercialProposalAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
+    Task SendCommercialProposalAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
 
     /// <summary>
-    /// Checks whether the given user is allowed to send an engagement letter for the prospect.
+    /// Checks whether the given user is allowed to send an engagement letter for the account.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>The eligibility response, or null when the prospect does not exist or is archived.</returns>
-    Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct);
+    /// <returns>The eligibility response, or null when no active prospect is linked to the account.</returns>
+    Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int accountId, int currentUserId, CancellationToken ct);
 
     /// <summary>
-    /// Sends the engagement letter PDF for a prospect.
+    /// Sends the engagement letter PDF for an account.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="currentUserId">The collaborator identifier.</param>
     /// <param name="contactEmail">The collaborator email address.</param>
     /// <param name="file">The PDF file.</param>
     /// <param name="ct">The cancellation token.</param>
-    Task SendEngagementLetterAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
+    Task SendEngagementLetterAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct);
 
     /// <summary>
     /// Uploads a supporting document to Prospect storage.

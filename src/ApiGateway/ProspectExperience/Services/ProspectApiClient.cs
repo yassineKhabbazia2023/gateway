@@ -438,20 +438,20 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
-    public Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
-        => GetEligibilityAsync<CommercialProposalEligibilityResponse>($"api/prospects/{prospectId}/commercial-proposal/eligibility", currentUserId, ct);
+    public Task<CommercialProposalEligibilityResponse?> GetCommercialProposalEligibilityAsync(int accountId, int currentUserId, CancellationToken ct)
+        => GetEligibilityAsync<CommercialProposalEligibilityResponse>($"api/accounts/{accountId}/commercial-proposal/eligibility", currentUserId, ct);
 
     /// <inheritdoc />
-    public Task SendCommercialProposalAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
-        => SendFileAsync($"api/prospects/{prospectId}/commercial-proposal", currentUserId, contactEmail, file, ct);
+    public Task SendCommercialProposalAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+        => SendFileAsync($"api/accounts/{accountId}/commercial-proposal", currentUserId, contactEmail, file, ct);
 
     /// <inheritdoc />
-    public Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int prospectId, int currentUserId, CancellationToken ct)
-        => GetEligibilityAsync<EngagementLetterEligibilityResponse>($"api/prospects/{prospectId}/engagement-letter/eligibility", currentUserId, ct);
+    public Task<EngagementLetterEligibilityResponse?> GetEngagementLetterEligibilityAsync(int accountId, int currentUserId, CancellationToken ct)
+        => GetEligibilityAsync<EngagementLetterEligibilityResponse>($"api/accounts/{accountId}/engagement-letter/eligibility", currentUserId, ct);
 
     /// <inheritdoc />
-    public Task SendEngagementLetterAsync(int prospectId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
-        => SendFileAsync($"api/prospects/{prospectId}/engagement-letter", currentUserId, contactEmail, file, ct);
+    public Task SendEngagementLetterAsync(int accountId, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
+        => SendFileAsync($"api/accounts/{accountId}/engagement-letter", currentUserId, contactEmail, file, ct);
 
     private async Task<T?> GetEligibilityAsync<T>(string url, int currentUserId, CancellationToken ct) where T : class
     {

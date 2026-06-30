@@ -23,7 +23,7 @@ public class EngagementLetterControllerTests
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
 
-    private const int ProspectId = 42;
+    private const int AccountId = 42;
     private const string UserEmail = "collab@test.fr";
     private static readonly ApiGateway.Contact.Models.Contact CurrentContact = new() { Id = 7, Email = UserEmail };
 
@@ -72,7 +72,7 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenFileIsNull_ReturnsValidationProblem()
     {
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, null!, CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, null!, CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
@@ -80,7 +80,7 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenFileIsEmpty_ReturnsValidationProblem()
     {
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(length: 0), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(length: 0), CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(400);
     }
@@ -88,7 +88,7 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenFileIsNotPdf_Returns415()
     {
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(contentType: "image/png"), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(contentType: "image/png"), CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(415);
     }
@@ -96,7 +96,7 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenFileExceedsMaxSize_Returns413()
     {
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(length: 11 * 1024 * 1024), CancellationToken.None);
 
         result.Should().BeAssignableTo<ObjectResult>().Which.StatusCode.Should().Be(413);
     }
@@ -106,7 +106,7 @@ public class EngagementLetterControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
 
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -116,10 +116,10 @@ public class EngagementLetterControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.Sent);
 
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.Created);
     }
@@ -129,10 +129,10 @@ public class EngagementLetterControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.ProspectNotFound);
 
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -142,10 +142,10 @@ public class EngagementLetterControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.AlreadySent);
 
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<ConflictObjectResult>();
     }
@@ -155,10 +155,10 @@ public class EngagementLetterControllerTests
     {
         _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
-            .Setup(s => s.SendAsync(ProspectId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.NotEligible);
 
-        var result = await _controller.SendEngagementLetterAsync(ProspectId, BuildFile(), CancellationToken.None);
+        var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
     }
