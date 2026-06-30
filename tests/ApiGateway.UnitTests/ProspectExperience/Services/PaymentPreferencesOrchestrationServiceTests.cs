@@ -171,6 +171,14 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
             .Callback(() => calls.Add("mark-sent"))
             .ReturnsAsync(true);
+        _prospectService
+            .Setup(service => service.CompleteStepAsync(
+                10,
+                It.Is<CompleteStepRequest>(req => req.StepName == "PAYMENT_METHOD"),
+                It.IsAny<CancellationToken>(),
+                0))
+            .Callback(() => calls.Add("complete-step"))
+            .ReturnsAsync(new DocumentUploadResultResponse([], []));
 
         var result = await _service.GetAsync(10, CancellationToken.None);
 
@@ -196,12 +204,20 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             Times.Once);
         _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
         _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
+        _prospectService.Verify(
+            service => service.CompleteStepAsync(
+                10,
+                It.Is<CompleteStepRequest>(req => req.StepName == "PAYMENT_METHOD"),
+                It.IsAny<CancellationToken>(),
+                0),
+            Times.Once);
         calls.Should().Equal(
             "rib-akuiteo",
             "signed-mandate-prospect",
             "save-document-id",
             "signed-mandate-akuiteo",
-            "mark-sent");
+            "mark-sent",
+            "complete-step");
     }
 
     /// <summary>
@@ -300,6 +316,13 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.SaveSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>(), It.IsAny<string>()),
             Times.Never);
         _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospectService.Verify(
+            service => service.CompleteStepAsync(
+                It.IsAny<int>(),
+                It.IsAny<CompleteStepRequest>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<int>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -356,6 +379,13 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         result!.PaymentType.Should().Be("MANDATE_SEPA");
         _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
         _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospectService.Verify(
+            service => service.CompleteStepAsync(
+                It.IsAny<int>(),
+                It.IsAny<CompleteStepRequest>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<int>()),
+            Times.Never);
     }
 
     /// <summary>

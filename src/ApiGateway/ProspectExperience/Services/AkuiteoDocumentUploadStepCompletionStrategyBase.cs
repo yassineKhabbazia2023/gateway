@@ -1,6 +1,7 @@
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
+using ApiGateway.ProspectExperience.Models.Responses;
 using Microsoft.AspNetCore.Http;
 
 namespace ApiGateway.ProspectExperience.Services;
@@ -33,7 +34,7 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
     }
 
     /// <inheritdoc />
-    public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+    public virtual async Task<DocumentExternalUploadBatchResult> CompleteAsync(
         int prospectId,
         string stepName,
         CancellationToken ct)
@@ -46,7 +47,7 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
     }
 
     /// <inheritdoc />
-    public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+    public virtual async Task<DocumentExternalUploadBatchResult> CompleteAsync(
         int prospectId,
         string stepName,
         CancellationToken ct,
@@ -57,6 +58,23 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
             stepName,
             completeStepAsync: () => prospectClient.CompleteStepAsync(prospectId, stepName, ct, currentUserId),
             ct);
+    }
+
+    /// <summary>
+    /// Validates the upload plan before proceeding with document upload.
+    /// Override to add custom validation logic based on uploadPlan status.
+    /// </summary>
+    /// <param name="uploadPlan">The upload plan returned by Prospect service.</param>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="stepName">The step name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    protected virtual Task ValidateUploadPlanAsync(
+        DocumentsToUploadToExternalServiceResponse uploadPlan,
+        int prospectId,
+        string stepName,
+        CancellationToken ct)
+    {
+        return Task.CompletedTask;
     }
 
     private async Task<DocumentExternalUploadBatchResult> CompleteAsync(
@@ -78,6 +96,8 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
                 stepName);
             throw new GatewayException(StatusCodes.Status404NotFound, Errors.NullArgumentCode, "Prospect or onboarding step was not found.");
         }
+
+        await ValidateUploadPlanAsync(uploadPlan, prospectId, stepName, ct);
 
         if (uploadPlan.DocumentIds.Count == 0)
         {

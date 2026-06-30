@@ -776,7 +776,7 @@ public class ProspectOrchestrationServiceTests
             .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
                 "AK-001",
                 [],
-                DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload));
+                DocumentsToUploadToExternalServiceStatus.StepAlreadyCompleted));
 
         var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
 
@@ -908,7 +908,7 @@ public class ProspectOrchestrationServiceTests
             .ReturnsAsync(new DocumentsToUploadToExternalServiceResponse(
                 "AK-001",
                 [],
-                DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload));
+                DocumentsToUploadToExternalServiceStatus.StepAlreadyCompleted));
 
         var result = await _service.CompleteStepAsync(42, new CompleteStepRequest { StepName = "beneficiary" }, CancellationToken.None);
 

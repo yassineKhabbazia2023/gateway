@@ -1,3 +1,7 @@
+using ApiGateway.Exceptions;
+using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Models.Responses;
+
 namespace ApiGateway.ProspectExperience.Services;
 
 /// <summary>
@@ -14,4 +18,26 @@ public sealed class BeneficiaryStepCompletionStrategy(
 
     /// <inheritdoc />
     protected override string DisplayName => "beneficiary";
+
+    /// <inheritdoc />
+    protected override Task ValidateUploadPlanAsync(
+        DocumentsToUploadToExternalServiceResponse uploadPlan,
+        int prospectId,
+        string stepName,
+        CancellationToken ct)
+    {
+        if (uploadPlan.Status == DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload)
+        {
+            logger.LogWarning(
+                "Beneficiary step completion blocked for prospect {ProspectId}: required identity documents not uploaded for all beneficiaries",
+                prospectId);
+
+            throw new GatewayException(
+                StatusCodes.Status422UnprocessableEntity,
+                "BeneficiaryStepNotReady",
+                "Cannot complete Beneficiary step: required identity documents not uploaded for all beneficiaries. Please ensure all beneficiaries have complete identity document sets before completing this step.");
+        }
+
+        return Task.CompletedTask;
+    }
 }

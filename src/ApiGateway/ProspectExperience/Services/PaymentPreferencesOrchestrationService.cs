@@ -186,6 +186,16 @@ public sealed class PaymentPreferencesOrchestrationService(
         }
 
         logger.LogInformation("Marked SEPA mandate as sent to Akuiteo for account {AccountId}", accountId);
+
+        await prospectService.CompleteStepAsync(
+            prospectId,
+            new Models.Requests.CompleteStepRequest { StepName = PaymentMethodStepName },
+            ct,
+            SystemUserId);
+
+        logger.LogInformation(
+            "Completed PaymentMethod step for prospect {ProspectId} after SEPA mandate signature and document upload to Akuiteo",
+            prospectId);
     }
 
     /// <summary>

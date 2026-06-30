@@ -5,6 +5,7 @@ using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Dynamic;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Services;
 
@@ -604,5 +605,253 @@ public sealed class SupportingDocumentsStepCompletionStrategyTests
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that when required documents are missing per legal form, the strategy throws GatewayException with 422 status.
+    /// This prevents completion when required supporting documents (e.g., KBIS for SARL) have not been uploaded.
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_MissingRequiredDocuments_ThrowsGatewayException422()
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        var requirements = new DocumentRequirementsResponse
+        {
+            Documents = new List<RequiredDocumentItem>
+            {
+                new() { Type = "KBIS", MaxFiles = 1, Documents = [] }, // Missing!
+                new() { Type = "STATUTS", MaxFiles = 1, Documents = [new ExpandoObject()] } // Uploaded
+            }
+        };
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requirements);
+
+        Func<Task> act = () => _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        exception.Which.ErrorCode.Should().Be("SupportingDocumentsStepNotReady");
+        exception.Which.Message.Should().Contain("KBIS");
+
+        _prospectClient.Verify(
+            client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _registryClient.Verify(
+            client => client.UploadAkuiteoDocumentAsync(
+                It.IsAny<string>(),
+                It.IsAny<ProspectDocumentContentResponse>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that when all required documents are uploaded, completion succeeds.
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_AllRequiredDocumentsUploaded_Succeeds()
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        var requirements = new DocumentRequirementsResponse
+        {
+            Documents = new List<RequiredDocumentItem>
+            {
+                new() { Type = "KBIS", MaxFiles = 1, Documents = [new ExpandoObject()] }, // Uploaded
+                new() { Type = "STATUTS", MaxFiles = 1, Documents = [new ExpandoObject()] } // Uploaded
+            }
+        };
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requirements);
+
+        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+
+        _prospectClient.Verify(
+            client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that "AUTRES" document type is optional and does not block completion even when missing.
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_AutresTypeMissing_AllowsCompletion()
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        var requirements = new DocumentRequirementsResponse
+        {
+            Documents = new List<RequiredDocumentItem>
+            {
+                new() { Type = "KBIS", MaxFiles = 1, Documents = [new ExpandoObject()] }, // Uploaded
+                new() { Type = "AUTRES", MaxFiles = 1, Documents = [] } // Missing but optional!
+            }
+        };
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requirements);
+
+        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+
+        _prospectClient.Verify(
+            client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that "AUTRES" type check is case-insensitive.
+    /// </summary>
+    [Theory]
+    [InlineData("autres")]
+    [InlineData("Autres")]
+    [InlineData("AUTRES")]
+    [InlineData("AuTrEs")]
+    public async Task CompleteAsync_AutresTypeCaseInsensitive_AllowsCompletion(string autresVariant)
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        var requirements = new DocumentRequirementsResponse
+        {
+            Documents = new List<RequiredDocumentItem>
+            {
+                new() { Type = "KBIS", MaxFiles = 1, Documents = [new ExpandoObject()] }, // Uploaded
+                new() { Type = autresVariant, MaxFiles = 1, Documents = [] } // Missing but optional (any casing)
+            }
+        };
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requirements);
+
+        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that when "AUTRES" is missing along with other required documents,
+    /// only the non-AUTRES types are reported as missing.
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_AutresAndOtherDocsMissing_ThrowsWithOnlyNonAutresTypes()
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        var requirements = new DocumentRequirementsResponse
+        {
+            Documents = new List<RequiredDocumentItem>
+            {
+                new() { Type = "KBIS", MaxFiles = 1, Documents = [] }, // Missing - REQUIRED
+                new() { Type = "AUTRES", MaxFiles = 1, Documents = [] }, // Missing - OPTIONAL
+                new() { Type = "STATUTS", MaxFiles = 1, Documents = [new ExpandoObject()] } // Uploaded
+            }
+        };
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requirements);
+
+        Func<Task> act = () => _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<GatewayException>();
+        exception.Which.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        exception.Which.ErrorCode.Should().Be("SupportingDocumentsStepNotReady");
+        exception.Which.Message.Should().Contain("KBIS");
+        exception.Which.Message.Should().NotContain("AUTRES"); // AUTRES should NOT be in error message
+    }
+
+    /// <summary>
+    /// Verifies graceful fallback when GetDocumentRequirementsAsync returns null.
+    /// </summary>
+    [Fact]
+    public async Task CompleteAsync_RequirementsNull_AllowsCompletion()
+    {
+        var uploadPlan = new DocumentsToUploadToExternalServiceResponse(
+            "AK12345",
+            Array.Empty<int>(),
+            DocumentsToUploadToExternalServiceStatus.NoDocumentsToUpload);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentsToUploadToExternalServiceAsync(
+                42,
+                "SupportingDocuments",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadPlan);
+
+        _prospectClient
+            .Setup(client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentRequirementsResponse?)null);
+
+        var result = await _strategy.CompleteAsync(42, "SupportingDocuments", CancellationToken.None);
+
+        result.SucceededDocumentIds.Should().BeEmpty();
+        result.FailedDocumentIds.Should().BeEmpty();
+
+        _prospectClient.Verify(
+            client => client.GetDocumentRequirementsAsync(42, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }
