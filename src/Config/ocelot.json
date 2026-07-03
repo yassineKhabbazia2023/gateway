@@ -2093,7 +2093,12 @@
       ],
       "UpstreamHttpMethod": [
         "POST"
-      ]
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      }
     },
     {
       "SwaggerKey": "Account",

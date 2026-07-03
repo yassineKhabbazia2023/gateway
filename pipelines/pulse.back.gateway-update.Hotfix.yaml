@@ -15,7 +15,7 @@ stages:
 - template: templates/update-gateway.yaml
   parameters:
     deployToDev: false
-    deployToItg: false
+    deployToItg: 'no'
     deployToRec: false
     deployToPrd: ${{ parameters.deployToPrd }}
     isHotfix: true

@@ -50,6 +50,25 @@ namespace ApiGateway.UnitTests.Extensions
         }
 
         [Fact]
+        public async Task PrepareRequestHeader_WhenCallerAlreadySentContactHeaders_ShouldReplaceNotDuplicate()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, _baseUri);
+            request.Headers.Add("ContactEmail", "spoofed@email.com");
+            request.Headers.Add("CurrentUser", "spoofed-id");
+            request.Headers.Add("ContactType", "Spoofed");
+
+            var contactEmail = "contact@email.com";
+            var contactId = "contact-id";
+            var contactType = "Collaborateur";
+
+            await request.PrepareRequestHeader(contactEmail, contactId, contactType, _mockAccountService.Object);
+
+            request.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be(contactEmail);
+            request.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be(contactId);
+            request.Headers.GetValues("ContactType").Should().ContainSingle().Which.Should().Be(contactType);
+        }
+
+        [Fact]
         public async Task PrepareRequestHeader_WhenContactIsGivenAndCurrentUser_ShouldSetContactInHeadersAndRequestUri()
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUri}/{HttpRequestMessageConstants.CurrentUserUriFragment}?search=firstname");

@@ -56,6 +56,13 @@ public static class HttpRequestMessageExtensions
 
         if (!string.IsNullOrWhiteSpace(contactId))
         {
+            // Remove any caller-supplied values first: these headers carry the identity resolved
+            // from the validated JWT and must not be appended to (and thus spoofable/duplicated by)
+            // whatever the client already sent (e.g. refreshToken's client-supplied ContactEmail).
+            request.Headers.Remove("CurrentUser");
+            request.Headers.Remove("ContactEmail");
+            request.Headers.Remove("ContactType");
+
             request.Headers.Add("CurrentUser", contactId);
             request.Headers.Add("ContactEmail", contactEmail);
             request.Headers.Add("ContactType", contactType?.ToString());
