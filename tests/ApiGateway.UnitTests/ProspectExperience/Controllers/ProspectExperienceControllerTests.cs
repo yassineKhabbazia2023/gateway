@@ -160,6 +160,35 @@ public class ProspectExperienceControllerTests
         objectResult.Value.Should().BeSameAs(prospect);
     }
 
+    /// <summary>
+    /// Verifies that a collaborator can be selected as both account manager and case manager.
+    /// </summary>
+    [Fact]
+    public async Task CreateProspect_WhenSameCollaboratorHasBothRoles_CallsOrchestration()
+    {
+        var request = BuildRequest();
+        request.CaseManagerContactId = request.AccountManagerContactId;
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _orchestrationService
+            .Setup(s => s.CreateAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectListItem
+            {
+                AccountId = 43,
+                AccountNumber = "AK-001",
+                AccountType = AccountType.PROSPECT,
+                LegalName = "ACME SARL",
+                StepCode = ProspectStepCode.InProgress
+            });
+
+        var result = await _controller.CreateProspect(request, CancellationToken.None);
+
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.Created);
+        _orchestrationService.Verify(s => s.CreateAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     [Fact]
     public async Task CreateProspect_WhenOrchestrationThrowsProspectOrchestrationException_BubblesUp()
     {

@@ -862,12 +862,37 @@ public class ProspectOrchestrationService(
 
         return items
             .GroupBy(item => item.ContactId)
-            .Select(group => new CreateRolesBulkItem
+            .SelectMany(group =>
             {
-                ContactId = group.Key,
-                IsSignatory = group.Any(item => item.IsSignatory == true),
-                ContactFlagPortailFactures = group.Any(item => item.ContactFlagPortailFactures == true) ? true : null,
-                RoleCode = group.Select(item => item.RoleCode).FirstOrDefault(code => code is not null)
+                var isSignatory = group.Any(item => item.IsSignatory == true);
+                var contactFlagPortailFactures = group.Any(item => item.ContactFlagPortailFactures == true) ? true : (bool?)null;
+                var roleCodes = group
+                    .Select(item => item.RoleCode)
+                    .Where(code => code is not null)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                if (roleCodes.Length == 0)
+                {
+                    return new[]
+                    {
+                        new CreateRolesBulkItem
+                        {
+                            ContactId = group.Key,
+                            IsSignatory = isSignatory,
+                            ContactFlagPortailFactures = contactFlagPortailFactures
+                        }
+                    };
+                }
+
+                // TODO: Confirm the historical naming with the business team before renaming the fields or role codes.
+                return roleCodes.Select(roleCode => new CreateRolesBulkItem
+                {
+                    ContactId = group.Key,
+                    IsSignatory = isSignatory,
+                    ContactFlagPortailFactures = contactFlagPortailFactures,
+                    RoleCode = roleCode
+                });
             })
             .ToArray();
     }

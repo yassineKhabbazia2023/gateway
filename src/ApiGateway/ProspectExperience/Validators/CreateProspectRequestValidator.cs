@@ -19,9 +19,6 @@ public class CreateProspectRequestValidator : AbstractValidator<CreateProspectRe
         {
             RuleFor(x => x.CaseManagerContactId!.Value).GreaterThan(0)
                 .WithName(nameof(CreateProspectRequest.CaseManagerContactId));
-            RuleFor(x => x).Must(x => x.CaseManagerContactId != x.AccountManagerContactId)
-                .WithName(nameof(CreateProspectRequest.CaseManagerContactId))
-                .WithMessage("CaseManagerContactId ne doit pas être identique à AccountManagerContactId.");
         });
         RuleFor(x => x.Department).NotEmpty();
         RuleFor(x => x.Region).NotEmpty();

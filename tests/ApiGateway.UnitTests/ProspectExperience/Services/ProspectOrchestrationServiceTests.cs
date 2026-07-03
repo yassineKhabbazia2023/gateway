@@ -188,6 +188,33 @@ public class ProspectOrchestrationServiceTests
         _prospect.Verify(p => p.PersistBeneficiariesAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that the same collaborator can receive both prospect collaborator roles.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WhenSameCollaboratorIsAccountManagerAndCaseManager_SendsBothRoleCodes()
+    {
+        IReadOnlyCollection<CreateRolesBulkItem>? capturedItems = null;
+        var request = BuildRequest();
+        request.CaseManagerContactId = request.AccountManagerContactId;
+
+        SetupHappyPath(42, "AK-001", 43, 99);
+        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((_, items, _, _) => capturedItems = items)
+            .ReturnsAsync(new CreateRolesBulkResult());
+
+        await _service.CreateAsync(request, CancellationToken.None);
+
+        capturedItems.Should().NotBeNull();
+        capturedItems!.Where(item => item.ContactId == request.AccountManagerContactId)
+            .Should()
+            .BeEquivalentTo(new[]
+            {
+                new CreateRolesBulkItem { ContactId = request.AccountManagerContactId, IsSignatory = false, RoleCode = "AM" },
+                new CreateRolesBulkItem { ContactId = request.AccountManagerContactId, IsSignatory = false, RoleCode = "CLP" }
+            });
+    }
+
     [Fact]
     public async Task CreateAsync_WhenSiretExistsInAkuiteo_ThrowsSiretAlreadyExistsAndSkipsAllOtherSteps()
     {
