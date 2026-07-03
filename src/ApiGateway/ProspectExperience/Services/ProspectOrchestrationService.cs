@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ApiGateway.Account;
 using ApiGateway.Account.Constants;
 using ApiGateway.Configuration;
@@ -23,6 +24,10 @@ public class ProspectOrchestrationService(
     IContactService contactService,
     ILogger<ProspectOrchestrationService> logger) : IProspectService
 {
+    private const string SupportingDocumentsStepName = "SupportingDocuments";
+    private const string OptionalSupportingDocumentType = "AUTRES";
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> SupportingDocumentsCompletionLocks = new();
+
     /// <inheritdoc />
     public async Task<DocumentUploadResultResponse> CompleteStepAsync(
         int prospectId,
@@ -957,9 +962,7 @@ public class ProspectOrchestrationService(
             return;
         }
 
-        var allMandatoryUploaded = requirements.Documents
-            .Where(r => !string.Equals(r.Type, "AUTRES", StringComparison.OrdinalIgnoreCase))
-            .All(r => r.Documents.Count >= r.MaxFiles);
+        var allMandatoryUploaded = AreAllMandatorySupportingDocumentsUploaded(requirements);
 
         if (!allMandatoryUploaded)
         {
@@ -970,15 +973,34 @@ public class ProspectOrchestrationService(
         }
 
         // 3. Trigger Akuiteo upload + step completion (non-blocking - log errors but don't fail upload response)
+        var completionLock = SupportingDocumentsCompletionLocks.GetOrAdd(prospectId, static _ => new SemaphoreSlim(1, 1));
+        await completionLock.WaitAsync(ct);
         try
         {
+            var refreshedRequirements = await prospectClient.GetDocumentRequirementsAsync(prospectId, ct);
+            if (refreshedRequirements is null)
+            {
+                logger.LogWarning(
+                    "Could not retrieve document requirements for prospect {ProspectId}. Skipping automatic step completion.",
+                    prospectId);
+                return;
+            }
+
+            if (!AreAllMandatorySupportingDocumentsUploaded(refreshedRequirements))
+            {
+                logger.LogInformation(
+                    "Not all mandatory documents uploaded for prospect {ProspectId}. Step completion postponed.",
+                    prospectId);
+                return;
+            }
+
             logger.LogInformation(
                 "All mandatory documents uploaded for prospect {ProspectId}. Triggering automatic Akuiteo sync and step completion.",
                 prospectId);
 
             var strategy = stepCompletionStrategies
                 .OrderByDescending(s => s.Priority)
-                .FirstOrDefault(s => s.CanHandle("SupportingDocuments"));
+                .FirstOrDefault(s => s.CanHandle(SupportingDocumentsStepName));
 
             if (strategy is null)
             {
@@ -988,7 +1010,7 @@ public class ProspectOrchestrationService(
             }
             else
             {
-                await strategy.CompleteAsync(prospectId, "SupportingDocuments", ct, currentUserId);
+                await strategy.CompleteAsync(prospectId, SupportingDocumentsStepName, ct, currentUserId);
                 logger.LogInformation(
                     "Supporting documents step completed successfully for prospect {ProspectId}",
                     prospectId);
@@ -1002,6 +1024,22 @@ public class ProspectOrchestrationService(
                 prospectId);
             // Don't rethrow - document upload already succeeded
         }
+        finally
+        {
+            completionLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Determines whether every mandatory supporting document type has reached the expected file count.
+    /// </summary>
+    /// <param name="requirements">The supporting document requirements returned by Prospect.</param>
+    /// <returns>True when all mandatory supporting documents are uploaded; otherwise false.</returns>
+    private static bool AreAllMandatorySupportingDocumentsUploaded(DocumentRequirementsResponse requirements)
+    {
+        return requirements.Documents
+            .Where(r => !string.Equals(r.Type, OptionalSupportingDocumentType, StringComparison.OrdinalIgnoreCase))
+            .All(r => r.Documents.Count >= r.MaxFiles);
     }
 
     private sealed record SignatoryAssignment(int ContactId, IEnumerable<string> ContactTypes);

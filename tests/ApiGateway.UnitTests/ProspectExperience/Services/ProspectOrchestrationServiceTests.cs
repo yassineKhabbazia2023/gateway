@@ -1177,8 +1177,183 @@ public class ProspectOrchestrationServiceTests
         await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
 
         _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
-        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent supporting document uploads for the same prospect serialize automatic step completion.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenConcurrentUploadsBecomeReady_SerializesStepCompletion()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var firstRequest = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+        var secondRequest = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "STATUTS",
+            File = Mock.Of<IFormFile>()
+        };
+        var completionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var activeCompletions = 0;
+        var maximumConcurrentCompletions = 0;
+        var completionCalls = 0;
+        var stepCompletionStrategy = new Mock<IProspectStepCompletionStrategy>();
+
+        stepCompletionStrategy.SetupGet(s => s.Priority).Returns(100);
+        stepCompletionStrategy.Setup(s => s.CanHandle("SupportingDocuments")).Returns(true);
+        stepCompletionStrategy
+            .Setup(s => s.CompleteAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId))
+            .Returns<int, string, CancellationToken, int?>(async (_, _, _, _) =>
+            {
+                var callNumber = Interlocked.Increment(ref completionCalls);
+                var active = Interlocked.Increment(ref activeCompletions);
+                maximumConcurrentCompletions = Math.Max(maximumConcurrentCompletions, active);
+
+                try
+                {
+                    if (callNumber == 1)
+                    {
+                        completionStarted.SetResult();
+                        await releaseFirstCompletion.Task;
+                    }
+
+                    return new DocumentExternalUploadBatchResult([], []);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeCompletions);
+                }
+            });
+
+        var service = new ProspectOrchestrationService(
+            _registry.Object,
+            _prospect.Object,
+            [stepCompletionStrategy.Object],
+            _accountService.Object,
+            _contactService.Object,
+            _logger.Object);
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, firstRequest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(41));
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, secondRequest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+        _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] }
+                ]
+            });
+
+        var firstUpload = service.UploadSupportingDocumentAsync(prospectId, currentUserId, firstRequest, CancellationToken.None);
+        await completionStarted.Task;
+        var secondUpload = service.UploadSupportingDocumentAsync(prospectId, currentUserId, secondRequest, CancellationToken.None);
+
+        await Task.Delay(50);
+        completionCalls.Should().Be(1);
+
+        releaseFirstCompletion.SetResult();
+        await Task.WhenAll(firstUpload, secondUpload);
+
+        completionCalls.Should().Be(2);
+        maximumConcurrentCompletions.Should().Be(1);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, It.IsAny<UploadSupportingDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(4));
+        stepCompletionStrategy.Verify(s => s.CompleteAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Exactly(2));
+    }
+
+    /// <summary>
+    /// Verifies that automatic completion is skipped when the in-lock requirements refresh fails.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenRefreshedRequirementsAreNull_DoesNotCompleteStep()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.SetupSequence(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] }
+                ]
+            })
+            .ReturnsAsync((DocumentRequirementsResponse?)null);
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Could not retrieve document requirements")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that automatic completion is skipped when the in-lock requirements refresh is no longer complete.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenRefreshedRequirementsAreNotComplete_DoesNotCompleteStep()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
+
+        _prospect.SetupSequence(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [new object()] }
+                ]
+            })
+            .ReturnsAsync(new DocumentRequirementsResponse
+            {
+                Documents =
+                [
+                    new RequiredDocumentItem { Type = "KBIS", MaxFiles = 1, Documents = [new object()] },
+                    new RequiredDocumentItem { Type = "STATUTS", MaxFiles = 1, Documents = [] }
+                ]
+            });
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
     }
 
     /// <summary>
@@ -1331,6 +1506,7 @@ public class ProspectOrchestrationServiceTests
         await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
 
         _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(prospectId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
         _logger.Verify(
             l => l.Log(
