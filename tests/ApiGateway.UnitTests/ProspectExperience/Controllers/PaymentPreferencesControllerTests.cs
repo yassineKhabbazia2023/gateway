@@ -17,8 +17,14 @@ namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 /// </summary>
 public sealed class PaymentPreferencesControllerTests
 {
+    // The route now carries the account identifier, which the controller resolves to the prospect
+    // identifier before delegating to the orchestration service. Distinct values prove the mapping.
+    private const int AccountId = 20;
+    private const int ProspectId = 10;
+
     private readonly Mock<IPaymentPreferencesOrchestrationService> _service = new();
     private readonly Mock<IContactService> _contactService = new();
+    private readonly Mock<IProspectApiClient> _prospectApiClient = new();
 
     /// <summary>
     /// Verifies that GET returns the payment preference payload.
@@ -28,14 +34,33 @@ public sealed class PaymentPreferencesControllerTests
     {
         var expected = new PaymentPreferenceResponse { PaymentType = "OTHER" };
         _service
-            .Setup(service => service.GetAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.GetAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var controller = CreateController("user@test.fr");
 
-        var actionResult = await controller.GetAsync(10, CancellationToken.None);
+        var actionResult = await controller.GetAsync(AccountId, CancellationToken.None);
 
         var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().BeSameAs(expected);
+    }
+
+    /// <summary>
+    /// Verifies that GET returns not found when the account cannot be resolved to a prospect.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenAccountIsNotResolved_Returns404()
+    {
+        var controller = CreateController("user@test.fr");
+        _prospectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var actionResult = await controller.GetAsync(AccountId, CancellationToken.None);
+
+        actionResult.Result.Should().BeOfType<NotFoundResult>();
+        _service.Verify(
+            service => service.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -45,11 +70,11 @@ public sealed class PaymentPreferencesControllerTests
     public async Task GetAsync_WhenPreferenceIsMissing_Returns404()
     {
         _service
-            .Setup(service => service.GetAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.GetAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((PaymentPreferenceResponse?)null);
         var controller = CreateController("user@test.fr");
 
-        var actionResult = await controller.GetAsync(10, CancellationToken.None);
+        var actionResult = await controller.GetAsync(AccountId, CancellationToken.None);
 
         actionResult.Result.Should().BeOfType<NotFoundResult>();
     }
@@ -61,11 +86,11 @@ public sealed class PaymentPreferencesControllerTests
     public async Task DownloadSignedSepaMandateAsync_WhenDocumentExists_ReturnsDocumentContentType()
     {
         _service
-            .Setup(service => service.DownloadSignedSepaMandateAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.DownloadSignedSepaMandateAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ProspectDocumentContentResponse([4, 5, 6], "application/pdf", "signed.pdf"));
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+        var result = await controller.DownloadSignedSepaMandateAsync(AccountId, CancellationToken.None);
 
         var file = result.Should().BeOfType<FileContentResult>().Subject;
         file.ContentType.Should().Be("application/pdf");
@@ -80,11 +105,11 @@ public sealed class PaymentPreferencesControllerTests
     public async Task DownloadSignedSepaMandateAsync_WhenDocumentIsUnavailable_Returns404()
     {
         _service
-            .Setup(service => service.DownloadSignedSepaMandateAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.DownloadSignedSepaMandateAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ProspectDocumentContentResponse?)null);
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.DownloadSignedSepaMandateAsync(10, CancellationToken.None);
+        var result = await controller.DownloadSignedSepaMandateAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -96,14 +121,14 @@ public sealed class PaymentPreferencesControllerTests
     public async Task SetOtherAsync_WhenSaved_ReturnsNoContent()
     {
         _service
-            .Setup(service => service.SetOtherAsync(10, "user@test.fr", 7, It.IsAny<CancellationToken>()))
+            .Setup(service => service.SetOtherAsync(ProspectId, "user@test.fr", 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _contactService
             .Setup(service => service.GetContactAsync("user@test.fr"))
             .ReturnsAsync(new ContactModel { Id = 7, Email = "user@test.fr" });
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetOtherAsync(10, CancellationToken.None);
+        var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -116,9 +141,32 @@ public sealed class PaymentPreferencesControllerTests
     {
         var controller = CreateController(" ");
 
-        var result = await controller.SetOtherAsync(10, CancellationToken.None);
+        var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<BadRequestObjectResult>();
+        _service.Verify(
+            service => service.SetOtherAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST OTHER returns not found when the account cannot be resolved to a prospect.
+    /// </summary>
+    [Fact]
+    public async Task SetOtherAsync_WhenAccountIsNotResolved_Returns404()
+    {
+        var controller = CreateController("user@test.fr");
+        _prospectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundResult>();
         _service.Verify(
             service => service.SetOtherAsync(
                 It.IsAny<int>(),
@@ -135,14 +183,14 @@ public sealed class PaymentPreferencesControllerTests
     public async Task SetOtherAsync_WhenSaveFails_Returns404()
     {
         _service
-            .Setup(service => service.SetOtherAsync(10, "user@test.fr", 7, It.IsAny<CancellationToken>()))
+            .Setup(service => service.SetOtherAsync(ProspectId, "user@test.fr", 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _contactService
             .Setup(service => service.GetContactAsync("user@test.fr"))
             .ReturnsAsync(new ContactModel { Id = 7, Email = "user@test.fr" });
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetOtherAsync(10, CancellationToken.None);
+        var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -165,7 +213,7 @@ public sealed class PaymentPreferencesControllerTests
             });
         _service
             .Setup(service => service.SetSepaAsync(
-                10,
+                ProspectId,
                 request,
                 "user@test.fr",
                 "Jean",
@@ -175,7 +223,7 @@ public sealed class PaymentPreferencesControllerTests
             .ReturnsAsync(SepaPaymentPreferenceOrchestrationResult.Completed("https://signature.test"));
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, request, CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeOfType<SepaPaymentPreferenceResponse>()
@@ -200,7 +248,7 @@ public sealed class PaymentPreferencesControllerTests
             });
         _service
             .Setup(service => service.SetSepaAsync(
-                10,
+                ProspectId,
                 request,
                 "user@test.fr",
                 "Jean",
@@ -210,7 +258,7 @@ public sealed class PaymentPreferencesControllerTests
             .ReturnsAsync(SepaPaymentPreferenceOrchestrationResult.FromOutcome(SepaPaymentPreferenceOrchestrationOutcome.Forbidden));
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, request, CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -225,7 +273,7 @@ public sealed class PaymentPreferencesControllerTests
         request.File = new FormFile(new MemoryStream(), 0, 0, "file", "empty.pdf");
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, request, CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
         result.Should().BeOfType<ObjectResult>().Which.Value.Should().BeOfType<ValidationProblemDetails>();
         _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
@@ -249,9 +297,36 @@ public sealed class PaymentPreferencesControllerTests
     {
         var controller = CreateController(" ");
 
-        var result = await controller.SetSepaAsync(10, CreateSepaRequest(), CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
         result.Should().BeOfType<BadRequestObjectResult>();
+        _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
+        _service.Verify(
+            service => service.SetSepaAsync(
+                It.IsAny<int>(),
+                It.IsAny<SepaPaymentPreferenceRequest>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that POST SEPA returns not found when the account cannot be resolved to a prospect.
+    /// </summary>
+    [Fact]
+    public async Task SetSepaAsync_WhenAccountIsNotResolved_ReturnsNotFound()
+    {
+        var controller = CreateController("user@test.fr");
+        _prospectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundResult>();
         _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
         _service.Verify(
             service => service.SetSepaAsync(
@@ -276,7 +351,7 @@ public sealed class PaymentPreferencesControllerTests
             .ReturnsAsync((ContactModel?)null);
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, CreateSepaRequest(), CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
         _service.Verify(
@@ -308,7 +383,7 @@ public sealed class PaymentPreferencesControllerTests
             });
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, CreateSepaRequest(), CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
         result.Should().BeOfType<BadRequestObjectResult>();
         _service.Verify(
@@ -333,7 +408,7 @@ public sealed class PaymentPreferencesControllerTests
         SetupConnectedContact();
         _service
             .Setup(service => service.SetSepaAsync(
-                10,
+                ProspectId,
                 request,
                 "user@test.fr",
                 "Jean",
@@ -343,7 +418,7 @@ public sealed class PaymentPreferencesControllerTests
             .ReturnsAsync(SepaPaymentPreferenceOrchestrationResult.FromOutcome(SepaPaymentPreferenceOrchestrationOutcome.NotFound));
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, request, CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -358,7 +433,7 @@ public sealed class PaymentPreferencesControllerTests
         SetupConnectedContact();
         _service
             .Setup(service => service.SetSepaAsync(
-                10,
+                ProspectId,
                 request,
                 "user@test.fr",
                 "Jean",
@@ -368,7 +443,7 @@ public sealed class PaymentPreferencesControllerTests
             .ReturnsAsync(SepaPaymentPreferenceOrchestrationResult.FromOutcome(SepaPaymentPreferenceOrchestrationOutcome.MandateFailed));
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.SetSepaAsync(10, request, CancellationToken.None);
+        var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
         result.Should().BeOfType<StatusCodeResult>()
             .Which.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
@@ -381,13 +456,32 @@ public sealed class PaymentPreferencesControllerTests
     public async Task ResetAsync_WhenReset_ReturnsNoContent()
     {
         _service
-            .Setup(service => service.ResetAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.ResetAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.ResetAsync(10, CancellationToken.None);
+        var result = await controller.ResetAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NoContentResult>();
+    }
+
+    /// <summary>
+    /// Verifies that DELETE returns not found when the account cannot be resolved to a prospect.
+    /// </summary>
+    [Fact]
+    public async Task ResetAsync_WhenAccountIsNotResolved_Returns404()
+    {
+        var controller = CreateController("user@test.fr");
+        _prospectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        var result = await controller.ResetAsync(AccountId, CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundResult>();
+        _service.Verify(
+            service => service.ResetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -397,11 +491,11 @@ public sealed class PaymentPreferencesControllerTests
     public async Task ResetAsync_WhenResetFails_Returns404()
     {
         _service
-            .Setup(service => service.ResetAsync(10, It.IsAny<CancellationToken>()))
+            .Setup(service => service.ResetAsync(ProspectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         var controller = CreateController("user@test.fr");
 
-        var result = await controller.ResetAsync(10, CancellationToken.None);
+        var result = await controller.ResetAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -413,6 +507,12 @@ public sealed class PaymentPreferencesControllerTests
     /// <returns>The tested controller.</returns>
     private PaymentPreferencesController CreateController(string email)
     {
+        // By default the account resolves to the prospect; individual tests override this to null
+        // to exercise the unresolved-account path.
+        _prospectApiClient
+            .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ProspectId);
+
         var identity = new ClaimsIdentity(
             [new Claim(ClaimTypes.Email, email)],
             authenticationType: "Test",
@@ -420,7 +520,11 @@ public sealed class PaymentPreferencesControllerTests
             roleType: ClaimTypes.Role);
         var userContext = new Mock<IUserContext>(MockBehavior.Strict);
         userContext.SetupGet(context => context.User).Returns(new ClaimsPrincipal(identity));
-        return new PaymentPreferencesController(userContext.Object, _contactService.Object, _service.Object);
+        return new PaymentPreferencesController(
+            userContext.Object,
+            _contactService.Object,
+            _prospectApiClient.Object,
+            _service.Object);
     }
 
     /// <summary>
