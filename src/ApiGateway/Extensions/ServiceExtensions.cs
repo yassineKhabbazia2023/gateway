@@ -63,6 +63,7 @@ public static class ServiceExtensions
         services.AddScoped<IProspectStepCompletionStrategy, BeneficiaryStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, SupportingDocumentsStepCompletionStrategy>();
         services.AddScoped<IProspectStepCompletionStrategy, DefaultStepCompletionStrategy>();
+        services.AddScoped<IAdditionalSupportingDocumentUploadStrategy, AdditionalSupportingDocumentUploadStrategy>();
         services.AddScoped<ICreatePasswordExperienceService, CreatePasswordExperienceService>();
         services.AddScoped<ICommercialProposalOrchestrationService, CommercialProposalOrchestrationService>();
         services.AddScoped<IEngagementLetterOrchestrationService, EngagementLetterOrchestrationService>();

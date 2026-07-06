@@ -20,6 +20,7 @@ public class ProspectOrchestrationServiceTests
     private readonly Mock<IProspectApiClient> _prospect;
     private readonly Mock<IAccountService> _accountService;
     private readonly Mock<IContactService> _contactService;
+    private readonly Mock<IAdditionalSupportingDocumentUploadStrategy> _additionalSupportingDocumentUploadStrategy;
     private readonly Mock<ILogger<ProspectOrchestrationService>> _logger;
     private readonly List<IProspectStepCompletionStrategy> _stepCompletionStrategies;
     private readonly ProspectOrchestrationService _service;
@@ -30,6 +31,7 @@ public class ProspectOrchestrationServiceTests
         _prospect = new Mock<IProspectApiClient>();
         _accountService = new Mock<IAccountService>();
         _contactService = new Mock<IContactService>();
+        _additionalSupportingDocumentUploadStrategy = new Mock<IAdditionalSupportingDocumentUploadStrategy>();
         _logger = new Mock<ILogger<ProspectOrchestrationService>>();
         _stepCompletionStrategies =
         [
@@ -45,6 +47,7 @@ public class ProspectOrchestrationServiceTests
             _registry.Object,
             _prospect.Object,
             _stepCompletionStrategies,
+            _additionalSupportingDocumentUploadStrategy.Object,
             _accountService.Object,
             _contactService.Object,
             _logger.Object);
@@ -1182,6 +1185,73 @@ public class ProspectOrchestrationServiceTests
     }
 
     /// <summary>
+    /// Verifies that complementary supporting documents are sent directly to Akuitéo without completing the step.
+    /// </summary>
+    [Theory]
+    [InlineData("AUTRES")]
+    [InlineData("Autres")]
+    public async Task UploadSupportingDocumentAsync_WhenDocumentTypeIsAutres_UploadsDirectlyWithoutStepCompletion(string documentType)
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var documentId = 99;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = documentType,
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(documentId));
+        _additionalSupportingDocumentUploadStrategy
+            .Setup(strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DocumentExternalUploadBatchResult([documentId], []));
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _additionalSupportingDocumentUploadStrategy.Verify(
+            strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that complementary document Akuitéo upload failures do not fail the stored document upload.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenAutresAkuiteoUploadFails_DoesNotThrowOrCompleteStep()
+    {
+        var prospectId = 42;
+        var currentUserId = 100;
+        var documentId = 99;
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "AUTRES",
+            File = Mock.Of<IFormFile>()
+        };
+
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UploadSupportingDocumentResult.Success(documentId));
+        _additionalSupportingDocumentUploadStrategy
+            .Setup(strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Akuitéo unavailable"));
+
+        await _service.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+
+        _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Failed to upload complementary supporting document")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    /// <summary>
     /// Verifies that concurrent supporting document uploads for the same prospect serialize automatic step completion.
     /// </summary>
     [Fact]
@@ -1236,6 +1306,7 @@ public class ProspectOrchestrationServiceTests
             _registry.Object,
             _prospect.Object,
             [stepCompletionStrategy.Object],
+            _additionalSupportingDocumentUploadStrategy.Object,
             _accountService.Object,
             _contactService.Object,
             _logger.Object);
@@ -1443,6 +1514,7 @@ public class ProspectOrchestrationServiceTests
             _registry.Object,
             _prospect.Object,
             [],
+            _additionalSupportingDocumentUploadStrategy.Object,
             _accountService.Object,
             _contactService.Object,
             _logger.Object);

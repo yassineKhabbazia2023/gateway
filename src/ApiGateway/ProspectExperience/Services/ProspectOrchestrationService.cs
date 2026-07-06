@@ -20,6 +20,7 @@ public class ProspectOrchestrationService(
     IRegistryProspectClient registryClient,
     IProspectApiClient prospectClient,
     IEnumerable<IProspectStepCompletionStrategy> stepCompletionStrategies,
+    IAdditionalSupportingDocumentUploadStrategy additionalSupportingDocumentUploadStrategy,
     IAccountService accountService,
     IContactService contactService,
     ILogger<ProspectOrchestrationService> logger) : IProspectService
@@ -952,6 +953,15 @@ public class ProspectOrchestrationService(
             prospectId,
             uploadResult.DocumentId!.Value);
 
+        if (IsAdditionalSupportingDocument(request.DocumentType))
+        {
+            await UploadAdditionalSupportingDocumentAsync(
+                prospectId,
+                uploadResult.DocumentId.Value,
+                ct);
+            return;
+        }
+
         // 2. Check if all mandatory documents uploaded
         var requirements = await prospectClient.GetDocumentRequirementsAsync(prospectId, ct);
         if (requirements is null)
@@ -1040,6 +1050,47 @@ public class ProspectOrchestrationService(
         return requirements.Documents
             .Where(r => !string.Equals(r.Type, OptionalSupportingDocumentType, StringComparison.OrdinalIgnoreCase))
             .All(r => r.Documents.Count >= r.MaxFiles);
+    }
+
+    /// <summary>
+    /// Determines whether the document type is a complementary supporting document.
+    /// </summary>
+    /// <param name="documentType">The uploaded supporting document type.</param>
+    /// <returns>True when the document type is complementary; otherwise false.</returns>
+    private static bool IsAdditionalSupportingDocument(string documentType)
+    {
+        return string.Equals(documentType, OptionalSupportingDocumentType, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Uploads a complementary supporting document to Akuitéo without completing the supporting documents step.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="documentId">The stored document identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task UploadAdditionalSupportingDocumentAsync(
+        int prospectId,
+        int documentId,
+        CancellationToken ct)
+    {
+        try
+        {
+            logger.LogInformation(
+                "Complementary supporting document {DocumentId} uploaded to storage for prospect {ProspectId}. Triggering direct Akuitéo sync.",
+                documentId,
+                prospectId);
+
+            await additionalSupportingDocumentUploadStrategy.UploadAsync(prospectId, documentId, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to upload complementary supporting document {DocumentId} to Akuitéo for prospect {ProspectId}. Document upload succeeded.",
+                documentId,
+                prospectId);
+        }
     }
 
     private sealed record SignatoryAssignment(int ContactId, IEnumerable<string> ContactTypes);
