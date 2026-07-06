@@ -475,8 +475,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/beneficiaries",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/beneficiaries",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/beneficiaries",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/beneficiaries",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -499,8 +499,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/beneficiaries/{beneficiaryId}/identity-documents",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/beneficiaries/{beneficiaryId}/identity-documents",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -595,8 +595,8 @@
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/documents/{documentId}",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/documents/{documentId}",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/documents/{documentId}",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/documents/{documentId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {

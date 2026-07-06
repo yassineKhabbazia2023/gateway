@@ -4,8 +4,8 @@
 
 | Direction | Method and path |
 | --- | --- |
-| Gateway upstream | `POST /gtw/prospect/api/prospects/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents` |
-| Prospect downstream | `POST /api/prospects/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents` |
+| Gateway upstream | `POST /gtw/prospect/api/onboarding/{accountId}/beneficiaries/{beneficiaryId}/identity-documents` |
+| Prospect downstream | `POST /api/prospects/{accountId}/beneficiaries/{beneficiaryId}/identity-documents` |
 
 The Gateway is a transparent proxy for this endpoint:
 
