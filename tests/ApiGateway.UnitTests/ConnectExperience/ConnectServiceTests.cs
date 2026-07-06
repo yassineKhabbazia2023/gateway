@@ -18,6 +18,7 @@ public class ExperienceServicesTests
     private readonly Mock<IOfferService> _offerMock = new();
     private ConnectServices CreateService() =>
         new(_contactMock.Object, _authMock.Object, _offerMock.Object, _accountMock.Object);
+    private readonly string _collabType = "Collaborator";
 
     [Fact]
     public async Task GetUserInformation_ShouldReturnUserInfo_WhenContactExists()
@@ -80,10 +81,10 @@ public class ExperienceServicesTests
     {
         var accountNumber = 324;
         var contactId = 123;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync((Summary?)null);
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId, _collabType)).ReturnsAsync((Summary?)null);
         var service = CreateService();
 
-        var result = async () => await service.GetSummaryAsync(accountNumber, contactId);
+        var result = async () => await service.GetSummaryAsync(accountNumber, contactId, _collabType);
 
         await result.Should().ThrowAsync<BadRequestException>();
     }
@@ -93,12 +94,11 @@ public class ExperienceServicesTests
     {
         var accountNumber = 876;
         var contactId = 123;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync(new Summary());
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId, _collabType)).ReturnsAsync(new Summary());
         _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync((SubscriptionStatus[]?)null);
         var service = CreateService();
 
-        var result = async () => await service.GetSummaryAsync(accountNumber, contactId);
-
+        var result = async () => await service.GetSummaryAsync(accountNumber, contactId, _collabType);
         await result.Should().ThrowAsync<BadRequestException>();
     }
 
@@ -108,12 +108,11 @@ public class ExperienceServicesTests
         var account = new Fixture().Create<Summary>();
         var accountNumber = 876;
         var contactId = 123;
-        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId)).ReturnsAsync(account);
+        _accountMock.Setup(s => s.GetSummaryAsync(accountNumber, contactId, _collabType)).ReturnsAsync(account);
         _offerMock.Setup(s => s.GetSubscriptionsAsync(accountNumber)).ReturnsAsync([]);
         var service = CreateService();
 
-        var result = await service.GetSummaryAsync(accountNumber, contactId);
-
+        var result = await service.GetSummaryAsync(accountNumber, contactId, _collabType);
         result.Should().BeEquivalentTo(account);
     }
 
@@ -131,7 +130,7 @@ public class ExperienceServicesTests
         var releaseCalls = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         _accountMock
-            .Setup(s => s.GetSummaryAsync(accountId, contactId))
+            .Setup(s => s.GetSummaryAsync(accountId, contactId, _collabType))
             .Returns(async () =>
             {
                 summaryStarted.SetResult(true);
@@ -153,7 +152,7 @@ public class ExperienceServicesTests
         var service = CreateService();
 
         // Act
-        var resultTask = service.GetSummaryAsync(accountId, contactId);
+        var resultTask = service.GetSummaryAsync(accountId, contactId, _collabType);
         await Task.WhenAll(summaryStarted.Task, subscriptionsStarted.Task).WaitAsync(TimeSpan.FromSeconds(1));
         releaseCalls.SetResult(true);
         var result = await resultTask;
@@ -163,7 +162,7 @@ public class ExperienceServicesTests
         result!.Subscriptions.Should().BeEquivalentTo(expectedSubscriptions);
 
         // Verify both services were called
-        _accountMock.Verify(s => s.GetSummaryAsync(accountId, contactId), Times.Once);
+        _accountMock.Verify(s => s.GetSummaryAsync(accountId, contactId, _collabType), Times.Once);
         _offerMock.Verify(s => s.GetSubscriptionsAsync(accountId), Times.Once);
 
         // Verify calls were made in parallel by requiring both calls to start before either one can complete.
@@ -188,13 +187,13 @@ public class ExperienceServicesTests
             new SubscriptionStatus { OfferCode = "BASIC", OfferName = "Basic Plan" }
         };
 
-        _accountMock.Setup(s => s.GetSummaryAsync(accountId, contactId)).ReturnsAsync(expectedSummary);
+        _accountMock.Setup(s => s.GetSummaryAsync(accountId, contactId, _collabType)).ReturnsAsync(expectedSummary);
         _offerMock.Setup(s => s.GetSubscriptionsAsync(accountId)).ReturnsAsync(expectedSubscriptions);
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetSummaryAsync(accountId, contactId);
+        var result = await service.GetSummaryAsync(accountId, contactId, _collabType);
 
         // Assert
         result.Should().NotBeNull();

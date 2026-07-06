@@ -7,6 +7,6 @@ namespace ApiGateway.ConnectExperience.Services
     {
         Task<UserInformation> GetUserInformation(string userEmail);
 
-        Task<Summary?> GetSummaryAsync(int accountId, int currentUserId);
+        Task<Summary?> GetSummaryAsync(int accountId, int currentUserId, string contactType);
     }
 }

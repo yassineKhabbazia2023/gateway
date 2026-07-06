@@ -3,7 +3,6 @@ using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Services;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace ApiGateway.Account;
@@ -114,11 +113,13 @@ public class AccountService : IAccountService
         return [];
     }
 
-    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId)
+    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId, string contactType)
     {
         var url = $"api/accounts/{accountId}/summary";
-        _httpClient.DefaultRequestHeaders.Add("CurrentUser", $"{currentUserId}");
-        var response = await _httpClient.GetAsync(url);
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");
+        httpRequest.Headers.Add("ContactType", contactType);
+        var response = await _httpClient.SendAsync(httpRequest);
         if (response.IsSuccessStatusCode)
         {
             var summary = await response.Content.ReadFromJsonAsync<Summary>();

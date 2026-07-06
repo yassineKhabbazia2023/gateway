@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.Account;
-using ApiGateway.Authorization;
 using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Services;
@@ -17,6 +16,7 @@ public class AccountServiceTests
     private readonly HttpClient _httpClient;
     private readonly AccountService _accountService;
     private readonly Fixture _fixture;
+    private readonly string _collabType = "Collaborator";
 
     public AccountServiceTests()
     {
@@ -211,7 +211,7 @@ public class AccountServiceTests
             .ReturnsAsync(httpResponse);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId, _collabType);
         result.Should().BeNull();
     }
 
@@ -238,7 +238,7 @@ public class AccountServiceTests
             .ReturnsAsync(httpResponse);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId, _collabType);
         result.Should().BeEquivalentTo(account);
     }
 
@@ -369,7 +369,7 @@ public class AccountServiceTests
             .ReturnsAsync(prospectId);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId, _collabType);
 
         // Assert
         result.Should().NotBeNull();
@@ -411,7 +411,7 @@ public class AccountServiceTests
             .ReturnsAsync(httpResponse);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId, _collabType);
 
         // Assert
         result.Should().NotBeNull();
@@ -457,7 +457,7 @@ public class AccountServiceTests
             .ReturnsAsync((int?)null);
 
         // Act
-        var result = await _accountService.GetSummaryAsync(accountId, contactId);
+        var result = await _accountService.GetSummaryAsync(accountId, contactId, _collabType);
 
         // Assert
         result.Should().NotBeNull();

@@ -43,9 +43,9 @@ public class ConnectServices(
         };
     }
 
-    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId)
+    public async Task<Summary?> GetSummaryAsync(int accountId, int currentUserId, string contactType)
     {
-        var summaryTask = accountService.GetSummaryAsync(accountId, currentUserId);
+        var summaryTask = accountService.GetSummaryAsync(accountId, currentUserId, contactType);
         var subscriptionsTask = offerService.GetSubscriptionsAsync(accountId);
 
         await Task.WhenAll(summaryTask, subscriptionsTask);

@@ -20,6 +20,7 @@ public class ConnectControllerTests
     private readonly int _contactId;
     private readonly int _accountId;
     private readonly ConnectController _sut;
+    private readonly string _collabType;
 
     private class TestClaimsPrincipal : ClaimsPrincipal
     {
@@ -44,11 +45,11 @@ public class ConnectControllerTests
 
         _contactId = 123456;
         _accountId = 316354;
+        _collabType = "Collaborator";
 
         _contactService
             .Setup(s => s.GetContactAsync("bob@truc.io"))
             .ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = _contactId });
-
         _sut = new ConnectController(new TestUserContext(), _experienceServices.Object, _accountService.Object, _contactService.Object);
     }
 
@@ -90,7 +91,7 @@ public class ConnectControllerTests
             .ReturnsAsync(true);
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId, _collabType))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act
@@ -124,7 +125,7 @@ public class ConnectControllerTests
             .ReturnsAsync(false);
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId, _collabType))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act
@@ -175,7 +176,7 @@ public class ConnectControllerTests
             .ReturnsAsync(new List<string> { "COADMI004" });
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId, _collabType))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act
@@ -212,7 +213,7 @@ public class ConnectControllerTests
             .ReturnsAsync(true);
 
         _experienceServices
-            .Setup(s => s.GetSummaryAsync(_accountId, _contactId))
+            .Setup(s => s.GetSummaryAsync(_accountId, _contactId, _collabType))
             .ReturnsAsync(new ApiGateway.Models.Summary());
 
         // Act

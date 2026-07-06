@@ -6,13 +6,10 @@ using ApiGateway.Helpers;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using Pulse.ExceptionMiddleware.Exceptions;
 using System.ComponentModel.DataAnnotations;
-using System.Net;
 
 namespace ApiGateway.ConnectExperience.Controller;
 
@@ -60,7 +57,7 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
                 }
             }
 
-            var result = await experienceServices.GetSummaryAsync(accountId, contactId);
+            var result = await experienceServices.GetSummaryAsync(accountId, contactId, contact.Type!);
             return Ok(result);
         }
         catch (BadRequestException ex)

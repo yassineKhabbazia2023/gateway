@@ -15,7 +15,7 @@ public interface IAccountService
 
     Task<IReadOnlyCollection<FavoriteAccount>?> GetFavoriteAccountsByContactIdAsync(int contactId);
 
-    Task<Summary?> GetSummaryAsync(int accountId, int currentUserId);
+    Task<Summary?> GetSummaryAsync(int accountId, int currentUserId, string contactType);
 
     Task<AccountCreated> CreateAccountForProspectAsync(CreateAccountRequest request, int? currentUserId, CancellationToken ct);
 
