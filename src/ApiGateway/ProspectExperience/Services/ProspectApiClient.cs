@@ -176,17 +176,17 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     }
 
     /// <inheritdoc />
-    public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct)
+    public async Task CompleteStepAsync(int accountId, string stepName, CancellationToken ct)
     {
-        await this.CompleteStepAsync(prospectId, stepName, ct, null);
+        await this.CompleteStepAsync(accountId, stepName, ct, null);
     }
 
     /// <inheritdoc />
-    public async Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct, int? currentUserId)
+    public async Task CompleteStepAsync(int accountId, string stepName, CancellationToken ct, int? currentUserId)
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"api/prospects/{prospectId}/onboarding/steps/{Uri.EscapeDataString(stepName)}/complete");
+            $"api/prospects/{accountId}/onboarding/steps/{Uri.EscapeDataString(stepName)}/complete");
         if (currentUserId.HasValue)
         {
             request.Headers.Add("CurrentUser", currentUserId.Value.ToString());

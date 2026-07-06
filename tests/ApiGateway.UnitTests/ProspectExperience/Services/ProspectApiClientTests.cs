@@ -479,10 +479,10 @@ public class ProspectApiClientTests
     }
 
     /// <summary>
-    /// Verifies that complete-step calls the generic Prospect endpoint with an escaped step name.
+    /// Verifies that complete-step calls the generic Prospect endpoint with an escaped step name and account identifier.
     /// </summary>
     [Fact]
-    public async Task CompleteStepAsync_WhenProspectAcceptsCompletion_IssuesPut()
+    public async Task CompleteStepAsync_WhenProspectAcceptsCompletion_IssuesPutWithAccountId()
     {
         var response = new HttpResponseMessage(HttpStatusCode.OK);
         HttpRequestMessage? captured = null;

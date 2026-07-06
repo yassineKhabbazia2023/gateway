@@ -31,15 +31,15 @@ public class ProspectOrchestrationService(
 
     /// <inheritdoc />
     public async Task<DocumentUploadResultResponse> CompleteStepAsync(
-        int prospectId,
+        int accountId,
         CompleteStepRequest request,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         logger.LogInformation(
-            "Starting onboarding step completion for prospect {ProspectId} and step {StepName}",
-            prospectId,
+            "Starting onboarding step completion for account {AccountId} and step {StepName}",
+            accountId,
             request.StepName);
 
         var strategy = stepCompletionStrategies
@@ -50,7 +50,7 @@ public class ProspectOrchestrationService(
             throw new GatewayException(StatusCodes.Status404NotFound, Errors.NullArgumentCode, "Onboarding step was not found.");
         }
 
-        var uploadResult = await strategy.CompleteAsync(prospectId, request.StepName, ct);
+        var uploadResult = await strategy.CompleteAsync(accountId, request.StepName, ct);
         return new DocumentUploadResultResponse(
             uploadResult.SucceededDocumentIds,
             uploadResult.FailedDocumentIds);
@@ -58,7 +58,7 @@ public class ProspectOrchestrationService(
 
     /// <inheritdoc />
     public async Task<DocumentUploadResultResponse> CompleteStepAsync(
-        int prospectId,
+        int accountId,
         CompleteStepRequest request,
         CancellationToken ct,
         int? currentUserId)
@@ -66,8 +66,8 @@ public class ProspectOrchestrationService(
         ArgumentNullException.ThrowIfNull(request);
 
         logger.LogInformation(
-            "Starting onboarding step completion for prospect {ProspectId} and step {StepName}",
-            prospectId,
+            "Starting onboarding step completion for account {AccountId} and step {StepName}",
+            accountId,
             request.StepName);
 
         var strategy = stepCompletionStrategies
@@ -78,7 +78,7 @@ public class ProspectOrchestrationService(
             throw new GatewayException(StatusCodes.Status404NotFound, Errors.NullArgumentCode, "Onboarding step was not found.");
         }
 
-        var uploadResult = await strategy.CompleteAsync(prospectId, request.StepName, ct, currentUserId);
+        var uploadResult = await strategy.CompleteAsync(accountId, request.StepName, ct, currentUserId);
         return new DocumentUploadResultResponse(
             uploadResult.SucceededDocumentIds,
             uploadResult.FailedDocumentIds);

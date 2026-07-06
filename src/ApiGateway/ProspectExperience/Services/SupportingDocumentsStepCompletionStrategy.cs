@@ -1,5 +1,6 @@
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Internal;
+using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
 
@@ -21,24 +22,13 @@ public sealed class SupportingDocumentsStepCompletionStrategy(
     protected override string DisplayName => "supporting documents";
 
     /// <inheritdoc />
-    public override async Task<DocumentExternalUploadBatchResult> CompleteAsync(
+    protected override async Task ValidateUploadPlanAsync(
+        DocumentsToUploadToExternalServiceResponse uploadPlan,
         int prospectId,
         string stepName,
         CancellationToken ct)
     {
         await ValidateSupportingDocumentsReadyAsync(prospectId, ct);
-        return await base.CompleteAsync(prospectId, stepName, ct);
-    }
-
-    /// <inheritdoc />
-    public override async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
-        string stepName,
-        CancellationToken ct,
-        int? currentUserId)
-    {
-        await ValidateSupportingDocumentsReadyAsync(prospectId, ct);
-        return await base.CompleteAsync(prospectId, stepName, ct, currentUserId);
     }
 
     private async Task ValidateSupportingDocumentsReadyAsync(

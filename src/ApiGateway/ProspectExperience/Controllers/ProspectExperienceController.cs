@@ -81,21 +81,21 @@ public class ProspectExperienceController(
         return StatusCode(StatusCodes.Status201Created, prospect);
     }
 
-    [HttpPut("{prospectId}/steps/complete")]
+    [HttpPut("{accountId}/steps/complete")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentUploadResultResponse))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<DocumentUploadResultResponse>> CompleteStepAsync(
-        int prospectId,
+        int accountId,
         [FromBody] CompleteStepRequest? request,
         CancellationToken ct)
     {
-        if (prospectId <= 0)
+        if (accountId <= 0)
         {
             return Problem(
                 statusCode: StatusCodes.Status400BadRequest,
-                title: "ProspectId must be greater than zero.");
+                title: "AccountId must be greater than zero.");
         }
 
         var userEmail = userContext.User.GetEmail();
@@ -134,7 +134,7 @@ public class ProspectExperienceController(
                 });
         }
 
-        var result = await prospectService.CompleteStepAsync(prospectId, request, ct);
+        var result = await prospectService.CompleteStepAsync(accountId, request, ct);
         return Ok(result);
     }
 

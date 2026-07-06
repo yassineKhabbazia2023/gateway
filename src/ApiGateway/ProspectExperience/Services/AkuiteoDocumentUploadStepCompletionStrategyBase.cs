@@ -35,28 +35,28 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
 
     /// <inheritdoc />
     public virtual async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
+        int accountId,
         string stepName,
         CancellationToken ct)
     {
         return await CompleteAsync(
-            prospectId,
+            accountId,
             stepName,
-            completeStepAsync: () => prospectClient.CompleteStepAsync(prospectId, stepName, ct),
+            completeStepAsync: () => prospectClient.CompleteStepAsync(accountId, stepName, ct),
             ct);
     }
 
     /// <inheritdoc />
     public virtual async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
+        int accountId,
         string stepName,
         CancellationToken ct,
         int? currentUserId)
     {
         return await CompleteAsync(
-            prospectId,
+            accountId,
             stepName,
-            completeStepAsync: () => prospectClient.CompleteStepAsync(prospectId, stepName, ct, currentUserId),
+            completeStepAsync: () => prospectClient.CompleteStepAsync(accountId, stepName, ct, currentUserId),
             ct);
     }
 
@@ -78,11 +78,12 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
     }
 
     private async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
+        int accountId,
         string stepName,
         Func<Task> completeStepAsync,
         CancellationToken ct)
     {
+        var prospectId = await ResolveProspectIdAsync(accountId, ct);
         var uploadPlan = await prospectClient.GetDocumentsToUploadToExternalServiceAsync(
             prospectId,
             stepName,
@@ -141,6 +142,17 @@ public abstract class AkuiteoDocumentUploadStepCompletionStrategyBase(
         }
 
         return uploadResult;
+    }
+
+    /// <summary>
+    /// Resolves the prospect identifier needed by existing prospect-scoped document helper endpoints.
+    /// </summary>
+    /// <param name="accountId">The account identifier received by the migrated complete-step endpoint.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The linked prospect identifier when found; otherwise the provided account identifier.</returns>
+    private async Task<int> ResolveProspectIdAsync(int accountId, CancellationToken ct)
+    {
+        return await prospectClient.GetProspectIdByAccountIdAsync(accountId, ct) ?? accountId;
     }
 
     /// <summary>

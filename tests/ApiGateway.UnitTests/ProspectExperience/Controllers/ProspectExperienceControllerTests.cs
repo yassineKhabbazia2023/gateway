@@ -229,7 +229,7 @@ public class ProspectExperienceControllerTests
     public async Task CompleteStepAsync_WhenFeatureFlagEnabledAndCollaborator_ReturnsOk()
     {
         // Arrange
-        const int prospectId = 123;
+        const int accountId = 123;
         var request = new CompleteStepRequest { StepName = "Beneficiary" };
         var response = new DocumentUploadResultResponse([1, 2], [3]);
 
@@ -240,30 +240,33 @@ public class ProspectExperienceControllerTests
             .Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>()))
             .Returns(true);
         _orchestrationService
-            .Setup(service => service.CompleteStepAsync(prospectId, request, It.IsAny<CancellationToken>()))
+            .Setup(service => service.CompleteStepAsync(accountId, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
         // Act
-        var result = await _controller.CompleteStepAsync(prospectId, request, CancellationToken.None);
+        var result = await _controller.CompleteStepAsync(accountId, request, CancellationToken.None);
 
         // Assert
         var objectResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         objectResult.Value.Should().BeSameAs(response);
-        _orchestrationService.Verify(service => service.CompleteStepAsync(prospectId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _orchestrationService.Verify(service => service.CompleteStepAsync(accountId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospectApiClient.Verify(
+            client => client.GetAccountIdByProspectIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
     public async Task CompleteStepAsync_WhenCallerIsNotCollaborator_Returns403()
     {
         // Arrange
-        const int prospectId = 123;
+        const int accountId = 123;
 
         _identityService
             .Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>()))
             .Returns(false);
 
         // Act
-        var result = await _controller.CompleteStepAsync(prospectId, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
+        var result = await _controller.CompleteStepAsync(accountId, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
 
         // Assert
         var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
@@ -301,11 +304,12 @@ public class ProspectExperienceControllerTests
     /// Verifies that an invalid prospect identifier returns 400 without calling orchestration.
     /// </summary>
     [Fact]
-    public async Task CompleteStepAsync_WhenProspectIdIsInvalid_Returns400()
+    public async Task CompleteStepAsync_WhenAccountIdIsInvalid_Returns400()
     {
         var result = await _controller.CompleteStepAsync(0, new CompleteStepRequest { StepName = "Beneficiary" }, CancellationToken.None);
 
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        result.Result.Should().BeOfType<ObjectResult>().Which.Value.Should().BeOfType<ProblemDetails>().Which.Title.Should().Be("AccountId must be greater than zero.");
         _orchestrationService.Verify(service => service.CompleteStepAsync(It.IsAny<int>(), It.IsAny<CompleteStepRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

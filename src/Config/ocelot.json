@@ -682,15 +682,15 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-    },
+      },
       "DelegatingHandlers": [
         "ProspectExperienceHandler"
       ]
     },
     {
       "SwaggerKey": "Prospect",
-      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{prospectId}/steps",
-      "DownstreamPathTemplate": "/api/prospects/{prospectId}/steps",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/steps",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/steps",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -706,7 +706,7 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
-    },
+      },
       "DelegatingHandlers": [
         "ProspectExperienceHandler"
       ]

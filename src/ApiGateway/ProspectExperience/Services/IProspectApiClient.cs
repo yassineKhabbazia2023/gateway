@@ -91,21 +91,21 @@ public interface IProspectApiClient
     /// <summary>
     /// Completes a named Prospect onboarding step.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="stepName">The public onboarding step name.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct);
+    Task CompleteStepAsync(int accountId, string stepName, CancellationToken ct);
 
     /// <summary>
     /// Completes a named Prospect onboarding step with completion audit metadata.
     /// </summary>
-    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="stepName">The public onboarding step name.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <param name="currentUserId">The optional current collaborator contact identifier.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task CompleteStepAsync(int prospectId, string stepName, CancellationToken ct, int? currentUserId);
+    Task CompleteStepAsync(int accountId, string stepName, CancellationToken ct, int? currentUserId);
 
     /// <summary>
     /// Resets a named Prospect onboarding step to TODO.
