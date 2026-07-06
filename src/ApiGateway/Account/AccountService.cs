@@ -103,8 +103,11 @@ public class AccountService : IAccountService
 
     public async Task<IReadOnlyCollection<FavoriteAccount>?> GetFavoriteAccountsByContactIdAsync(int contactId)
     {
-        var url = $"api/favorites?contactId={contactId}";
-        var response = await _httpClient.GetAsync(url);
+        var url = $"api/favorites";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        httpRequest.Headers.Add("CurrentUser", $"{contactId}");
+        var response = await _httpClient.SendAsync(httpRequest);
+
         if (response.IsSuccessStatusCode)
         {
             var stream = await response.Content.ReadAsStreamAsync();
@@ -120,6 +123,7 @@ public class AccountService : IAccountService
         httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");
         httpRequest.Headers.Add("ContactType", contactType);
         var response = await _httpClient.SendAsync(httpRequest);
+
         if (response.IsSuccessStatusCode)
         {
             var summary = await response.Content.ReadFromJsonAsync<Summary>();
