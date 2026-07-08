@@ -16,25 +16,24 @@ namespace ApiGateway.UnitTests.Authorization
             string projectRoot = FindProjectRoot();
 
             // 🔗 Construire les chemins des fichiers
-            string ocelotPath = Path.Combine(projectRoot, "src", "Config", "ocelot.json");
+            string configFolder = Path.Combine(projectRoot, "src", "Config");
             string profilesPath = Path.Combine(projectRoot, "tests", "ApiGateway.UnitTests", "Authorization", "Profiles");
 
-            // ✅ Vérifier l'existence du fichier ocelot.json
-            if (!File.Exists(ocelotPath))
+            // ✅ Lire et fusionner les routes de tous les fichiers ocelot.<domaine>.json
+            var ocelotFiles = Directory.GetFiles(configFolder, "ocelot.*.json");
+            if (ocelotFiles.Length == 0)
             {
-                throw new FileNotFoundException($"❌ Fichier Ocelot non trouvé : {ocelotPath}");
+                throw new FileNotFoundException($"❌ Aucun fichier ocelot.*.json trouvé dans : {configFolder}");
             }
 
-            // ✅ Lire et parser le fichier Ocelot
-            var jsonConfig = File.ReadAllText(ocelotPath);
-            var ocelotConfig = JsonConvert.DeserializeObject<OcelotConfiguration>(jsonConfig);
+            var routes = ocelotFiles
+                .Select(file => JsonConvert.DeserializeObject<OcelotConfiguration>(File.ReadAllText(file))
+                    ?? throw new InvalidDataException($"❌ Le fichier {file} est malformé ou vide."))
+                .Where(config => config.Routes is not null)
+                .SelectMany(config => config.Routes)
+                .ToList();
 
-            if (ocelotConfig == null)
-            {
-                throw new InvalidDataException("❌ Le fichier Ocelot.json est malformé ou vide.");
-            }
-
-            var allRoutes = ocelotConfig.GetFlattenedRoutes();
+            var allRoutes = new OcelotConfiguration { Routes = routes }.GetFlattenedRoutes();
 
             // ✅ Vérifier l'existence du dossier Profiles
             if (!Directory.Exists(profilesPath))

@@ -1,0 +1,41 @@
+{
+  "Aggregates": [
+    {
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}&accountId={xyz}",
+      "RouteKeys": [
+        "NormalConfiguration",
+        "GedConfiguration"
+      ],
+      "Aggregator": "ConfigurationAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/authorization/api/authorizations/configuration?contactId={abc}",
+      "RouteKeys": [
+        "CollabConfiguration"
+      ],
+      "Aggregator": "ConfigurationAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/currentuser",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "RouteKeys": [
+        "HubspotSubmissionRegistry",
+        "VentyaDematReady"
+      ],
+      "Aggregator": "SubmissionAggregator"
+    },
+    {
+      "UpstreamPathTemplate": "/gtw/wallet/api/infos/currentuser",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "RouteKeys": [
+        "WalletInfoAccount",
+        "WalletInfoProspect"
+      ],
+      "Aggregator": "WalletInfoAggregator"
+    }
+  ]
+}

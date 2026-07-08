@@ -1,0 +1,25 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "GedCore",
+      "UpstreamPathTemplate": "/gtw/gedcore/api/drop/documents",
+      "DownstreamPathTemplate": "/drop/documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseged#{env_id}#03.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    }
+  ]
+}

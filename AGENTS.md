@@ -40,7 +40,11 @@ src/
       Models/
 
 Config/
-  ocelot.json                     # Production Ocelot routes
+  ocelot.<domain>.json            # Production Ocelot routes, one file per domain (/gtw/<domain>/... → ocelot.<domain>.json)
+  ocelot.aggregates.json          # Aggregates section
+  ocelot.swagger.json             # SwaggerEndPoints section (MMLib.SwaggerForOcelot)
+  ocelot.global.json              # GlobalConfiguration section
+  README.md                       # Layout rules + merge instructions
   mocks.db                        # Mock responses database
 
 tests/
@@ -57,7 +61,7 @@ tests/
 | Interfaces                | `{Feature}/` or feature root          |
 | Models/DTOs               | `{Feature}/Models/` or `Models/`      |
 | DI registration           | `Extensions/*ServiceExtensions.cs`    |
-| Ocelot config (prod)      | `Config/ocelot.json`                  |
+| Ocelot config (prod)      | `Config/ocelot.<domain>.json`         |
 | Ocelot config (dev)       | `Configuration/ocelot.json`           |
 | Constants                 | `Constants/GlobalConstants.cs`        |
 | Error codes               | `Exceptions/Errors.cs`               |
@@ -129,8 +133,9 @@ The Gateway is a **single project** — not Clean Architecture. Code is organize
 
 ## Ocelot Configuration
 
-### Route structure (`ocelot.json`)
+### Route structure (`ocelot.*.json`)
 
+- Production routes are split by domain: one `Config/ocelot.<domain>.json` per downstream service, where `<domain>` is the first upstream segment after `/gtw/` (e.g. `/gtw/prospect/api/...` → `ocelot.prospect.json`). The build pipeline merges them into a single `ocelot.json` (`Merge-OcelotConfig`); enforced by `OcelotConfigurationTests`
 - Upstream path pattern: `/gtw/{service}/...`
 - Use `{everything}` catch-all for passthrough routes
 - Every route MUST specify `AuthenticationOptions.AuthenticationProviderKey` (or be explicitly anonymous)
@@ -150,7 +155,7 @@ The Gateway is a **single project** — not Clean Architecture. Code is organize
 
 - NEVER remove or rename a published route without deprecation period
 - Adding `RouteClaimsRequirement` to an existing open route is a breaking change — coordinate with frontend
-- New routes MUST be added to both `Config/ocelot.json` (prod) and `Configuration/ocelot.json` (dev)
+- New routes MUST be added to both the matching domain file `Config/ocelot.<domain>.json` (prod) and `Configuration/ocelot.json` (dev)
 
 
 ## DelegatingHandlers

@@ -1,0 +1,359 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/prospect/api/referential-infos",
+      "DownstreamPathTemplate": "/api/referentials/AccountReferentialInformation",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "ContactRegistry",
+      "UpstreamPathTemplate": "/gtw/prospect/api/prospects/check-eligibility",
+      "DownstreamPathTemplate": "/api/prospects/check-eligibility",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsereg#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AddQueriesToRequest": {
+        "siret": "{Query.siret}"
+      },
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/beneficiaries",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/beneficiaries",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/beneficiaries/{beneficiaryId}/identity-documents",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/beneficiaries/{beneficiaryId}/identity-documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/supporting-documents",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/supporting-documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/documents",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/documents",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/documents/{documentId}/content",
+      "DownstreamPathTemplate": "/api/prospects/accounts/{accountId}/documents/{documentId}/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/documents/{documentId}",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/documents/{documentId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/accounts/search",
+      "DownstreamPathTemplate": "/api/accounts/external-search",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/collab-roles",
+      "DownstreamPathTemplate": "/api/collab-roles",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/steps/{stepId}",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/steps/{stepId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/steps",
+      "DownstreamPathTemplate": "/api/prospects/{accountId}/steps",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/commercial-proposal/content",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/commercial-proposal/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Prospect",
+      "UpstreamPathTemplate": "/gtw/prospect/api/onboarding/{accountId}/engagement-letter/content",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/engagement-letter/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseprs#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Contact",
+      "UpstreamPathTemplate": "/gtw/prospect/api/contacts",
+      "DownstreamPathTemplate": "/api/contacts?Type=Collaborator",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsecnt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "ProspectExperienceHandler"
+      ]
+    }
+  ]
+}

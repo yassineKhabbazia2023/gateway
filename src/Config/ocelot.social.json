@@ -1,0 +1,151 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/company/currentuser/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/company/currentuser/{everything}",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/companies/currentuser",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/companies/currentuser",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/desktop-client/versions/latest",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/static/latest.exe",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/desktop-client/currentuser/generate-sso-link",
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/currentuser/GenerateSSOLink",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/health",
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/health",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ]
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/onboarding/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/onboarding/{everything}",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "Social",
+      "UpstreamPathTemplate": "/gtw/social/api/silae/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/api/silae/{everything}",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsesoc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    }
+  ]
+}

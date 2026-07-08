@@ -72,22 +72,64 @@ public sealed class ProspectOnboardingRouteConfigurationTests
     }
 
     /// <summary>
-    /// Loads the production Ocelot configuration.
+    /// Loads the production Ocelot configuration by merging the per-domain
+    /// <c>ocelot.*.json</c> files (see <c>src/Config/README.md</c> and
+    /// <c>pipelines/Deployment/Public/Merge-OcelotConfig.ps1</c>), which the
+    /// build pipeline concatenates into the single <c>ocelot.json</c> consumed
+    /// at runtime.
     /// </summary>
-    /// <returns>The parsed Ocelot JSON document.</returns>
+    /// <returns>The parsed, merged Ocelot JSON document.</returns>
     private static JsonDocument LoadOcelotConfiguration()
     {
-        var configPath = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "src",
-            "Config",
-            "ocelot.json"));
+        var configFolder = Path.Combine(FindRepositoryRoot(), "src", "Config");
 
-        return JsonDocument.Parse(File.ReadAllText(configPath));
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteStartArray("Routes");
+
+            foreach (var file in Directory
+                         .GetFiles(configFolder, "ocelot.*.json")
+                         .OrderBy(path => path, StringComparer.Ordinal))
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(file));
+                if (document.RootElement.TryGetProperty("Routes", out var routes) &&
+                    routes.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var route in routes.EnumerateArray())
+                    {
+                        route.WriteTo(writer);
+                    }
+                }
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return JsonDocument.Parse(buffer.ToArray());
+    }
+
+    /// <summary>
+    /// Walks up from the test output directory to the repository root
+    /// (the folder that contains both <c>src</c> and <c>tests</c>).
+    /// </summary>
+    /// <returns>The absolute path of the repository root.</returns>
+    private static string FindRepositoryRoot()
+    {
+        var directory = AppContext.BaseDirectory;
+        while (!string.IsNullOrEmpty(directory))
+        {
+            if (Directory.Exists(Path.Combine(directory, "src")) &&
+                Directory.Exists(Path.Combine(directory, "tests")))
+            {
+                return directory;
+            }
+
+            directory = Directory.GetParent(directory)?.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Unable to locate the repository root containing 'src' and 'tests'.");
     }
 }

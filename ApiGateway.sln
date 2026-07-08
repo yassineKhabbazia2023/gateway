@@ -17,7 +17,35 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{4305
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{CC933C69-CD39-4BD3-89B0-0E7B4C32D656}"
 	ProjectSection(SolutionItems) = preProject
-		src\Config\ocelot.json = src\Config\ocelot.json
+		src\Config\README.md = src\Config\README.md
+		src\Config\ocelot.account.json = src\Config\ocelot.account.json
+		src\Config\ocelot.aggregates.json = src\Config\ocelot.aggregates.json
+		src\Config\ocelot.aiservices.json = src\Config\ocelot.aiservices.json
+		src\Config\ocelot.authentication.json = src\Config\ocelot.authentication.json
+		src\Config\ocelot.authorization.json = src\Config\ocelot.authorization.json
+		src\Config\ocelot.booking.json = src\Config\ocelot.booking.json
+		src\Config\ocelot.contact.json = src\Config\ocelot.contact.json
+		src\Config\ocelot.customer-wallet.json = src\Config\ocelot.customer-wallet.json
+		src\Config\ocelot.entitycreator.json = src\Config\ocelot.entitycreator.json
+		src\Config\ocelot.fakecustomer.json = src\Config\ocelot.fakecustomer.json
+		src\Config\ocelot.feedcenter.json = src\Config\ocelot.feedcenter.json
+		src\Config\ocelot.ged.json = src\Config\ocelot.ged.json
+		src\Config\ocelot.gedcore.json = src\Config\ocelot.gedcore.json
+		src\Config\ocelot.global.json = src\Config\ocelot.global.json
+		src\Config\ocelot.history.json = src\Config\ocelot.history.json
+		src\Config\ocelot.hub.json = src\Config\ocelot.hub.json
+		src\Config\ocelot.internal.json = src\Config\ocelot.internal.json
+		src\Config\ocelot.mandate.json = src\Config\ocelot.mandate.json
+		src\Config\ocelot.notifications.json = src\Config\ocelot.notifications.json
+		src\Config\ocelot.offer.json = src\Config\ocelot.offer.json
+		src\Config\ocelot.pennylane.json = src\Config\ocelot.pennylane.json
+		src\Config\ocelot.prospect.json = src\Config\ocelot.prospect.json
+		src\Config\ocelot.registry.json = src\Config\ocelot.registry.json
+		src\Config\ocelot.reporting.json = src\Config\ocelot.reporting.json
+		src\Config\ocelot.social.json = src\Config\ocelot.social.json
+		src\Config\ocelot.swagger.json = src\Config\ocelot.swagger.json
+		src\Config\ocelot.ventya.json = src\Config\ocelot.ventya.json
+		src\Config\ocelot.wallet.json = src\Config\ocelot.wallet.json
 	EndProjectSection
 EndProject
 Global

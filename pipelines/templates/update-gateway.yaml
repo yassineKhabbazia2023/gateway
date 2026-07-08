@@ -71,8 +71,10 @@ stages:
         squad: ${{ parameters.squad }}
       displayName: '[Build] Set name'
 
-    - pwsh: Copy-Item -Path $(Build.SourcesDirectory)/src/Config/ocelot.json -Destination $(Build.SourcesDirectory)/pipelines/ocelot.json
-      displayName: '[Build] Copy ocelot.json to artifact staging directory'
+    - pwsh: |
+        . $(Build.SourcesDirectory)/pipelines/Deployment/Public/Merge-OcelotConfig.ps1
+        Merge-OcelotConfig -SourceFolder $(Build.SourcesDirectory)/src/Config -OutputFile $(Build.SourcesDirectory)/pipelines/ocelot.json
+      displayName: '[Build] Merge ocelot.*.json domain files into ocelot.json'
 
     - publish: $(Build.SourcesDirectory)/pipelines
       artifact: Module

@@ -1,0 +1,153 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/offers",
+      "DownstreamPathTemplate": "/recommendations/offers",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COAIOFFER"
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/sales-pitch",
+      "DownstreamPathTemplate": "/recommendations/sales-pitch",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COAIOFFER"
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/validation",
+      "DownstreamPathTemplate": "/recommendations/validation",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "PUT": "COAIOFFER"
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/details",
+      "DownstreamPathTemplate": "/monitoring/details",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD ADM"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/summary",
+      "DownstreamPathTemplate": "/monitoring/summary",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD ADM"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/monitoring/filters",
+      "DownstreamPathTemplate": "/monitoring/filters",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD ADM"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "AiServices",
+      "UpstreamPathTemplate": "/gtw/aiservices/api/recommendations/formation",
+      "DownstreamPathTemplate": "/formation/offers",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "vmcegpulseais#{env_id}#01.privatelink.virtualmachines.com",
+          "Port": 80
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Authorization",
+      "UpstreamPathTemplate": "/gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "DownstreamPathTemplate": "/api/accounts/{xyz}/contacts/{abc}/ged-settings",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseged#{env_id}#02.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Key": "GedConfiguration",
+      "RouteClaimsRequirement": {
+        "GET": "COUSER001, COADMI004, CLUSER004"
+      }
+    }
+  ]
+}

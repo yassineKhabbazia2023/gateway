@@ -1,0 +1,30 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "EntityCreator",
+      "UpstreamPathTemplate": "/gtw/entitycreator/api/{everything}",
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseect#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COADMI007",
+        "POST": "COADMI007"
+      }
+    }
+  ]
+}

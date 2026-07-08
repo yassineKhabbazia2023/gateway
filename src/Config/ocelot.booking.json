@@ -1,0 +1,383 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/accounts/{accountId}/booking-link/currentuser/experts?page={page}&pageSize={pageSize}",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/booking-link/experts?page={page}&pageSize={pageSize}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking-link/currentuser",
+      "DownstreamPathTemplate": "/api/booking-link",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001",
+        "POST": "CORDV001",
+        "PUT": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/collaborators/{collaboratorId}/booking-link/currentuser",
+      "DownstreamPathTemplate": "/api/collaborators/{collaboratorId}/booking-link",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/collaborators/currentuser",
+      "DownstreamPathTemplate": "/api/collaborators",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/email",
+      "DownstreamPathTemplate": "/api/booking/businesses/email",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "DELETE": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/status/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses/status",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/businesses/{configurationId}/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses/{configurationId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/upcoming/currentuser?limit={limit}",
+      "DownstreamPathTemplate": "/api/booking/appointments?period=upcoming&limit={limit}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/upcoming/count/currentuser",
+      "DownstreamPathTemplate": "/api/booking/appointments/upcoming/count",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/appointments/past/currentuser?limit={limit}",
+      "DownstreamPathTemplate": "/api/booking/appointments?period=past&limit={limit}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      },
+      "DelegatingHandlers": [
+        "BookingSyncHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/provisioning/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Booking",
+      "Key": "BookingUpdateService",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/businesses/{configurationId}/services/currentuser",
+      "DownstreamPathTemplate": "/api/booking/businesses/{configurationId}/services",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "PATCH": "CORDV001"
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Booking",
+      "UpstreamPathTemplate": "/gtw/booking/api/booking/eligibility/currentuser",
+      "DownstreamPathTemplate": "/api/booking/eligibility",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulserdv#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBookingEnabled"
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "FakeCustomer",
+      "UpstreamPathTemplate": "/gtw/ged/accounts/{accountId}/ged-services/currentuser",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/ged-services/currentuser",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseged#{env_id}#02.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    },
+    {
+      "SwaggerKey": "GedAccounting",
+      "UpstreamPathTemplate": "/gtw/ged/api/93012CC8-77B9-4161-8DBD-61915D935E21/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegac#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLGED0002,COGED0002",
+        "POST": "CLGED0002,COGED0002",
+        "DELETE": "CLGED0002,COGED0002",
+        "PATCH": "CLGED0002,COGED0002"
+      }
+    },
+    {
+      "SwaggerKey": "GedSocial",
+      "UpstreamPathTemplate": "/gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsegso#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PATCH"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLGED0001,COGED0001",
+        "POST": "CLGED0001,COGED0001",
+        "DELETE": "CLGED0001,COGED0001",
+        "PATCH": "CLGED0001,COGED0001"
+      }
+    }
+  ]
+}
