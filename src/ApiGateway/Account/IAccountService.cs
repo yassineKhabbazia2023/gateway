@@ -28,4 +28,6 @@ public interface IAccountService
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The prospect-only check result.</returns>
     Task<ProspectOnlyContactResult> GetProspectOnlyContactResultAsync(int contactId, CancellationToken ct);
+
+    Task UpdateLastActivityDateAsync(int currentUserId, string contactType, int accountId);
 }

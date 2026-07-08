@@ -1,7 +1,5 @@
-﻿using System.Net.Http.Json;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Web;
-using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Internal;
@@ -9,14 +7,9 @@ using ApiGateway.ProspectExperience.Models.Requests;
 
 namespace ApiGateway.Contact;
 
-public class ContactService : IContactService
+public class ContactService(HttpClient httpClient) : IContactService
 {
-    private readonly HttpClient httpClient;
-
-    public ContactService(HttpClient httpClient)
-    {
-        this.httpClient = httpClient;
-    }
+    private readonly HttpClient httpClient = httpClient;
 
     public async Task<Models.Contact?> GetContactAsync(string userEmail)
     {
@@ -105,5 +98,25 @@ public class ContactService : IContactService
     {
         string encodedEmail = HttpUtility.UrlEncode(userEmail);
         return $"contacts?Email={encodedEmail}";
+    }
+
+    public async Task<IEnumerable<int>> SendEmailAsync(int currentUserId, string accountNumber, int[] customerIDs, string? entityType = null)
+    {
+        var url = string.IsNullOrWhiteSpace(entityType)
+            ? $"customers/bulk-invite/{accountNumber}"
+            : $"customers/bulk-invite/{accountNumber}?entityType={Uri.EscapeDataString(entityType)}";
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
+        httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");
+        httpRequest.Content = JsonContent.Create(customerIDs);
+        var response = await httpClient.SendAsync(httpRequest);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync();
+            return await JsonSerializer.DeserializeAsync<IEnumerable<int>>(stream) ?? [];
+        }
+
+        return [];
     }
 }

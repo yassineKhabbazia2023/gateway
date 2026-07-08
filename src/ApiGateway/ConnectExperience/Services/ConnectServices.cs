@@ -66,4 +66,17 @@ public class ConnectServices(
         summary.Subscriptions = subscriptions;
         return summary;
     }
+
+    public async Task<IEnumerable<int>> SendEmailAsync(string userEmail, int accountId, int[] customerIDs, string? entityType = null)
+    {
+        var contact = await contactService.GetContactAsync(userEmail)
+            ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
+        var account = await accountService.GetAccountAsync(accountId)
+            ?? throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+
+        var invitedCustomerIDs = await contactService.SendEmailAsync(contact.Id, account.AccountNumber!, customerIDs, entityType);
+        await accountService.UpdateLastActivityDateAsync(contact.Id, contact.Type!, accountId);
+
+        return invitedCustomerIDs;
+    }
 }

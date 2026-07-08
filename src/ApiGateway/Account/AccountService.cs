@@ -190,4 +190,13 @@ public class AccountService : IAccountService
         var isProspectOnly = await response.Content.ReadFromJsonAsync<bool>(_jsonSerializerOptions, ct);
         return isProspectOnly ? ProspectOnlyContactResult.ProspectOnly : ProspectOnlyContactResult.NotProspectOnly;
     }
+
+    public async Task UpdateLastActivityDateAsync(int currentUserId, string contactType, int accountId)
+    {
+        var url = $"api/roles/last-activity-date?accountId={accountId}";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, url);
+        httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");
+        httpRequest.Headers.Add("ContactType", contactType);
+        await _httpClient.SendAsync(httpRequest);
+    }
 }

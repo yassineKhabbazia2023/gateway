@@ -337,7 +337,7 @@ public class AuthorizationMiddlewareTests
             { "PUT", "CLRAPP002,COEVPO01" },
         };
 
-        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new(), false);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new());
         var cacheService = new Mock<ICacheService>();
         httpContext.RequestServices = new ServiceCollection()
             .AddSingleton(_mockContactService.Object)
@@ -698,7 +698,7 @@ public class AuthorizationMiddlewareTests
             .ReturnsAsync(relatedAccounts)
             .Verifiable();
 
-        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims,new(),false);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims,new());
 
         // Add the "Customer" role to the ClaimsPrincipal
         httpContext.User = new ClaimsPrincipal(
@@ -742,7 +742,7 @@ public class AuthorizationMiddlewareTests
         var contactEmail = string.Empty;
         var requiredClaims = new Dictionary<string, string>();
 
-        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new(), true);
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims, new(), isAnonymous: true);
         var cacheService = new Mock<ICacheService>();
 
         httpContext.RequestServices = new ServiceCollection()

@@ -46,7 +46,10 @@ public class FeatureFlagGateHandlerTests
 
         if (metadata != null)
         {
-            var fileMetadata = new FileMetadataOptions { Metadata = metadata };
+            var metadataOptions = new MetadataOptions(new FileMetadataOptions())
+            {
+                Metadata = metadata
+            };
             var downstreamRoute = new DownstreamRoute(
                 key: "test-route",
                 upstreamPathTemplate: new UpstreamPathTemplate(path, 1, true, ""),
@@ -56,12 +59,9 @@ public class FeatureFlagGateHandlerTests
                 serviceName: "serviceName",
                 serviceNamespace: "serviceNamespace",
                 httpHandlerOptions: null,
-                useServiceDiscovery: false,
-                enableEndpointEndpointRateLimiting: false,
                 qosOptions: null,
                 downstreamScheme: "http",
                 requestIdKey: null,
-                isCached: false,
                 cacheOptions: null,
                 loadBalancerOptions: null,
                 rateLimitOptions: null,
@@ -70,8 +70,6 @@ public class FeatureFlagGateHandlerTests
                 claimsToHeaders: null,
                 claimsToClaims: null,
                 claimsToPath: null,
-                isAuthenticated: false,
-                isAuthorized: false,
                 authenticationOptions: null,
                 downstreamPathTemplate: null,
                 loadBalancerKey: null,
@@ -84,7 +82,8 @@ public class FeatureFlagGateHandlerTests
                 downstreamHttpVersion: null,
                 downstreamHttpVersionPolicy: default,
                 upstreamHeaders: null,
-                metadataOptions: new MetadataOptions(fileMetadata)
+                metadataOptions: metadataOptions,
+                timeout: null
             );
 
             httpContext.Items.UpsertDownstreamRoute(downstreamRoute);

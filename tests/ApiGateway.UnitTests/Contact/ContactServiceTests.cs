@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text;
 using ApiGateway.Contact;
-using ApiGateway.Contact.Exceptions;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Requests;
@@ -600,5 +599,114 @@ public class ContactServiceTests
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WithoutEntityType_CallsBulkInviteEndpointWithBodyAndHeader()
+    {
+        // Arrange
+        const int currentUserId = 123;
+        const string accountNumber = "0000000001";
+        var customerIds = new[] { 10, 20, 30 };
+        var responsePayload = new[] { 1, 2 };
+        string? bodyJson = null;
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+            {
+                req.Method.Should().Be(HttpMethod.Post);
+                req.RequestUri?.PathAndQuery.Should().Be($"/customers/bulk-invite/{accountNumber}");
+                req.Headers.Contains("CurrentUser").Should().BeTrue();
+                req.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be(currentUserId.ToString());
+                bodyJson = req.Content?.ReadAsStringAsync(c).GetAwaiter().GetResult();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(responsePayload), Encoding.UTF8, "application/json")
+            });
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.SendEmailAsync(currentUserId, accountNumber, customerIds);
+
+        // Assert
+        result.Should().BeEquivalentTo(responsePayload);
+        using var json = JsonDocument.Parse(bodyJson!);
+        json.RootElement[0].GetInt32().Should().Be(10);
+        json.RootElement[1].GetInt32().Should().Be(20);
+        json.RootElement[2].GetInt32().Should().Be(30);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WithEntityType_CallsBulkInviteEndpointWithEntityTypeQuery()
+    {
+        // Arrange
+        const int currentUserId = 123;
+        const string accountNumber = "0000000001";
+        var customerIds = new[] { 10 };
+        const string entityType = "PROSPECT FLOW";
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+            {
+                req.Method.Should().Be(HttpMethod.Post);
+                req.RequestUri?.PathAndQuery.Should().Be($"/customers/bulk-invite/{accountNumber}?entityType=PROSPECT%20FLOW");
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("[]", Encoding.UTF8, "application/json")
+            });
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.SendEmailAsync(currentUserId, accountNumber, customerIds, entityType);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WhenResponseIsNotSuccess_ShouldReturnEmptyCollection()
+    {
+        // Arrange
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest));
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.SendEmailAsync(123, "0000000001", [10, 20]);
+
+        // Assert
+        result.Should().BeEmpty();
     }
 }

@@ -228,4 +228,18 @@ public class ConnectControllerTests
             Times.Once,
             "CheckContactRoleAsync should be called when SkipRoleCheck returns false");
     }
+
+    [Fact]
+    public async Task SendEmailAsync_Nominal()
+    {
+        _experienceServices.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int[]>(), It.IsAny<string?>()))
+            .ReturnsAsync([1, 2, 3]);
+
+        var result = await _sut.SendEmailAsync(1, [1, 2, 3], "CLIENT") as OkObjectResult;
+
+        result.Should().BeOfType<OkObjectResult>();
+        result!.Value.Should().BeEquivalentTo(new[] { 1, 2, 3 });
+
+        _experienceServices.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Once);
+    }
 }

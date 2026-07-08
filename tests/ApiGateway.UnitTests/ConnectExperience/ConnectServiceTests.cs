@@ -202,4 +202,85 @@ public class ExperienceServicesTests
         result.Subscriptions.Should().HaveCount(2);
         result.Subscriptions.Should().BeEquivalentTo(expectedSubscriptions);
     }
+
+    [Fact]
+    public async Task SendEmailAsync_ShouldSendInvitesAndUpdateLastActivity_WhenContactAndAccountExist()
+    {
+        // Arrange
+        const string userEmail = "john@example.com";
+        const int accountId = 42;
+        var customerIds = new[] { 10, 20 };
+        const string entityType = "PROSPECT";
+
+        var contact = new ContactModel { Id = 123, Type = "Collaborator" };
+        var account = new ApiGateway.Models.Account { AccountId = accountId, AccountNumber = "0000000042" };
+        var invitedIds = new[] { 10, 20 };
+
+        _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync(contact);
+        _accountMock.Setup(x => x.GetAccountAsync(accountId)).ReturnsAsync(account);
+        _contactMock
+            .Setup(x => x.SendEmailAsync(contact.Id, account.AccountNumber!, customerIds, entityType))
+            .ReturnsAsync(invitedIds)
+            .Verifiable();
+        _accountMock
+            .Setup(x => x.UpdateLastActivityDateAsync(contact.Id, contact.Type!, accountId))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.SendEmailAsync(userEmail, accountId, customerIds, entityType);
+
+        // Assert
+        result.Should().BeEquivalentTo(invitedIds);
+        _contactMock.Verify(x => x.GetContactAsync(userEmail), Times.Once);
+        _accountMock.Verify(x => x.GetAccountAsync(accountId), Times.Once);
+        _contactMock.Verify();
+        _accountMock.Verify();
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_ShouldThrowBadRequest_WhenContactNotFound()
+    {
+        // Arrange
+        const string userEmail = "missing@example.com";
+
+        _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync((ContactModel)null!);
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SendEmailAsync(userEmail, 42, [10], "PROSPECT");
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<BadRequestException>(act);
+        ex.Code.Should().Be(Errors.NotFoundContactCode);
+        ex.Message.Should().Be(Errors.NotFoundContactMessage);
+        _accountMock.Verify(x => x.GetAccountAsync(It.IsAny<int>()), Times.Never);
+        _contactMock.Verify(x => x.SendEmailAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Never);
+        _accountMock.Verify(x => x.UpdateLastActivityDateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_ShouldThrowBadRequest_WhenAccountNotFound()
+    {
+        // Arrange
+        const string userEmail = "john@example.com";
+        const int accountId = 42;
+        var contact = new ContactModel { Id = 123, Type = "Collaborator" };
+
+        _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync(contact);
+        _accountMock.Setup(x => x.GetAccountAsync(accountId)).ReturnsAsync((ApiGateway.Models.Account)null!);
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SendEmailAsync(userEmail, accountId, [10], "PROSPECT");
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<BadRequestException>(act);
+        ex.Code.Should().Be(Errors.NotFoundAccountCode);
+        ex.Message.Should().Be(string.Format(Errors.NotFoundAccountMessage, accountId));
+        _contactMock.Verify(x => x.SendEmailAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Never);
+        _accountMock.Verify(x => x.UpdateLastActivityDateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
 }

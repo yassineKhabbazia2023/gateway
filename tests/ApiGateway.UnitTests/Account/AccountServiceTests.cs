@@ -466,4 +466,54 @@ public class AccountServiceTests
             client => client.GetProspectIdByAccountIdAsync(accountId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task UpdateLastActivityDateAsync_ShouldSendPatchWithExpectedQueryAndHeaders()
+    {
+        // Arrange
+        const int currentUserId = 123;
+        const int accountId = 42;
+        const string contactType = "Collaborator";
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((request, token) =>
+            {
+                request.Method.Should().Be(HttpMethod.Patch);
+                request.RequestUri.Should().Be($"http://local.account/api/roles/last-activity-date?accountId={accountId}");
+                request.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be(currentUserId.ToString());
+                request.Headers.GetValues("ContactType").Should().ContainSingle().Which.Should().Be(contactType);
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NoContent))
+            .Verifiable();
+
+        // Act
+        await _accountService.UpdateLastActivityDateAsync(currentUserId, contactType, accountId);
+
+        // Assert
+        _mockHttpMessageHandler.Verify();
+    }
+
+    [Fact]
+    public async Task UpdateLastActivityDateAsync_WhenResponseIsNotSuccess_ShouldNotThrow()
+    {
+        // Arrange
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest));
+
+        // Act
+        var act = async () => await _accountService.UpdateLastActivityDateAsync(123, "Collaborator", 42);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
 }

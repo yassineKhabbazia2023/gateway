@@ -19,9 +19,9 @@ namespace ApiGateway.UnitTests
         string contactEmail,
         Dictionary<string, string> requiredClaims,
         Dictionary<string, string> headers = default,
-        bool isAnonymous = false,
         Dictionary<string, string> routeValues = null,
-        Dictionary<string, string> queryParameters = null
+        Dictionary<string, string> queryParameters = null,
+        bool isAnonymous = false
         )
         {
             if (headers == null) headers = new Dictionary<string, string>();
@@ -59,8 +59,13 @@ namespace ApiGateway.UnitTests
         }
 
 
-        public static DownstreamRoute GenerateDownStream(Dictionary<string, string> requiredClaims, bool isAnonymous)
+        public static DownstreamRoute GenerateDownStream(Dictionary<string, string> requiredClaims, bool isAnonymous = false)
         {
+            var authenticationOptions = new AuthenticationOptions(new List<string>(), ["TestAuthScheme"])
+            {
+                AllowAnonymous = isAnonymous
+            };
+
             var downstreamRoute = new DownstreamRoute(
                 key: "key",
                 upstreamPathTemplate: new UpstreamPathTemplate("template", 1, true, ""),
@@ -70,12 +75,9 @@ namespace ApiGateway.UnitTests
                 serviceName: "serviceName",
                 serviceNamespace: "serviceNamespace",
                 httpHandlerOptions: null,
-                useServiceDiscovery: false,
-                enableEndpointEndpointRateLimiting: false,
                 qosOptions: null,
                 downstreamScheme: "http",
                 requestIdKey: null,
-                isCached: false,
                 cacheOptions: null,
                 loadBalancerOptions: null,
                 rateLimitOptions: null,
@@ -84,9 +86,7 @@ namespace ApiGateway.UnitTests
                 claimsToHeaders: null,
                 claimsToClaims: null,
                 claimsToPath: null,
-                isAuthenticated: !isAnonymous,
-                isAuthorized: false,
-                authenticationOptions: null,
+                authenticationOptions: authenticationOptions,
                 downstreamPathTemplate: null,
                 loadBalancerKey: null,
                 delegatingHandlers: null,
@@ -98,7 +98,8 @@ namespace ApiGateway.UnitTests
                 downstreamHttpVersion: null,
                 downstreamHttpVersionPolicy: default,
                 upstreamHeaders: null,
-                metadataOptions: new MetadataOptions(new FileMetadataOptions())
+                metadataOptions: new MetadataOptions(new FileMetadataOptions()),
+                timeout: null
             );
             return downstreamRoute;
         }

@@ -30,7 +30,7 @@
 		<PackageReference Include="Ardalis.GuardClauses" Version="4.4.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.0" />
 		<PackageReference Include="Azure.Data.Tables" Version="12.9.0" />
-		<PackageReference Include="Azure.Identity" Version="1.11.4" />
+		<PackageReference Include="Azure.Identity" Version="1.21.0" />
 		<PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.2.0" />
 		<PackageReference Include="FluentValidation" Version="12.1.1" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
@@ -39,16 +39,16 @@
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />
 		<PackageReference Include="OpenFeature" Version="2.3.0" />
 		<PackageReference Include="OpenFeature.Contrib.Providers.ConfigCat" Version="0.1.1" />
 		<PackageReference Include="MMLib.SwaggerForOcelot" Version="8.1.0" />
 		<PackageReference Include="NRedisStack" Version="0.11.0" />
-		<PackageReference Include="Ocelot" Version="23.3.4" />
+		<PackageReference Include="Ocelot" Version="24.1.0" />
 		<PackageReference Include="Pulse.ExceptionMiddleware" Version="2.73.41" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 		<PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
-		<PackageReference Include="System.Text.Json" Version="9.0.0" />
+		<PackageReference Include="System.Text.Json" Version="10.0.3" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Update="Configuration\ocelot.json">

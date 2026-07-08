@@ -175,12 +175,9 @@ namespace ApiGateway.UnitTests.Aggregator
                 serviceName: "serviceName",
                 serviceNamespace: "serviceNamespace",
                 httpHandlerOptions: null,
-                useServiceDiscovery: false,
-                enableEndpointEndpointRateLimiting: false,
                 qosOptions: null,
                 downstreamScheme: "http",
                 requestIdKey: null,
-                isCached: false,
                 cacheOptions: null,
                 loadBalancerOptions: null,
                 rateLimitOptions: null,
@@ -189,8 +186,6 @@ namespace ApiGateway.UnitTests.Aggregator
                 claimsToHeaders: null,
                 claimsToClaims: null,
                 claimsToPath: null,
-                isAuthenticated: false,
-                isAuthorized: false,
                 authenticationOptions: null,
                 downstreamPathTemplate: null,
                 loadBalancerKey: null,
@@ -201,9 +196,10 @@ namespace ApiGateway.UnitTests.Aggregator
                 securityOptions: null,
                 downstreamHttpMethod: null,
                 downstreamHttpVersion: null,
-                downstreamHttpVersionPolicy: System.Net.Http.HttpVersionPolicy.RequestVersionOrLower,
+                downstreamHttpVersionPolicy: HttpVersionPolicy.RequestVersionOrLower,
                 upstreamHeaders: null,
-                metadataOptions: new Ocelot.Configuration.MetadataOptions(new Ocelot.Configuration.File.FileMetadataOptions())
+                metadataOptions: new MetadataOptions(new Ocelot.Configuration.File.FileMetadataOptions()),
+                timeout: null
             );
         }
 

@@ -45,4 +45,6 @@ public interface IContactService
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The raw Contact downstream response.</returns>
     Task<HttpResponseMessage> CreateNewPasswordAsync(CreateNewPasswordRequest request, string? entityType, CancellationToken ct);
+
+    Task<IEnumerable<int>> SendEmailAsync(int currentUserId, string accountNumber, int[] customerIDs, string? entityType = null);
 }

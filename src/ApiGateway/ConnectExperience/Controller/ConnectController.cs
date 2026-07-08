@@ -65,4 +65,12 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPost("customers/bulk-invite/{accountId}")]
+    public async Task<ActionResult> SendEmailAsync([FromRoute] int accountId, [FromBody] int[] customerIDs, [FromQuery] string? entityType = null)
+    {
+        var userEmail = userContext.User.GetEmail();
+        var result = await experienceServices.SendEmailAsync(userEmail, accountId, customerIDs, entityType);
+        return Ok(result);
+    }
 }
