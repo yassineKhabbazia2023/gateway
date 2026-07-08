@@ -25,6 +25,12 @@ namespace ApiGateway.Aggregator
             var result = new List<Models.Configuration>();
             foreach (var response in responsesDownstream)
             {
+                // Skip 204 No Content and 404 Not Found (no data available, expected behavior)
+                if (response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    continue;
+                }
+
                 var content = await response.Content.ReadAsStringAsync();
                 var configurations = JsonConvert.DeserializeObject<List<Models.Configuration>>(content);
                 Merge(configurations!, result);
