@@ -36,11 +36,13 @@ public interface IProspectService
     /// <summary>
     /// Uploads a supporting document with automatic Akuiteo sync and step completion orchestration.
     /// </summary>
+    /// <param name="accountId">The account identifier.</param>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="currentUserId">The current user identifier.</param>
     /// <param name="request">The upload request.</param>
     /// <param name="ct">The cancellation token.</param>
     Task UploadSupportingDocumentAsync(
+        int accountId,
         int prospectId,
         int currentUserId,
         UploadSupportingDocumentRequest request,

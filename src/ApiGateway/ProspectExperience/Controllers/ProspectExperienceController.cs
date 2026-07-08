@@ -194,7 +194,7 @@ public class ProspectExperienceController(
 
         try
         {
-            await prospectService.UploadSupportingDocumentAsync(prospectId.Value, contact.Id, request, ct);
+            await prospectService.UploadSupportingDocumentAsync(accountId, prospectId.Value, contact.Id, request, ct);
             return StatusCode(StatusCodes.Status201Created);
         }
         catch (GatewayException ex)

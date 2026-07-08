@@ -365,6 +365,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService
             .Setup(s => s.UploadSupportingDocumentAsync(
+                accountId,
                 prospectId,
                 contact.Id,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
@@ -392,6 +393,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService.Verify(
             s => s.UploadSupportingDocumentAsync(
+                accountId,
                 prospectId,
                 contact.Id,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
@@ -423,6 +425,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService.Verify(
             s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
@@ -459,6 +462,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService.Verify(
             s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
@@ -506,6 +510,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService.Verify(
             s => s.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
@@ -562,6 +567,7 @@ public class ProspectExperienceControllerTests
             s => s.UploadSupportingDocumentAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<int>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -599,6 +605,7 @@ public class ProspectExperienceControllerTests
 
         _orchestrationService
             .Setup(s => s.UploadSupportingDocumentAsync(
+                accountId,
                 prospectId,
                 contact.Id,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),

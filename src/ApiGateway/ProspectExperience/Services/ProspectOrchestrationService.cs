@@ -904,6 +904,7 @@ public class ProspectOrchestrationService(
     }
 
     public async Task UploadSupportingDocumentAsync(
+        int accountId,
         int prospectId,
         int currentUserId,
         UploadSupportingDocumentRequest request,
@@ -1020,7 +1021,7 @@ public class ProspectOrchestrationService(
             }
             else
             {
-                await strategy.CompleteAsync(prospectId, SupportingDocumentsStepName, ct, currentUserId);
+                await strategy.CompleteAsync(accountId, SupportingDocumentsStepName, ct, currentUserId);
                 logger.LogInformation(
                     "Supporting documents step completed successfully for prospect {ProspectId}",
                     prospectId);

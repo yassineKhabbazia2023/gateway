@@ -173,7 +173,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .ReturnsAsync(true);
         _prospectService
             .Setup(service => service.CompleteStepAsync(
-                10,
+                42,
                 It.Is<CompleteStepRequest>(req => req.StepName == "PAYMENT_METHOD"),
                 It.IsAny<CancellationToken>(),
                 0))
@@ -206,7 +206,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
         _prospectService.Verify(
             service => service.CompleteStepAsync(
-                10,
+                42,
                 It.Is<CompleteStepRequest>(req => req.StepName == "PAYMENT_METHOD"),
                 It.IsAny<CancellationToken>(),
                 0),
@@ -516,7 +516,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .ReturnsAsync(true);
         _prospectService
             .Setup(service => service.CompleteStepAsync(
-                10,
+                42,
                 It.Is<CompleteStepRequest>(request => request.StepName == "PAYMENT_METHOD"),
                 It.IsAny<CancellationToken>(),
                 7))
@@ -530,7 +530,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         result.Should().BeTrue();
         _prospectService.Verify(
             service => service.CompleteStepAsync(
-                10,
+                42,
                 It.Is<CompleteStepRequest>(request => request.StepName == "PAYMENT_METHOD"),
                 It.IsAny<CancellationToken>(),
                 7),
@@ -558,7 +558,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .ReturnsAsync(true);
         _prospectService
             .Setup(service => service.CompleteStepAsync(
-                10,
+                42,
                 It.IsAny<CompleteStepRequest>(),
                 It.IsAny<CancellationToken>(),
                 7))
@@ -625,7 +625,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .ReturnsAsync(true);
         _prospectService
             .Setup(service => service.CompleteStepAsync(
-                10,
+                42,
                 It.IsAny<CompleteStepRequest>(),
                 It.IsAny<CancellationToken>(),
                 7))

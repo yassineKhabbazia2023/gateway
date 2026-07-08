@@ -23,18 +23,18 @@ public sealed class DefaultStepCompletionStrategy(
 
     /// <inheritdoc />
     public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
+        int accountId,
         string stepName,
         CancellationToken ct)
     {
         logger.LogInformation(
-            "Completing onboarding step {StepName} for prospect {ProspectId} without external document upload",
+            "Completing onboarding step {StepName} for account {AccountId} without external document upload",
             stepName,
-            prospectId);
+            accountId);
 
         try
         {
-            await prospectClient.CompleteStepAsync(prospectId, stepName, ct);
+            await prospectClient.CompleteStepAsync(accountId, stepName, ct);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
@@ -49,19 +49,19 @@ public sealed class DefaultStepCompletionStrategy(
 
     /// <inheritdoc />
     public async Task<DocumentExternalUploadBatchResult> CompleteAsync(
-        int prospectId,
+        int accountId,
         string stepName,
         CancellationToken ct,
         int? currentUserId)
     {
         logger.LogInformation(
-            "Completing onboarding step {StepName} for prospect {ProspectId} without external document upload",
+            "Completing onboarding step {StepName} for account {AccountId} without external document upload",
             stepName,
-            prospectId);
+            accountId);
 
         try
         {
-            await prospectClient.CompleteStepAsync(prospectId, stepName, ct, currentUserId);
+            await prospectClient.CompleteStepAsync(accountId, stepName, ct, currentUserId);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
