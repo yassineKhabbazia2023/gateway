@@ -907,6 +907,7 @@ public class ProspectOrchestrationService(
         int accountId,
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         UploadSupportingDocumentRequest request,
         CancellationToken ct)
     {
@@ -918,16 +919,19 @@ public class ProspectOrchestrationService(
         var uploadResult = await prospectClient.UploadSupportingDocumentAsync(
             prospectId,
             currentUserId,
+            contactEmail,
             request,
             ct);
 
         if (uploadResult.Outcome != UploadSupportingDocumentOutcome.Success)
         {
             logger.LogWarning(
-                "Supporting document upload failed for prospect {ProspectId}. Outcome: {Outcome}, ErrorCode: {ErrorCode}",
+                "Supporting document upload failed for prospect {ProspectId}. Outcome: {Outcome}, Field: {Field}, ErrorCode: {ErrorCode}, ErrorMessage: {ErrorMessage}",
                 prospectId,
                 uploadResult.Outcome,
-                uploadResult.ErrorCode ?? "n/a");
+                uploadResult.FieldName ?? "n/a",
+                uploadResult.ErrorCode ?? "n/a",
+                uploadResult.ErrorMessage ?? "n/a");
             throw uploadResult.Outcome switch
             {
                 UploadSupportingDocumentOutcome.ValidationError => new GatewayException(

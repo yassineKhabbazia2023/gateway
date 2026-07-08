@@ -17,6 +17,7 @@ namespace ApiGateway.UnitTests.ProspectExperience.Services;
 public class ProspectOrchestrationServiceTests
 {
     private const int SupportingDocumentsAccountId = 84;
+    private const string ContactEmail = "collaborator@test.fr";
     private readonly Mock<IRegistryProspectClient> _registry;
     private readonly Mock<IProspectApiClient> _prospect;
     private readonly Mock<IAccountService> _accountService;
@@ -1164,7 +1165,7 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1178,9 +1179,9 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(SupportingDocumentsAccountId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
     }
@@ -1202,13 +1203,13 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(documentId));
         _additionalSupportingDocumentUploadStrategy
             .Setup(strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new DocumentExternalUploadBatchResult([documentId], []));
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         _additionalSupportingDocumentUploadStrategy.Verify(
             strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()),
@@ -1232,13 +1233,13 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(documentId));
         _additionalSupportingDocumentUploadStrategy
             .Setup(strategy => strategy.UploadAsync(prospectId, documentId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Akuitéo unavailable"));
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
@@ -1312,9 +1313,9 @@ public class ProspectOrchestrationServiceTests
             _contactService.Object,
             _logger.Object);
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, firstRequest, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, firstRequest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(41));
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, secondRequest, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, secondRequest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new DocumentRequirementsResponse
@@ -1326,9 +1327,9 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        var firstUpload = service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, firstRequest, CancellationToken.None);
+        var firstUpload = service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, firstRequest, CancellationToken.None);
         await completionStarted.Task;
-        var secondUpload = service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, secondRequest, CancellationToken.None);
+        var secondUpload = service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, secondRequest, CancellationToken.None);
 
         await Task.Delay(50);
         completionCalls.Should().Be(1);
@@ -1338,7 +1339,7 @@ public class ProspectOrchestrationServiceTests
 
         completionCalls.Should().Be(2);
         maximumConcurrentCompletions.Should().Be(1);
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, It.IsAny<UploadSupportingDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, It.IsAny<UploadSupportingDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(4));
         stepCompletionStrategy.Verify(s => s.CompleteAsync(SupportingDocumentsAccountId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Exactly(2));
     }
@@ -1357,7 +1358,7 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.SetupSequence(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1371,9 +1372,9 @@ public class ProspectOrchestrationServiceTests
             })
             .ReturnsAsync((DocumentRequirementsResponse?)null);
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
         _logger.Verify(
@@ -1400,7 +1401,7 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.SetupSequence(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1421,9 +1422,9 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<int?>()), Times.Never);
     }
@@ -1442,7 +1443,7 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1455,9 +1456,9 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -1476,15 +1477,15 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((DocumentRequirementsResponse?)null);
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _logger.Verify(
@@ -1520,7 +1521,7 @@ public class ProspectOrchestrationServiceTests
             _contactService.Object,
             _logger.Object);
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1533,7 +1534,7 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        await serviceWithoutSupportingDocsStrategy.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await serviceWithoutSupportingDocsStrategy.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         _prospect.Verify(p => p.CompleteStepAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _logger.Verify(
@@ -1560,7 +1561,7 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.Success(42));
 
         _prospect.Setup(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()))
@@ -1576,9 +1577,9 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.CompleteStepAsync(SupportingDocumentsAccountId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId))
             .ThrowsAsync(new HttpRequestException("Strategy failed"));
 
-        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        await _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
-        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()), Times.Once);
+        _prospect.Verify(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.GetDocumentRequirementsAsync(prospectId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(p => p.CompleteStepAsync(SupportingDocumentsAccountId, "SupportingDocuments", It.IsAny<CancellationToken>(), currentUserId), Times.Once);
         _logger.Verify(
@@ -1605,10 +1606,10 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.ValidationError("DocumentType", "INVALID_TYPE", "Invalid document type"));
 
-        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<GatewayException>();
         exception.Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
@@ -1631,10 +1632,10 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.FileTooLarge("FILE_TOO_LARGE", "File exceeds maximum size of 10MB"));
 
-        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<GatewayException>();
         exception.Which.StatusCode.Should().Be(StatusCodes.Status413RequestEntityTooLarge);
@@ -1657,10 +1658,10 @@ public class ProspectOrchestrationServiceTests
             File = Mock.Of<IFormFile>()
         };
 
-        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, request, It.IsAny<CancellationToken>()))
+        _prospect.Setup(p => p.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(UploadSupportingDocumentResult.ProspectNotFound());
 
-        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, request, CancellationToken.None);
+        Func<Task> act = () => _service.UploadSupportingDocumentAsync(SupportingDocumentsAccountId, prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<GatewayException>();
         exception.Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
@@ -1671,3 +1672,4 @@ public class ProspectOrchestrationServiceTests
 
     #endregion
 }
+

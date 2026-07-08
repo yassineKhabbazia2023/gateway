@@ -48,6 +48,7 @@ public interface IProspectApiClient
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="currentUserId">The current user identifier.</param>
+    /// <param name="contactEmail">The optional uploader email address.</param>
     /// <param name="documentType">The document type.</param>
     /// <param name="file">The file to upload.</param>
     /// <param name="ct">The cancellation token.</param>
@@ -55,6 +56,7 @@ public interface IProspectApiClient
     Task<int?> UploadDocumentAsync(
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         string documentType,
         IFormFile file,
         CancellationToken ct);
@@ -270,12 +272,14 @@ public interface IProspectApiClient
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="currentUserId">The current user identifier.</param>
+    /// <param name="contactEmail">The uploader email address.</param>
     /// <param name="request">The upload request with document type and file.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The upload result with document ID or error details.</returns>
     Task<UploadSupportingDocumentResult> UploadSupportingDocumentAsync(
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         UploadSupportingDocumentRequest request,
         CancellationToken ct);
 

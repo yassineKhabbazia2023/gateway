@@ -44,7 +44,8 @@ public sealed class PaymentPreferencesController(
             return NotFound();
         }
 
-        var response = await paymentPreferencesService.GetAsync(prospectId.Value, ct);
+        var contactEmail = userContext.User.GetEmail();
+        var response = await paymentPreferencesService.GetAsync(prospectId.Value, contactEmail, ct);
         return response is null ? NotFound() : Ok(response);
     }
 

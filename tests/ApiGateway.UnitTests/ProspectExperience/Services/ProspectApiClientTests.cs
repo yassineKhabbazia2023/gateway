@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ApiGateway.ProspectExperience.Constants;
 using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
@@ -375,12 +376,13 @@ public class ProspectApiClientTests
             ContentType = "application/pdf"
         };
 
-        var result = await client.UploadDocumentAsync(42, 7, "RIB", file, CancellationToken.None);
+        var result = await client.UploadDocumentAsync(42, 7, "user@test.fr", "RIB", file, CancellationToken.None);
 
         result.Should().Be(123);
         captured!.Method.Should().Be(HttpMethod.Post);
         captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/42/documents");
         captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("7");
+        captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("user@test.fr");
         captured.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
         multipartBody.Should().Contain("name=documentType");
         multipartBody.Should().Contain("RIB");
@@ -401,9 +403,57 @@ public class ProspectApiClientTests
             ContentType = "application/pdf"
         };
 
-        var result = await client.UploadDocumentAsync(42, 7, "RIB", file, CancellationToken.None);
+        var result = await client.UploadDocumentAsync(42, 7, null, "RIB", file, CancellationToken.None);
 
         result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that document upload does not send a contact email header when the email is blank.
+    /// </summary>
+    [Fact]
+    public async Task UploadDocumentAsync_WhenContactEmailIsBlank_DoesNotSendContactEmailHeader()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create(new { documentId = 123 }, options: CamelCase)
+        };
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(response, request => captured = request);
+        var file = new FormFile(new MemoryStream([1]), 0, 1, "file", "rib.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+
+        var result = await client.UploadDocumentAsync(42, 7, " ", "RIB", file, CancellationToken.None);
+
+        result.Should().Be(123);
+        captured!.Headers.Contains("ContactEmail").Should().BeFalse();
+        captured.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("7");
+    }
+
+    /// <summary>
+    /// Verifies that document upload reports an invalid downstream response when the payload is empty.
+    /// </summary>
+    [Fact]
+    public async Task UploadDocumentAsync_WhenResponseIsEmpty_ThrowsHttpRequestException()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = JsonContent.Create<object?>(null, options: CamelCase)
+        };
+        var (client, _) = CreateClient(response);
+        var file = new FormFile(new MemoryStream([1]), 0, 1, "file", "rib.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+
+        Func<Task> act = () => client.UploadDocumentAsync(42, 7, "user@test.fr", "RIB", file, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("Document upload response for prospect 42 was empty.");
     }
 
     /// <summary>
@@ -1407,6 +1457,8 @@ public class ProspectApiClientTests
 
     #region UploadSupportingDocumentAsync Tests
 
+    private const string ContactEmail = "collaborator@test.fr";
+
     /// <summary>
     /// Verifies that UploadSupportingDocumentAsync successfully uploads a file and returns the document ID.
     /// </summary>
@@ -1485,7 +1537,7 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        var result = await client.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+        var result = await client.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.Outcome.Should().Be(UploadSupportingDocumentOutcome.Success);
@@ -1500,6 +1552,7 @@ public class ProspectApiClientTests
         capturedUploadRequest.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/prospects/999/supporting-documents");
         capturedUploadRequest.Content!.Headers.ContentType!.MediaType.Should().Be("multipart/form-data");
         capturedUploadRequest.Headers.Should().Contain(h => h.Key == "CurrentUser" && h.Value.Contains("100"));
+        capturedUploadRequest.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be(ContactEmail);
     }
 
     /// <summary>
@@ -1573,7 +1626,7 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        await client.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+        await client.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         capturedFormData.Should().NotBeNull();
     }
@@ -1598,7 +1651,7 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        var result = await client.UploadSupportingDocumentAsync(42, 100, request, CancellationToken.None);
+        var result = await client.UploadSupportingDocumentAsync(42, 100, null, request, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ProspectNotFound);
@@ -1663,7 +1716,7 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, request, CancellationToken.None);
+        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, null, request, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ProspectNotFound);
@@ -1741,13 +1794,227 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, request, CancellationToken.None);
+        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, null, request, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ValidationError);
         result.FieldName.Should().Be("documentType");
         result.ErrorCode.Should().Be("INVALID_DOCUMENT_TYPE");
         result.ErrorMessage.Should().Be("Invalid document type");
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync preserves validation details when ProblemDetails extensions are nested.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenValidationProblemExtensionsAreNested_ReturnsValidationErrorDetails()
+    {
+        const int prospectId = 42;
+        const int accountId = 999;
+
+        var handlerCalls = 0;
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                handlerCalls++;
+                if (handlerCalls == 1)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = JsonContent.Create(new
+                        {
+                            prospectId,
+                            accountId,
+                            accountNumber = "ACC-999",
+                            accountType = "PROSPECT",
+                            legalName = "Test Company",
+                            siret = "12345678901234",
+                            legalForm = "SAS"
+                        }, options: CamelCase)
+                    };
+                }
+
+                var problemDetails = new
+                {
+                    title = "One or more validation errors occurred.",
+                    status = 400,
+                    detail = "La limite de 1 document(s) pour le type 'KBIS' est atteinte.",
+                    errors = new Dictionary<string, string[]>
+                    {
+                        ["documentType"] = ["La limite de 1 document(s) pour le type 'KBIS' est atteinte."]
+                    },
+                    extensions = new
+                    {
+                        errorCode = "PRS008",
+                        field = "documentType"
+                    }
+                };
+
+                return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = JsonContent.Create(problemDetails, options: CamelCase)
+                };
+            });
+
+        var httpClient = new HttpClient(handler.Object)
+        {
+            BaseAddress = new Uri("https://prospect.test/")
+        };
+        var logger = new Mock<ILogger<ProspectApiClient>>();
+        var client = new ProspectApiClient(httpClient, logger.Object);
+
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("kbis.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
+
+        var request = new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = file.Object
+        };
+
+        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, null, request, CancellationToken.None);
+
+        result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ValidationError);
+        result.FieldName.Should().Be("documentType");
+        result.ErrorCode.Should().Be("PRS008");
+        result.ErrorMessage.Should().Be("La limite de 1 document(s) pour le type 'KBIS' est atteinte.");
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync reads validation details from the first model-state error.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenValidationErrorsContainDetails_ReturnsFirstErrorDetails()
+    {
+        var (client, _) = CreateSupportingDocumentClient(
+            new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = JsonContent.Create(new
+                {
+                    errors = new Dictionary<string, string[]>
+                    {
+                        ["ContactEmail"] = ["The ContactEmail header is required."]
+                    }
+                }, options: CamelCase)
+            });
+
+        var result = await client.UploadSupportingDocumentAsync(
+            42,
+            100,
+            null,
+            CreateSupportingDocumentRequest(),
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ValidationError);
+        result.FieldName.Should().Be("ContactEmail");
+        result.ErrorCode.Should().Be("VALIDATION_ERROR");
+        result.ErrorMessage.Should().Be("The ContactEmail header is required.");
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync falls back to default validation details when ProblemDetails is empty.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenValidationProblemBodyIsEmpty_ReturnsDefaultValidationError()
+    {
+        var (client, _) = CreateSupportingDocumentClient(
+            new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(string.Empty)
+            });
+
+        var result = await client.UploadSupportingDocumentAsync(
+            42,
+            100,
+            null,
+            CreateSupportingDocumentRequest(),
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(UploadSupportingDocumentOutcome.ValidationError);
+        result.FieldName.Should().Be(ProblemDetailsKeys.DefaultField);
+        result.ErrorCode.Should().Be(ProblemDetailsKeys.DefaultErrorCode);
+        result.ErrorMessage.Should().Be(ProblemDetailsKeys.DefaultValidationMessage);
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync falls back to default file-too-large details when ProblemDetails is invalid JSON.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenFileTooLargeProblemBodyIsInvalidJson_ReturnsDefaultFileTooLargeError()
+    {
+        var (client, _) = CreateSupportingDocumentClient(
+            new HttpResponseMessage(HttpStatusCode.RequestEntityTooLarge)
+            {
+                Content = new StringContent("{invalid-json")
+            });
+
+        var result = await client.UploadSupportingDocumentAsync(
+            42,
+            100,
+            null,
+            CreateSupportingDocumentRequest(),
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(UploadSupportingDocumentOutcome.FileTooLarge);
+        result.ErrorCode.Should().Be(ProblemDetailsKeys.DefaultFileTooLargeCode);
+        result.ErrorMessage.Should().Be(ProblemDetailsKeys.DefaultFileTooLargeMessage);
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync rejects a successful response without a valid document identifier.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenCreatedResponseHasInvalidDocumentId_ThrowsHttpRequestException()
+    {
+        var (client, _) = CreateSupportingDocumentClient(
+            new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = JsonContent.Create(new { documentId = 0 }, options: CamelCase)
+            });
+
+        Func<Task> act = () => client.UploadSupportingDocumentAsync(
+            42,
+            100,
+            ContactEmail,
+            CreateSupportingDocumentRequest(),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("Prospect API returned 201 but response body missing or invalid documentId");
+    }
+
+    /// <summary>
+    /// Verifies that UploadSupportingDocumentAsync does not send a contact email header when the email is blank.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenContactEmailIsBlank_DoesNotSendContactEmailHeader()
+    {
+        HttpRequestMessage? capturedUploadRequest = null;
+        var (client, _) = CreateSupportingDocumentClient(
+            new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = JsonContent.Create(new { documentId = 555 }, options: CamelCase)
+            },
+            request => capturedUploadRequest = request);
+
+        var result = await client.UploadSupportingDocumentAsync(
+            42,
+            100,
+            " ",
+            CreateSupportingDocumentRequest(),
+            CancellationToken.None);
+
+        result.Outcome.Should().Be(UploadSupportingDocumentOutcome.Success);
+        capturedUploadRequest!.Headers.Contains("ContactEmail").Should().BeFalse();
+        capturedUploadRequest.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be("100");
     }
 
     /// <summary>
@@ -1821,7 +2088,7 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, request, CancellationToken.None);
+        var result = await client.UploadSupportingDocumentAsync(prospectId, 100, null, request, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.Outcome.Should().Be(UploadSupportingDocumentOutcome.FileTooLarge);
@@ -1899,11 +2166,86 @@ public class ProspectApiClientTests
             File = file.Object
         };
 
-        await client.UploadSupportingDocumentAsync(prospectId, currentUserId, request, CancellationToken.None);
+        await client.UploadSupportingDocumentAsync(prospectId, currentUserId, ContactEmail, request, CancellationToken.None);
 
         capturedUploadRequest!.Headers.Should().Contain(h => h.Key == "CurrentUser" && h.Value.Contains("777"));
     }
 
     #endregion
 
+    /// <summary>
+    /// Creates a Prospect client for supporting document upload tests.
+    /// </summary>
+    /// <param name="uploadResponse">The upload endpoint response.</param>
+    /// <param name="captureUploadRequest">An optional callback for the upload request.</param>
+    /// <returns>The client and mocked message handler.</returns>
+    private static (ProspectApiClient Client, Mock<HttpMessageHandler> Handler) CreateSupportingDocumentClient(
+        HttpResponseMessage uploadResponse,
+        Action<HttpRequestMessage>? captureUploadRequest = null)
+    {
+        var handlerCalls = 0;
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                if (handlerCalls == 1)
+                {
+                    captureUploadRequest?.Invoke(req);
+                }
+            })
+            .ReturnsAsync(() =>
+            {
+                handlerCalls++;
+                if (handlerCalls == 1)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = JsonContent.Create(new
+                        {
+                            prospectId = 42,
+                            accountId = 999,
+                            accountNumber = "ACC-999",
+                            accountType = "PROSPECT",
+                            legalName = "Test Company",
+                            siret = "12345678901234",
+                            legalForm = "SAS"
+                        }, options: CamelCase)
+                    };
+                }
+
+                return uploadResponse;
+            });
+
+        var httpClient = new HttpClient(handler.Object)
+        {
+            BaseAddress = new Uri("https://prospect.test/")
+        };
+        var logger = new Mock<ILogger<ProspectApiClient>>();
+        return (new ProspectApiClient(httpClient, logger.Object), handler);
+    }
+
+    /// <summary>
+    /// Creates a valid supporting document upload request.
+    /// </summary>
+    /// <returns>The upload request.</returns>
+    private static UploadSupportingDocumentRequest CreateSupportingDocumentRequest()
+    {
+        var file = new Mock<IFormFile>();
+        file.Setup(f => f.FileName).Returns("kbis.pdf");
+        file.Setup(f => f.ContentType).Returns("application/pdf");
+        file.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1]));
+
+        return new UploadSupportingDocumentRequest
+        {
+            DocumentType = "KBIS",
+            File = file.Object
+        };
+    }
+
 }
+

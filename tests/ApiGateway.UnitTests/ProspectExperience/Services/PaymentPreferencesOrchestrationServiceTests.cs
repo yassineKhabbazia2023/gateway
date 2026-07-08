@@ -47,7 +47,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("OTHER");
@@ -156,6 +156,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadDocumentAsync(
                 10,
                 0,
+                "user@test.fr",
                 "SIGNED_MANDATE",
                 It.Is<IFormFile>(file =>
                     file.FileName == "mandat-AK-001-signature.pdf"
@@ -180,7 +181,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Callback(() => calls.Add("complete-step"))
             .ReturnsAsync(new DocumentUploadResultResponse([], []));
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -198,6 +199,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.UploadDocumentAsync(
                 10,
                 0,
+                "user@test.fr",
                 "SIGNED_MANDATE",
                 It.Is<IFormFile>(file => file.FileName == "mandat-AK-001-signature.pdf"),
                 It.IsAny<CancellationToken>()),
@@ -248,7 +250,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -256,6 +258,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.UploadDocumentAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<string>(),
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()),
@@ -297,12 +300,13 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadDocumentAsync(
                 10,
                 0,
+                "user@test.fr",
                 "SIGNED_MANDATE",
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((int?)null);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -359,6 +363,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadDocumentAsync(
                 10,
                 0,
+                "user@test.fr",
                 "SIGNED_MANDATE",
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()))
@@ -373,7 +378,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"))
             .ReturnsAsync(true);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -421,7 +426,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -429,6 +434,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.UploadDocumentAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<string>(),
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()),
@@ -470,6 +476,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadDocumentAsync(
                 10,
                 0,
+                "user@test.fr",
                 "SIGNED_MANDATE",
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()))
@@ -478,7 +485,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"))
             .ReturnsAsync(false);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.PaymentType.Should().Be("MANDATE_SEPA");
@@ -496,7 +503,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ProspectAccountResponse?)null);
 
-        var result = await _service.GetAsync(10, CancellationToken.None);
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
 
         result.Should().BeNull();
         _mandateClient.Verify(client => client.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -685,7 +692,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _prospectClient
-            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .Setup(client => client.UploadDocumentAsync(10, 7, "user@test.fr", "RIB", request.File!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(123);
         _mandateClient
             .Setup(client => client.SetSepaAsync(
@@ -765,6 +772,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.UploadDocumentAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<string>(),
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()),
@@ -813,6 +821,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             client => client.UploadDocumentAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<string>(),
                 It.IsAny<IFormFile>(),
                 It.IsAny<CancellationToken>()),
@@ -839,7 +848,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _prospectClient
-            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .Setup(client => client.UploadDocumentAsync(10, 7, "user@test.fr", "RIB", request.File!, It.IsAny<CancellationToken>()))
             .ReturnsAsync((int?)null);
 
         var result = await _service.SetSepaAsync(
@@ -890,7 +899,7 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.IsProspectSignatoryAsync(10, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _prospectClient
-            .Setup(client => client.UploadDocumentAsync(10, 7, "RIB", request.File!, It.IsAny<CancellationToken>()))
+            .Setup(client => client.UploadDocumentAsync(10, 7, "user@test.fr", "RIB", request.File!, It.IsAny<CancellationToken>()))
             .ReturnsAsync(123);
         _mandateClient
             .Setup(client => client.SetSepaAsync(42, It.IsAny<MandateSepaPaymentPreferenceRequest>(), It.IsAny<CancellationToken>()))
@@ -1007,3 +1016,4 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             Times.Never);
     }
 }
+

@@ -34,7 +34,7 @@ public sealed class PaymentPreferencesControllerTests
     {
         var expected = new PaymentPreferenceResponse { PaymentType = "OTHER" };
         _service
-            .Setup(service => service.GetAsync(ProspectId, It.IsAny<CancellationToken>()))
+            .Setup(service => service.GetAsync(ProspectId, "user@test.fr", It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var controller = CreateController("user@test.fr");
 
@@ -59,7 +59,7 @@ public sealed class PaymentPreferencesControllerTests
 
         actionResult.Result.Should().BeOfType<NotFoundResult>();
         _service.Verify(
-            service => service.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            service => service.GetAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -70,7 +70,7 @@ public sealed class PaymentPreferencesControllerTests
     public async Task GetAsync_WhenPreferenceIsMissing_Returns404()
     {
         _service
-            .Setup(service => service.GetAsync(ProspectId, It.IsAny<CancellationToken>()))
+            .Setup(service => service.GetAsync(ProspectId, "user@test.fr", It.IsAny<CancellationToken>()))
             .ReturnsAsync((PaymentPreferenceResponse?)null);
         var controller = CreateController("user@test.fr");
 
@@ -570,3 +570,4 @@ public sealed class PaymentPreferencesControllerTests
         };
     }
 }
+

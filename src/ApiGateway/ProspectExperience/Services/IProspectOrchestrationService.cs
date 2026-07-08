@@ -39,12 +39,14 @@ public interface IProspectService
     /// <param name="accountId">The account identifier.</param>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="currentUserId">The current user identifier.</param>
+    /// <param name="contactEmail">The uploader email address.</param>
     /// <param name="request">The upload request.</param>
     /// <param name="ct">The cancellation token.</param>
     Task UploadSupportingDocumentAsync(
         int accountId,
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         UploadSupportingDocumentRequest request,
         CancellationToken ct);
 }

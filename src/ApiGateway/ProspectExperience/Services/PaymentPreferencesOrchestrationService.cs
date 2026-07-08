@@ -21,7 +21,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     private const string PdfContentType = "application/pdf";
 
     /// <inheritdoc />
-    public async Task<PaymentPreferenceResponse?> GetAsync(int prospectId, CancellationToken ct)
+    public async Task<PaymentPreferenceResponse?> GetAsync(int prospectId, string? contactEmail, CancellationToken ct)
     {
         logger.LogInformation("Reading payment preference for prospect {ProspectId}", prospectId);
 
@@ -55,7 +55,7 @@ public sealed class PaymentPreferencesOrchestrationService(
 
         if (preference.HasSignedMandate)
         {
-            await UploadSignedSepaDocumentsAsync(prospectId, preference, ct);
+            await UploadSignedSepaDocumentsAsync(prospectId, preference, contactEmail, ct);
         }
 
         return new PaymentPreferenceResponse { PaymentType = preference.PaymentType };
@@ -88,11 +88,13 @@ public sealed class PaymentPreferencesOrchestrationService(
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="preference">The internal Mandat payment preference response.</param>
+    /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     private async Task UploadSignedSepaDocumentsAsync(
         int prospectId,
         MandatePaymentPreferenceResponse preference,
+        string? contactEmail,
         CancellationToken ct)
     {
         var accountId = preference.AccountId!.Value;
@@ -154,6 +156,7 @@ public sealed class PaymentPreferencesOrchestrationService(
             signedMandateContent,
             signedMandateContentType,
             signedMandateFileName,
+            contactEmail,
             ct);
         if (!signedMandateProspectDocumentId.HasValue)
         {
@@ -207,6 +210,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     /// <param name="content">The signed mandate PDF content.</param>
     /// <param name="contentType">The signed mandate content type.</param>
     /// <param name="fileName">The signed mandate file name.</param>
+    /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The existing or newly created Prospect document identifier.</returns>
     private async Task<int?> EnsureSignedMandateDocumentIdAsync(
@@ -216,6 +220,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         byte[] content,
         string contentType,
         string fileName,
+        string? contactEmail,
         CancellationToken ct)
     {
         if (int.TryParse(preference.SignedMandateDocumentId, NumberStyles.None, CultureInfo.InvariantCulture, out var existingDocumentId))
@@ -232,6 +237,7 @@ public sealed class PaymentPreferencesOrchestrationService(
             content,
             contentType,
             fileName,
+            contactEmail,
             ct);
         if (!signedMandateProspectDocumentId.HasValue)
         {
@@ -269,6 +275,7 @@ public sealed class PaymentPreferencesOrchestrationService(
     /// <param name="content">The signed mandate PDF content.</param>
     /// <param name="contentType">The signed mandate content type.</param>
     /// <param name="fileName">The signed mandate file name.</param>
+    /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The created Prospect document identifier, or null when Prospect rejects the upload.</returns>
     private async Task<int?> UploadSignedMandateToProspectAsync(
@@ -276,6 +283,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         byte[] content,
         string contentType,
         string fileName,
+        string? contactEmail,
         CancellationToken ct)
     {
         await using var stream = new MemoryStream(content);
@@ -288,6 +296,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         return await prospectClient.UploadDocumentAsync(
             prospectId,
             SystemUserId,
+            contactEmail,
             SignedMandateDocumentType,
             file,
             ct);
@@ -393,6 +402,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         var uploadedDocumentId = await prospectClient.UploadDocumentAsync(
             prospectId,
             currentUserId,
+            contactEmail,
             RibDocumentType,
             request.File,
             ct);

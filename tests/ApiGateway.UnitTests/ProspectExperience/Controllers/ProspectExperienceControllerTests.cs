@@ -368,6 +368,7 @@ public class ProspectExperienceControllerTests
                 accountId,
                 prospectId,
                 contact.Id,
+                UserEmail,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -396,6 +397,7 @@ public class ProspectExperienceControllerTests
                 accountId,
                 prospectId,
                 contact.Id,
+                UserEmail,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -428,6 +430,7 @@ public class ProspectExperienceControllerTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -465,6 +468,7 @@ public class ProspectExperienceControllerTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -513,6 +517,7 @@ public class ProspectExperienceControllerTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -568,6 +573,7 @@ public class ProspectExperienceControllerTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<int>(),
+                It.IsAny<string?>(),
                 It.IsAny<UploadSupportingDocumentRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
@@ -608,6 +614,7 @@ public class ProspectExperienceControllerTests
                 accountId,
                 prospectId,
                 contact.Id,
+                UserEmail,
                 It.Is<UploadSupportingDocumentRequest>(r => r.DocumentType == documentType && r.File == mockFile.Object),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -634,3 +641,4 @@ public class ProspectExperienceControllerTests
 
     #endregion
 }
+

@@ -13,9 +13,10 @@ public interface IPaymentPreferencesOrchestrationService
     /// Gets the current payment preference for a prospect.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The payment preference response, or null when the prospect or account is not found.</returns>
-    Task<PaymentPreferenceResponse?> GetAsync(int prospectId, CancellationToken ct);
+    Task<PaymentPreferenceResponse?> GetAsync(int prospectId, string? contactEmail, CancellationToken ct);
 
     /// <summary>
     /// Downloads the signed SEPA mandate content for a prospect.

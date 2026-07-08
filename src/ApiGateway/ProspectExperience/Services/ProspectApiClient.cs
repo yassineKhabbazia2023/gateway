@@ -99,6 +99,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     public async Task<int?> UploadDocumentAsync(
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         string documentType,
         IFormFile file,
         CancellationToken ct)
@@ -115,6 +116,10 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             Content = content
         };
         request.Headers.Add("CurrentUser", currentUserId.ToString());
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            request.Headers.Add("ContactEmail", contactEmail);
+        }
 
         using var response = await httpClient.SendAsync(request, ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -483,6 +488,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     public async Task<UploadSupportingDocumentResult> UploadSupportingDocumentAsync(
         int prospectId,
         int currentUserId,
+        string? contactEmail,
         UploadSupportingDocumentRequest request,
         CancellationToken ct)
     {
@@ -511,33 +517,28 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             Content = content
         };
         httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            httpRequest.Headers.Add("ContactEmail", contactEmail);
+        }
 
         var response = await httpClient.SendAsync(httpRequest, ct);
 
         if (response.StatusCode == HttpStatusCode.RequestEntityTooLarge)
         {
-            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(JsonOptions, ct);
-            var errorCode = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.ErrorCode, out var code)
-                ? code?.ToString() ?? ProblemDetailsKeys.DefaultFileTooLargeCode
-                : ProblemDetailsKeys.DefaultFileTooLargeCode;
+            var problem = await ReadProblemDetailsAsync(response, ct);
             return UploadSupportingDocumentResult.FileTooLarge(
-                errorCode,
-                problem?.Detail ?? ProblemDetailsKeys.DefaultFileTooLargeMessage);
+                problem.ErrorCode ?? ProblemDetailsKeys.DefaultFileTooLargeCode,
+                problem.Detail ?? ProblemDetailsKeys.DefaultFileTooLargeMessage);
         }
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
-            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(JsonOptions, ct);
-            var field = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.Field, out var f)
-                ? f?.ToString() ?? ProblemDetailsKeys.DefaultField
-                : ProblemDetailsKeys.DefaultField;
-            var errorCode = problem?.Extensions != null && problem.Extensions.TryGetValue(ProblemDetailsKeys.ErrorCode, out var code)
-                ? code?.ToString() ?? ProblemDetailsKeys.DefaultErrorCode
-                : ProblemDetailsKeys.DefaultErrorCode;
+            var problem = await ReadProblemDetailsAsync(response, ct);
             return UploadSupportingDocumentResult.ValidationError(
-                field,
-                errorCode,
-                problem?.Detail ?? ProblemDetailsKeys.DefaultValidationMessage);
+                problem.Field ?? ProblemDetailsKeys.DefaultField,
+                problem.ErrorCode ?? ProblemDetailsKeys.DefaultErrorCode,
+                problem.Detail ?? ProblemDetailsKeys.DefaultValidationMessage);
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -581,6 +582,92 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<DocumentRequirementsResponse>(JsonOptions, ct);
+    }
+
+    /// <summary>
+    /// Reads a ProblemDetails response while preserving extension fields serialized as top-level JSON properties.
+    /// </summary>
+    /// <param name="response">The HTTP response containing problem details.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The parsed problem details values used by Gateway error mapping.</returns>
+    private static async Task<(string? Detail, string? Field, string? ErrorCode)> ReadProblemDetailsAsync(
+        HttpResponseMessage response,
+        CancellationToken ct)
+    {
+        var json = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return (null, null, null);
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return (null, null, null);
+        }
+
+        using (document)
+        {
+            var root = document.RootElement;
+
+            var detail = TryGetString(root, "detail");
+            var field = TryGetString(root, ProblemDetailsKeys.Field);
+            var errorCode = TryGetString(root, ProblemDetailsKeys.ErrorCode);
+
+            if (root.TryGetProperty("extensions", out var extensions)
+                && extensions.ValueKind == JsonValueKind.Object)
+            {
+                field ??= TryGetString(extensions, ProblemDetailsKeys.Field);
+                errorCode ??= TryGetString(extensions, ProblemDetailsKeys.ErrorCode);
+            }
+
+            if (field is null
+                && root.TryGetProperty("errors", out var errors)
+                && errors.ValueKind == JsonValueKind.Object)
+            {
+                var firstError = errors.EnumerateObject().FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(firstError.Name))
+                {
+                    field = firstError.Name;
+                }
+
+                if (detail is null
+                    && firstError.Value.ValueKind == JsonValueKind.Array
+                    && firstError.Value.GetArrayLength() > 0)
+                {
+                    detail = firstError.Value[0].GetString();
+                }
+            }
+
+            return (detail, field, errorCode);
+        }
+    }
+
+    /// <summary>
+    /// Reads a string property from a JSON element when it exists.
+    /// </summary>
+    /// <param name="element">The JSON element.</param>
+    /// <param name="propertyName">The property name.</param>
+    /// <returns>The property value, or null when it is absent or not a scalar value.</returns>
+    private static string? TryGetString(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var property))
+        {
+            return null;
+        }
+
+        return property.ValueKind switch
+        {
+            JsonValueKind.String => property.GetString(),
+            JsonValueKind.Number => property.GetRawText(),
+            JsonValueKind.True => bool.TrueString,
+            JsonValueKind.False => bool.FalseString,
+            _ => null
+        };
     }
 
     private static object BuildSignatoryPayload(SignatoryDto signatory) => new
