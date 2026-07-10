@@ -1,5 +1,7 @@
 using System.Net;
 using System.Security.Claims;
+using ApiGateway.Account;
+using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
 using ApiGateway.Identity;
@@ -12,6 +14,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 
@@ -19,6 +22,8 @@ public class EngagementLetterControllerTests
 {
     private readonly Mock<IEngagementLetterOrchestrationService> _orchestrationService;
     private readonly Mock<IContactService> _contactService;
+    private readonly Mock<IAuthorizationService> _authorizationService;
+    private readonly Mock<IAccountService> _accountService;
     private readonly Mock<IUserContext> _userContext;
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
@@ -31,6 +36,12 @@ public class EngagementLetterControllerTests
     {
         _orchestrationService = new Mock<IEngagementLetterOrchestrationService>(MockBehavior.Strict);
         _contactService = new Mock<IContactService>(MockBehavior.Strict);
+        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
+        _authorizationService = new Mock<IAuthorizationService>(MockBehavior.Strict);
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(CurrentContact.Id, AccountId)).ReturnsAsync(new List<string>());
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(CurrentContact.Id, -1)).ReturnsAsync(new List<string>());
+        _accountService = new Mock<IAccountService>(MockBehavior.Strict);
+        _accountService.Setup(service => service.CheckContactRoleAsync(CurrentContact.Id, AccountId, null)).ReturnsAsync(true);
         _userContext = CreateUserContext(UserEmail);
         _logger = new Mock<ILogger<ProspectExperienceController>>();
 
@@ -45,6 +56,16 @@ public class EngagementLetterControllerTests
             new Mock<ICommercialProposalOrchestrationService>().Object,
             _orchestrationService.Object,
             _logger.Object);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = new ServiceCollection()
+                    .AddSingleton(_authorizationService.Object)
+                    .AddSingleton(_accountService.Object)
+                    .BuildServiceProvider()
+            }
+        };
     }
 
     private static Mock<IUserContext> CreateUserContext(string email)
@@ -114,7 +135,6 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenOutcomeIsSent_Returns201()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.Sent);
@@ -127,7 +147,6 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenOutcomeIsProspectNotFound_Returns404()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.ProspectNotFound);
@@ -140,7 +159,6 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenOutcomeIsAlreadySent_Returns409()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.AlreadySent);
@@ -153,7 +171,6 @@ public class EngagementLetterControllerTests
     [Fact]
     public async Task SendEngagementLetterAsync_WhenOutcomeIsNotEligible_Returns422()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(EngagementLetterOrchestrationOutcome.NotEligible);

@@ -5,6 +5,7 @@ using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Identity;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
@@ -134,6 +135,12 @@ public class ProspectExperienceController(
                 });
         }
 
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var result = await prospectService.CompleteStepAsync(accountId, request, ct);
         return Ok(result);
     }
@@ -172,7 +179,13 @@ public class ProspectExperienceController(
                 });
         }
 
-        var contact = await contactService.GetContactAsync(userEmail);
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
+        var contact = authorization.Contact;
         if (contact is null)
         {
             logger.LogWarning("Contact not found for email {UserEmail} on supporting document upload for account {AccountId}", userEmail, accountId);
@@ -242,7 +255,13 @@ public class ProspectExperienceController(
             return fileError;
 
         var userEmail = userContext.User.GetEmail();
-        var contact = await contactService.GetContactAsync(userEmail);
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
+        var contact = authorization.Contact;
 
         if (contact is null)
         {
@@ -281,7 +300,13 @@ public class ProspectExperienceController(
             return fileError;
 
         var userEmail = userContext.User.GetEmail();
-        var contact = await contactService.GetContactAsync(userEmail);
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
+        var contact = authorization.Contact;
 
         if (contact is null)
         {
@@ -301,4 +326,5 @@ public class ProspectExperienceController(
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
+
 }

@@ -14,6 +14,12 @@ namespace ApiGateway.DelegatingHandlers
     /// </summary>
     public class RoleHandler : DelegatingHandler
     {
+        // Upstream route prefixes where the first path parameter represents an accountId.
+        private static readonly string[] ProspectAccountRoutePrefixes =
+        [
+            "/gtw/prospect/api/onboarding/"
+        ];
+
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<RoleHandler> _logger;
 
@@ -43,10 +49,22 @@ namespace ApiGateway.DelegatingHandlers
                 int? contactId = AuthorizationHelper.ParseQueryParameter<int>("contactId", queryParameters);
                 string? accountNumber = queryParameters["accountNumber"];
 
-                /// Attempt to extract contactId from the route path if not present in the query string
-                // Example route: /gtw/customer-wallet/api/contacts/188/accounts/602 => ContactId = 188
-                contactId ??= ExtractContactIdFromRoute(request);
-                accountId ??= ExtractAccountIdFromRoute(request);
+                var requestPath = GetRequestPath(request);
+                var isProspectAccountRoute = false;
+                var prospectAccountRoutePrefix = GetProspectAccountRoutePrefix(requestPath);
+                if (prospectAccountRoutePrefix is not null)
+                {
+                    isProspectAccountRoute = true;
+                    accountId = ExtractProspectAccountIdFromRoute(requestPath, prospectAccountRoutePrefix) ?? accountId;
+                    contactId = null;
+                }
+                else
+                {
+                    // Attempt to extract contactId from the route path if not present in the query string
+                    // Example route: /gtw/customer-wallet/api/contacts/188/accounts/602 => ContactId = 188
+                    contactId ??= ExtractContactIdFromRoute(request);
+                    accountId ??= ExtractAccountIdFromRoute(request);
+                }
 
                 // Special handling for /invite endpoints where the authenticated user may not be defined
                 // In this scenario, we only validate if the specified contact has the appropriate role
@@ -73,6 +91,12 @@ namespace ApiGateway.DelegatingHandlers
                 {
                     _logger.LogWarning("[Response]: 403 - [Handler]: RoleHandler - [Reason]: Invalid 'CurrentUser' contactId.");
                     return await ReturnError(new GatewayException(403, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, "CurrentUser")));
+                }
+
+                if (isProspectAccountRoute && !accountId.HasValue)
+                {
+                    _logger.LogWarning($"[Response]: 403 - [Handler]: RoleHandler - [Function]: ExtractProspectAccountIdFromRoute - [Reason]: Missing accountId for Prospect onboarding route and contactId: {currentUserId}");
+                    return await ReturnError(new GatewayException(403, Errors.NoRoleOnAccountCode, string.Format(Errors.NoRoleOnAccountMessage, currentUserId, accountId)));
                 }
 
                 // Case 1: If the logged-in user is accessing their own info, skip the role check.
@@ -157,6 +181,51 @@ namespace ApiGateway.DelegatingHandlers
             var match = Regex.Match(path ?? string.Empty, @"/accounts/(\d+)");
 
             if (match.Success && int.TryParse(match.Groups[1].Value, out int parsedId))
+            {
+                return parsedId;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the original upstream path when available, otherwise falls back to the current request URI path.
+        /// </summary>
+        /// <param name="request">The incoming HTTP request message.</param>
+        /// <returns>The path that should be used for gateway route-specific authorization decisions.</returns>
+        private string GetRequestPath(HttpRequestMessage request)
+        {
+            var upstreamPath = _httpContextAccessor.HttpContext?.Request.Path.Value;
+            return string.IsNullOrWhiteSpace(upstreamPath)
+                ? request.RequestUri?.AbsolutePath ?? string.Empty
+                : upstreamPath;
+        }
+
+        /// <summary>
+        /// Determines whether the request path targets a Prospect route whose path identifier must be handled as an account identifier.
+        /// </summary>
+        /// <param name="path">The request path to evaluate.</param>
+        /// <returns>The matched Prospect route prefix, or null when the path is not a Prospect account route.</returns>
+        private static string? GetProspectAccountRoutePrefix(string path)
+        {
+            return ProspectAccountRoutePrefixes.FirstOrDefault(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Extracts the account identifier from supported Prospect upstream routes.
+        /// </summary>
+        /// <param name="path">The incoming Prospect upstream path.</param>
+        /// <param name="prefix">The matched Prospect route prefix.</param>
+        /// <returns>The account identifier found in the Prospect route, or null if none is found.</returns>
+        private static int? ExtractProspectAccountIdFromRoute(string path, string prefix)
+        {
+            var remainingPath = path[prefix.Length..];
+            var accountIdSegment = remainingPath
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault();
+
+            if (int.TryParse(accountIdSegment, out var parsedId))
             {
                 return parsedId;
             }

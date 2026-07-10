@@ -253,6 +253,145 @@ public class RoleHandlerTests
     content.Should().BeEquivalentTo("{\"ErrorMessage\":\"Les Contacts: [2] , [3] n'ont pas de rôle commun au niveau des entités.\",\"ErrorCode\":\"GTW015\"}");
   }
 
+  /// <summary>
+  /// Ensures Prospect onboarding routes use the path identifier as an account identifier for role validation.
+  /// </summary>
+  [Fact]
+  public async Task ShouldCheckAccountRole_WhenProspectOnboardingRouteContainsAccountId()
+  {
+    var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com/gtw/prospect/api/onboarding/602/documents");
+    request.Headers.Add("CurrentUser", "2");
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(2, 602))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(2, -1))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(2, 602, null))
+        .ReturnsAsync(true)
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    _accountServiceMock.Verify(x => x.CheckContactRoleAsync(2, 602, null), Times.Once);
+    _accountServiceMock.Verify(x => x.CheckContactsCommonAccountRole(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+  }
+
+  /// <summary>
+  /// Ensures Prospect onboarding routes use the original upstream path when Ocelot has already rewritten the request URI to the downstream path.
+  /// </summary>
+  [Fact]
+  public async Task ShouldCheckAccountRole_WhenProspectOnboardingRouteUsesDownstreamRequestUri()
+  {
+    var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com/api/prospects/602/steps");
+    request.Headers.Add("CurrentUser", "2");
+    _httpContextAccessorMock.HttpContext!.Request.Path = "/gtw/prospect/api/onboarding/602/steps";
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(2, 602))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(2, -1))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(2, 602, null))
+        .ReturnsAsync(true)
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    _accountServiceMock.Verify(x => x.CheckContactRoleAsync(2, 602, null), Times.Once);
+    _accountServiceMock.Verify(x => x.CheckContactsCommonAccountRole(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+  }
+
+  /// <summary>
+  /// Ensures Prospect account identifiers are not interpreted as contact identifiers and do not trigger the self-access shortcut.
+  /// </summary>
+  [Fact]
+  public async Task ShouldNotSkipRoleCheck_WhenProspectAccountIdEqualsCurrentUserId()
+  {
+    var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com/gtw/prospect/api/onboarding/602/documents?accountId=12&contactId=602");
+    request.Headers.Add("CurrentUser", "602");
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(602, 602))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(602, -1))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(602, 602, null))
+        .ReturnsAsync(false)
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    var content = await response.Content.ReadAsStringAsync();
+    content.Should().BeEquivalentTo("{\"ErrorMessage\":\"Le contact avec l'identifiant 602 n'a pas de rôle dans l'entité 602\",\"ErrorCode\":\"GTW007\"}");
+    _accountServiceMock.Verify(x => x.CheckContactRoleAsync(602, 602, null), Times.Once);
+  }
+
+  /// <summary>
+  /// Ensures Prospect onboarding routes fall back to the query account identifier when the path segment is not numeric.
+  /// </summary>
+  [Fact]
+  public async Task ShouldUseQueryAccountId_WhenProspectOnboardingRouteAccountSegmentIsInvalid()
+  {
+    var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com/gtw/prospect/api/onboarding/current/documents?accountId=777&contactId=777");
+    request.Headers.Add("CurrentUser", "777");
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(777, 777))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(777, -1))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    _accountServiceMock.Setup(x => x.CheckContactRoleAsync(777, 777, null))
+        .ReturnsAsync(true)
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    _accountServiceMock.Verify(x => x.CheckContactRoleAsync(777, 777, null), Times.Once);
+    _accountServiceMock.Verify(x => x.CheckContactsCommonAccountRole(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+  }
+
+  /// <summary>
+  /// Ensures Prospect onboarding routes fail closed when no valid account identifier can be resolved.
+  /// </summary>
+  [Fact]
+  public async Task ShouldReturnForbidden_WhenProspectOnboardingRouteHasNoValidAccountId()
+  {
+    var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com/gtw/prospect/api/onboarding/current/documents");
+    request.Headers.Add("CurrentUser", "777");
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    var content = await response.Content.ReadAsStringAsync();
+    content.Should().Contain("\"ErrorCode\":\"GTW007\"");
+    _authorizationServiceMock.Verify(
+        service => service.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()),
+        Times.Never);
+    _accountServiceMock.Verify(
+        service => service.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<string?>()),
+        Times.Never);
+    _accountServiceMock.Verify(
+        service => service.CheckContactsCommonAccountRole(It.IsAny<int>(), It.IsAny<int>()),
+        Times.Never);
+  }
+
   // Test: Request passes through to the next middleware
   [Fact]
   public async Task ShouldContinueToNextMiddleware_WhenAllChecksPass()

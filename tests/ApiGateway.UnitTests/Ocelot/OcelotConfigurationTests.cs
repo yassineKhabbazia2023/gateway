@@ -119,5 +119,33 @@ namespace ApiGateway.UnitTests.Permissions
             Assert.True(filesWithGlobal.Count == 1 && filesWithGlobal[0] == "ocelot.global.json",
                 $"❌ GlobalConfiguration doit être définie uniquement dans ocelot.global.json. Trouvée dans : [{string.Join(", ", filesWithGlobal)}]");
         }
+
+        /// <summary>
+        /// Ensures Prospect onboarding routes are protected by the role handler in addition to the feature flag handler.
+        /// </summary>
+        [Fact]
+        public void EnsureProspectOnboardingRoutesUseRoleHandler()
+        {
+            var routes = RoutesByFile["ocelot.prospect.json"];
+            var onboardingRoutes = routes
+                .Where(route => route["UpstreamPathTemplate"]?.ToString().StartsWith(
+                    "/gtw/prospect/api/onboarding/",
+                    StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+
+            Assert.NotEmpty(onboardingRoutes);
+
+            var unsecuredRoutes = onboardingRoutes
+                .Where(route =>
+                {
+                    var handlers = route["DelegatingHandlers"]?.Select(handler => handler.ToString()).ToList() ?? [];
+                    return !handlers.Contains("ProspectExperienceHandler") || !handlers.Contains("RoleHandler");
+                })
+                .Select(route => route["UpstreamPathTemplate"]?.ToString())
+                .ToList();
+
+            Assert.True(unsecuredRoutes.Count == 0,
+                $"❌ Les routes Prospect onboarding doivent utiliser ProspectExperienceHandler et RoleHandler : [{string.Join(", ", unsecuredRoutes)}]");
+        }
     }
 }

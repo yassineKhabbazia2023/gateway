@@ -1,6 +1,7 @@
+using ApiGateway.Contact;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
-using ApiGateway.Contact;
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Models.Responses;
@@ -38,6 +39,12 @@ public sealed class PaymentPreferencesController(
         int accountId,
         CancellationToken ct)
     {
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userContext.User.GetEmail(), contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
         if (!prospectId.HasValue)
         {
@@ -65,6 +72,12 @@ public sealed class PaymentPreferencesController(
         int accountId,
         CancellationToken ct)
     {
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userContext.User.GetEmail(), contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
         if (!prospectId.HasValue)
         {
@@ -107,13 +120,19 @@ public sealed class PaymentPreferencesController(
             });
         }
 
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, contactEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
         if (!prospectId.HasValue)
         {
             return NotFound();
         }
 
-        var contact = await contactService.GetContactAsync(contactEmail);
+        var contact = authorization.Contact;
         if (contact is null)
         {
             return NotFound();
@@ -163,13 +182,19 @@ public sealed class PaymentPreferencesController(
             });
         }
 
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, contactEmail, contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
         if (!prospectId.HasValue)
         {
             return NotFound();
         }
 
-        var contact = await contactService.GetContactAsync(contactEmail);
+        var contact = authorization.Contact;
         if (contact is null)
         {
             return NotFound();
@@ -223,6 +248,12 @@ public sealed class PaymentPreferencesController(
         int accountId,
         CancellationToken ct)
     {
+        var authorization = await ProspectAccountAuthorizationHelper.AuthorizeAccountRoleAsync(accountId, userContext.User.GetEmail(), contactService, HttpContext);
+        if (authorization.Error is not null)
+        {
+            return authorization.Error;
+        }
+
         var prospectId = await prospectApiClient.GetProspectIdByAccountIdAsync(accountId, ct);
         if (!prospectId.HasValue)
         {
@@ -232,4 +263,5 @@ public sealed class PaymentPreferencesController(
         var reset = await paymentPreferencesService.ResetAsync(prospectId.Value, ct);
         return reset ? NoContent() : NotFound();
     }
+
 }

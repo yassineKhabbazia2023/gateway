@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using ApiGateway.Account;
+using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ContactModel = ApiGateway.Contact.Models.Contact;
 using ApiGateway.Identity.context;
@@ -9,6 +11,7 @@ using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
 
@@ -24,6 +27,8 @@ public sealed class PaymentPreferencesControllerTests
 
     private readonly Mock<IPaymentPreferencesOrchestrationService> _service = new();
     private readonly Mock<IContactService> _contactService = new();
+    private readonly Mock<IAuthorizationService> _authorizationService = new();
+    private readonly Mock<IAccountService> _accountService = new();
     private readonly Mock<IProspectApiClient> _prospectApiClient = new();
 
     /// <summary>
@@ -80,6 +85,23 @@ public sealed class PaymentPreferencesControllerTests
     }
 
     /// <summary>
+    /// Verifies that GET returns the authorization error when the connected contact has no role on the account.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenConnectedContactHasNoAccountRole_ReturnsForbidden()
+    {
+        var controller = CreateController("user@test.fr");
+        SetupNoAccountRole();
+
+        var actionResult = await controller.GetAsync(AccountId, CancellationToken.None);
+
+        actionResult.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _service.Verify(
+            service => service.GetAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
     /// Verifies that signed SEPA mandate download returns the binary content with its document content type.
     /// </summary>
     [Fact]
@@ -115,6 +137,23 @@ public sealed class PaymentPreferencesControllerTests
     }
 
     /// <summary>
+    /// Verifies that signed SEPA mandate download returns the authorization error before downstream calls.
+    /// </summary>
+    [Fact]
+    public async Task DownloadSignedSepaMandateAsync_WhenConnectedContactHasNoAccountRole_ReturnsForbidden()
+    {
+        var controller = CreateController("user@test.fr");
+        SetupNoAccountRole();
+
+        var result = await controller.DownloadSignedSepaMandateAsync(AccountId, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _service.Verify(
+            service => service.DownloadSignedSepaMandateAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
     /// Verifies that POST OTHER returns no content after successful orchestration.
     /// </summary>
     [Fact]
@@ -123,9 +162,6 @@ public sealed class PaymentPreferencesControllerTests
         _service
             .Setup(service => service.SetOtherAsync(ProspectId, "user@test.fr", 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _contactService
-            .Setup(service => service.GetContactAsync("user@test.fr"))
-            .ReturnsAsync(new ContactModel { Id = 7, Email = "user@test.fr" });
         var controller = CreateController("user@test.fr");
 
         var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
@@ -185,14 +221,32 @@ public sealed class PaymentPreferencesControllerTests
         _service
             .Setup(service => service.SetOtherAsync(ProspectId, "user@test.fr", 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
-        _contactService
-            .Setup(service => service.GetContactAsync("user@test.fr"))
-            .ReturnsAsync(new ContactModel { Id = 7, Email = "user@test.fr" });
         var controller = CreateController("user@test.fr");
 
         var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
+    }
+
+    /// <summary>
+    /// Verifies that POST OTHER returns the authorization error before downstream calls.
+    /// </summary>
+    [Fact]
+    public async Task SetOtherAsync_WhenConnectedContactHasNoAccountRole_ReturnsForbidden()
+    {
+        var controller = CreateController("user@test.fr");
+        SetupNoAccountRole();
+
+        var result = await controller.SetOtherAsync(AccountId, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _service.Verify(
+            service => service.SetOtherAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -202,15 +256,6 @@ public sealed class PaymentPreferencesControllerTests
     public async Task SetSepaAsync_WhenConnectedUserIsSignatory_ReturnsSignatureUrl()
     {
         var request = CreateSepaRequest();
-        _contactService
-            .Setup(service => service.GetContactAsync("user@test.fr"))
-            .ReturnsAsync(new ContactModel
-            {
-                Id = 7,
-                Email = "user@test.fr",
-                FirstName = "Jean",
-                LastName = "Dupont"
-            });
         _service
             .Setup(service => service.SetSepaAsync(
                 ProspectId,
@@ -237,15 +282,6 @@ public sealed class PaymentPreferencesControllerTests
     public async Task SetSepaAsync_WhenConnectedUserIsNotSignatory_ReturnsForbidden()
     {
         var request = CreateSepaRequest();
-        _contactService
-            .Setup(service => service.GetContactAsync("user@test.fr"))
-            .ReturnsAsync(new ContactModel
-            {
-                Id = 7,
-                Email = "user@test.fr",
-                FirstName = "Jean",
-                LastName = "Dupont"
-            });
         _service
             .Setup(service => service.SetSepaAsync(
                 ProspectId,
@@ -275,8 +311,7 @@ public sealed class PaymentPreferencesControllerTests
 
         var result = await controller.SetSepaAsync(AccountId, request, CancellationToken.None);
 
-        result.Should().BeOfType<ObjectResult>().Which.Value.Should().BeOfType<ValidationProblemDetails>();
-        _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
+        result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().BeOfType<ValidationProblemDetails>();
         _service.Verify(
             service => service.SetSepaAsync(
                 It.IsAny<int>(),
@@ -300,7 +335,6 @@ public sealed class PaymentPreferencesControllerTests
         var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
         result.Should().BeOfType<BadRequestObjectResult>();
-        _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
         _service.Verify(
             service => service.SetSepaAsync(
                 It.IsAny<int>(),
@@ -327,7 +361,6 @@ public sealed class PaymentPreferencesControllerTests
         var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
-        _contactService.Verify(service => service.GetContactAsync(It.IsAny<string>()), Times.Never);
         _service.Verify(
             service => service.SetSepaAsync(
                 It.IsAny<int>(),
@@ -346,10 +379,11 @@ public sealed class PaymentPreferencesControllerTests
     [Fact]
     public async Task SetSepaAsync_WhenConnectedContactIsMissing_ReturnsNotFound()
     {
+        var controller = CreateController("user@test.fr");
+
         _contactService
             .Setup(service => service.GetContactAsync("user@test.fr"))
             .ReturnsAsync((ContactModel?)null);
-        var controller = CreateController("user@test.fr");
 
         var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
@@ -372,6 +406,8 @@ public sealed class PaymentPreferencesControllerTests
     [Fact]
     public async Task SetSepaAsync_WhenConnectedContactNameIsIncomplete_ReturnsBadRequest()
     {
+        var controller = CreateController("user@test.fr");
+
         _contactService
             .Setup(service => service.GetContactAsync("user@test.fr"))
             .ReturnsAsync(new ContactModel
@@ -381,7 +417,6 @@ public sealed class PaymentPreferencesControllerTests
                 FirstName = "Jean",
                 LastName = " "
             });
-        var controller = CreateController("user@test.fr");
 
         var result = await controller.SetSepaAsync(AccountId, CreateSepaRequest(), CancellationToken.None);
 
@@ -501,6 +536,23 @@ public sealed class PaymentPreferencesControllerTests
     }
 
     /// <summary>
+    /// Verifies that DELETE returns the authorization error before downstream calls.
+    /// </summary>
+    [Fact]
+    public async Task ResetAsync_WhenConnectedContactHasNoAccountRole_ReturnsForbidden()
+    {
+        var controller = CreateController("user@test.fr");
+        SetupNoAccountRole();
+
+        var result = await controller.ResetAsync(AccountId, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _service.Verify(
+            service => service.ResetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
     /// Creates a controller with the provided user email claim.
     /// </summary>
     /// <param name="email">The user email claim value.</param>
@@ -513,6 +565,25 @@ public sealed class PaymentPreferencesControllerTests
             .Setup(client => client.GetProspectIdByAccountIdAsync(AccountId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ProspectId);
 
+        _contactService
+            .Setup(service => service.GetContactAsync(email))
+            .ReturnsAsync(new ContactModel
+            {
+                Id = 7,
+                Email = email,
+                FirstName = "Jean",
+                LastName = "Dupont"
+            });
+        _authorizationService
+            .Setup(service => service.GetContactAuthorizationAsync(7, AccountId))
+            .ReturnsAsync(new List<string>());
+        _authorizationService
+            .Setup(service => service.GetContactAuthorizationAsync(7, -1))
+            .ReturnsAsync(new List<string>());
+        _accountService
+            .Setup(service => service.CheckContactRoleAsync(7, AccountId, null))
+            .ReturnsAsync(true);
+
         var identity = new ClaimsIdentity(
             [new Claim(ClaimTypes.Email, email)],
             authenticationType: "Test",
@@ -520,11 +591,25 @@ public sealed class PaymentPreferencesControllerTests
             roleType: ClaimTypes.Role);
         var userContext = new Mock<IUserContext>(MockBehavior.Strict);
         userContext.SetupGet(context => context.User).Returns(new ClaimsPrincipal(identity));
-        return new PaymentPreferencesController(
+        var controller = new PaymentPreferencesController(
             userContext.Object,
             _contactService.Object,
             _prospectApiClient.Object,
             _service.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = new ServiceCollection()
+                    .AddControllers()
+                    .Services
+                    .AddSingleton(_authorizationService.Object)
+                    .AddSingleton(_accountService.Object)
+                    .BuildServiceProvider()
+            }
+        };
+
+        return controller;
     }
 
     /// <summary>
@@ -541,6 +626,16 @@ public sealed class PaymentPreferencesControllerTests
                 FirstName = "Jean",
                 LastName = "Dupont"
             });
+    }
+
+    /// <summary>
+    /// Configures the connected contact as unauthorized on the prospect account.
+    /// </summary>
+    private void SetupNoAccountRole()
+    {
+        _accountService
+            .Setup(service => service.CheckContactRoleAsync(7, AccountId, null))
+            .ReturnsAsync(false);
     }
 
     /// <summary>

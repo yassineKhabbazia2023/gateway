@@ -1,5 +1,7 @@
 using System.Net;
 using System.Security.Claims;
+using ApiGateway.Account;
+using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
@@ -17,6 +19,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
@@ -28,6 +31,9 @@ public class ProspectExperienceControllerTests
     private readonly Mock<IIdentityService> _identityService;
     private readonly Mock<IProspectService> _orchestrationService;
     private readonly Mock<IProspectApiClient> _prospectApiClient;
+    private readonly Mock<IContactService> _contactService;
+    private readonly Mock<IAuthorizationService> _authorizationService;
+    private readonly Mock<IAccountService> _accountService;
     private readonly IValidator<CreateProspectRequest> _validator;
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
@@ -41,6 +47,12 @@ public class ProspectExperienceControllerTests
         _identityService = new Mock<IIdentityService>();
         _orchestrationService = new Mock<IProspectService>();
         _prospectApiClient = new Mock<IProspectApiClient>();
+        _contactService = new Mock<IContactService>();
+        _contactService.Setup(service => service.GetContactAsync(UserEmail)).ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = 789, Email = UserEmail });
+        _authorizationService = new Mock<IAuthorizationService>();
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(789, It.IsAny<int?>())).ReturnsAsync(new List<string>());
+        _accountService = new Mock<IAccountService>();
+        _accountService.Setup(service => service.CheckContactRoleAsync(789, It.IsAny<int?>(), null)).ReturnsAsync(true);
         _validator = new CreateProspectRequestValidator();
         _logger = new Mock<ILogger<ProspectExperienceController>>();
         _identityService.Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>())).Returns(true);
@@ -52,10 +64,11 @@ public class ProspectExperienceControllerTests
             _orchestrationService.Object,
             _prospectApiClient.Object,
             _validator,
-            new Mock<IContactService>().Object,
+            _contactService.Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        _controller.ControllerContext = CreateControllerContext();
     }
 
     private static Mock<IUserContext> CreateUserContext(string email)
@@ -73,6 +86,26 @@ public class ProspectExperienceControllerTests
         var userContext = new Mock<IUserContext>(MockBehavior.Strict);
         userContext.SetupGet(uc => uc.User).Returns(principal);
         return userContext;
+    }
+
+    /// <summary>
+    /// Creates a controller context containing services required by <see cref="ApiGateway.Helpers.AuthorizationHelper"/>.
+    /// </summary>
+    /// <returns>The controller context.</returns>
+    private ControllerContext CreateControllerContext()
+    {
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = new ServiceCollection()
+                    .AddControllers()
+                    .Services
+                    .AddSingleton(_authorizationService.Object)
+                    .AddSingleton(_accountService.Object)
+                    .BuildServiceProvider()
+            }
+        };
     }
 
     private static CreateProspectRequest BuildRequest() => new()
@@ -255,6 +288,33 @@ public class ProspectExperienceControllerTests
             Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that step completion returns the authorization error before orchestration.
+    /// </summary>
+    [Fact]
+    public async Task CompleteStepAsync_WhenConnectedContactHasNoAccountRole_ReturnsForbidden()
+    {
+        const int accountId = 123;
+        var request = new CompleteStepRequest { StepName = "Beneficiary" };
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _identityService
+            .Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>()))
+            .Returns(true);
+        _accountService
+            .Setup(service => service.CheckContactRoleAsync(789, accountId, null))
+            .ReturnsAsync(false);
+
+        var result = await _controller.CompleteStepAsync(accountId, request, CancellationToken.None);
+
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _orchestrationService.Verify(
+            service => service.CompleteStepAsync(It.IsAny<int>(), It.IsAny<CompleteStepRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     [Fact]
     public async Task CompleteStepAsync_WhenCallerIsNotCollaborator_Returns403()
     {
@@ -380,10 +440,11 @@ public class ProspectExperienceControllerTests
             _orchestrationService.Object,
             mockProspectApiClient.Object,
             _validator,
-            mockContactService.Object,
+            _contactService.Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        controller.ControllerContext = CreateControllerContext();
 
         // Act
         var result = await controller.UploadSupportingDocumentAsync(accountId, documentType, mockFile.Object, CancellationToken.None);
@@ -491,7 +552,7 @@ public class ProspectExperienceControllerTests
 
         var mockContactService = new Mock<IContactService>();
         mockContactService
-            .Setup(s => s.GetContactAsync(UserEmail))
+            .Setup(service => service.GetContactAsync(UserEmail))
             .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
 
         var controller = new ProspectExperienceController(
@@ -505,6 +566,7 @@ public class ProspectExperienceControllerTests
             new Mock<ICommercialProposalOrchestrationService>().Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        controller.ControllerContext = CreateControllerContext();
 
         // Act
         var result = await controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
@@ -557,10 +619,11 @@ public class ProspectExperienceControllerTests
             _orchestrationService.Object,
             mockProspectApiClient.Object,
             _validator,
-            mockContactService.Object,
+            _contactService.Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        controller.ControllerContext = CreateControllerContext();
 
         // Act
         var result = await controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
@@ -626,10 +689,11 @@ public class ProspectExperienceControllerTests
             _orchestrationService.Object,
             mockProspectApiClient.Object,
             _validator,
-            mockContactService.Object,
+            _contactService.Object,
             new Mock<ICommercialProposalOrchestrationService>().Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        controller.ControllerContext = CreateControllerContext();
 
         // Act
         var result = await controller.UploadSupportingDocumentAsync(accountId, documentType, mockFile.Object, CancellationToken.None);

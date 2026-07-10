@@ -1,5 +1,7 @@
 using System.Net;
 using System.Security.Claims;
+using ApiGateway.Account;
+using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
 using ApiGateway.Identity;
@@ -12,6 +14,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
@@ -20,6 +23,8 @@ public class CommercialProposalControllerTests
 {
     private readonly Mock<ICommercialProposalOrchestrationService> _orchestrationService;
     private readonly Mock<IContactService> _contactService;
+    private readonly Mock<IAuthorizationService> _authorizationService;
+    private readonly Mock<IAccountService> _accountService;
     private readonly Mock<IUserContext> _userContext;
     private readonly Mock<ILogger<ProspectExperienceController>> _logger;
     private readonly ProspectExperienceController _controller;
@@ -32,6 +37,12 @@ public class CommercialProposalControllerTests
     {
         _orchestrationService = new Mock<ICommercialProposalOrchestrationService>(MockBehavior.Strict);
         _contactService = new Mock<IContactService>(MockBehavior.Strict);
+        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
+        _authorizationService = new Mock<IAuthorizationService>(MockBehavior.Strict);
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(CurrentContact.Id, AccountId)).ReturnsAsync(new List<string>());
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(CurrentContact.Id, -1)).ReturnsAsync(new List<string>());
+        _accountService = new Mock<IAccountService>(MockBehavior.Strict);
+        _accountService.Setup(service => service.CheckContactRoleAsync(CurrentContact.Id, AccountId, null)).ReturnsAsync(true);
         _userContext = CreateUserContext(UserEmail);
         _logger = new Mock<ILogger<ProspectExperienceController>>();
 
@@ -46,6 +57,16 @@ public class CommercialProposalControllerTests
             _orchestrationService.Object,
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object);
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                RequestServices = new ServiceCollection()
+                    .AddSingleton(_authorizationService.Object)
+                    .AddSingleton(_accountService.Object)
+                    .BuildServiceProvider()
+            }
+        };
     }
 
     private static Mock<IUserContext> CreateUserContext(string email)
@@ -117,7 +138,6 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenOutcomeIsSent_Returns201()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.Sent);
@@ -131,7 +151,6 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenOutcomeIsProspectNotFound_Returns404()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.ProspectNotFound);
@@ -144,7 +163,6 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenOutcomeIsAlreadySent_Returns409()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.AlreadySent);
@@ -157,7 +175,6 @@ public class CommercialProposalControllerTests
     [Fact]
     public async Task SendCommercialProposalAsync_WhenOutcomeIsNotEligible_Returns422()
     {
-        _contactService.Setup(s => s.GetContactAsync(UserEmail)).ReturnsAsync(CurrentContact);
         _orchestrationService
             .Setup(s => s.SendAsync(AccountId, CurrentContact.Id, UserEmail, It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommercialProposalOrchestrationOutcome.NotEligible);

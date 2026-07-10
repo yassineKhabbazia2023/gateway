@@ -67,7 +67,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -91,7 +92,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -115,7 +117,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -139,7 +142,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -163,7 +167,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -187,7 +192,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -257,7 +263,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -281,7 +288,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -305,7 +313,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
@@ -329,7 +338,8 @@
         ]
       },
       "DelegatingHandlers": [
-        "ProspectExperienceHandler"
+        "ProspectExperienceHandler",
+        "RoleHandler"
       ]
     },
     {
