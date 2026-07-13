@@ -71,14 +71,15 @@ public class ProspectExperienceControllerTests
         _controller.ControllerContext = CreateControllerContext();
     }
 
-    private static Mock<IUserContext> CreateUserContext(string email)
+    private static Mock<IUserContext> CreateUserContext(string email, bool isCollaborator = true)
     {
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
+        if (isCollaborator)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Collaborator"));
+        }
         var identity = new ClaimsIdentity(
-            new[]
-            {
-                new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Role, "Collaborator")
-            },
+            claims,
             authenticationType: "Test",
             nameType: ClaimTypes.Name,
             roleType: ClaimTypes.Role);
@@ -238,6 +239,67 @@ public class ProspectExperienceControllerTests
 
         // Assert - the controller does NOT catch; middleware handles it
         await act.Should().ThrowAsync<ProspectOrchestrationException>();
+    }
+
+    [Fact]
+    public async Task CreateProspect_WhenIdentityServiceDoesNotValidateCollaborator_Returns403AndDoesNotCallOrchestration()
+    {
+        // Arrange
+        _identityService.Setup(service => service.ValidateCollaborator(It.IsAny<HttpContext>())).Returns(false);
+
+        // Act
+        var result = await _controller.CreateProspect(BuildRequest(), CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+        objectResult.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.NotValidCollaboratorCode,
+            ErrorMessage = string.Format(Errors.NotValidCollaboratorMessage, UserEmail)
+        });
+        _featureFlagService.Verify(
+            f => f.IsEnabledAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _orchestrationService.Verify(
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateProspect_WhenUserIsNotCollaborator_Returns403AndDoesNotCallOrchestration()
+    {
+        // Arrange
+        var nonCollaboratorUserContext = CreateUserContext(UserEmail, isCollaborator: false);
+        var controller = new ProspectExperienceController(
+            nonCollaboratorUserContext.Object,
+            _featureFlagService.Object,
+            _identityService.Object,
+            _orchestrationService.Object,
+            _prospectApiClient.Object,
+            _validator,
+            _contactService.Object,
+            new Mock<ICommercialProposalOrchestrationService>().Object,
+            new Mock<IEngagementLetterOrchestrationService>().Object,
+            _logger.Object)
+        {
+            ControllerContext = CreateControllerContext()
+        };
+
+        // Act
+        var result = await controller.CreateProspect(BuildRequest(), CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+        objectResult.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.NotValidCollaboratorCode,
+            ErrorMessage = string.Format(Errors.NotValidCollaboratorMessage, UserEmail)
+        });
+        _orchestrationService.Verify(
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

@@ -65,7 +65,18 @@ public class ProspectExperienceController(
         }
 
         var userEmail = userContext.User.GetEmail();
-
+        if (!userContext.User.IsCollaborator() || !identityService.ValidateCollaborator(HttpContext))
+        {
+            logger.LogWarning(
+                "[Response]: 403 - [Controller]: ProspectExperienceController - [Function]: Create Prospect - [Reason]: Collaborator access denied");
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    ErrorCode = Errors.NotValidCollaboratorCode,
+                    ErrorMessage = string.Format(Errors.NotValidCollaboratorMessage, userEmail)
+                });
+        }
         if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: FeatureContext.FromEmail(userEmail), ct: ct))
         {
             logger.LogWarning("[Response]: 403 - [Controller]: ProspectExperienceController - [Function]: CreateProspect - [Reason]: Prospect experience is disabled by feature flag");
