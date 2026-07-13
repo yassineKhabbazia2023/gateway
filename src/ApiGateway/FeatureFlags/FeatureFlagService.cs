@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using ApiGateway.FeatureFlags.Models;
 using OpenFeature;
@@ -44,8 +44,9 @@ public class FeatureFlagService(ILogger<FeatureFlagService> logger) : IFeatureFl
             return null;
         }
 
+        var hashedEmail = HashEmail(context.Email);
         return EvaluationContext.Builder()
-            .SetTargetingKey(HashEmail(context.Email))
+            .Set("Identifier", hashedEmail)
             .Build();
     }
 }
