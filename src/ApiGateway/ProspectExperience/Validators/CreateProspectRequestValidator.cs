@@ -39,7 +39,11 @@ public class SignatoryDtoValidator : AbstractValidator<SignatoryDto>
         RuleFor(x => x.Department).NotEmpty();
         RuleFor(x => x.CompanyRole).NotEmpty();
         RuleFor(x => x.ContactTypes).NotEmpty();
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .EmailAddress()
+            .Must(email => !email.EndsWith("@rydge.fr", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("La création d'un prospect avec une adresse email '@rydge.fr' est interdite.");
         RuleFor(x => x.MobilePhone).NotEmpty();
     }
 }
