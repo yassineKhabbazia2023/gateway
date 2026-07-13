@@ -957,6 +957,48 @@ public class ProspectApiClientTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that cleanup sends the expected Prospect request.
+    /// </summary>
+    [Fact]
+    public async Task CleanupOnboardingAsync_WhenProspectAcceptsRequest_ReturnsTrue()
+    {
+        HttpRequestMessage? captured = null;
+        var (client, _) = CreateClient(new HttpResponseMessage(HttpStatusCode.NoContent), request => captured = request);
+
+        var result = await client.CleanupOnboardingAsync(42, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://prospect.test/api/onboarding/42/cleanup");
+    }
+
+    /// <summary>
+    /// Verifies that cleanup maps Prospect not found responses to false.
+    /// </summary>
+    [Fact]
+    public async Task CleanupOnboardingAsync_WhenProspectReturnsNotFound_ReturnsFalse()
+    {
+        var (client, _) = CreateClient(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await client.CleanupOnboardingAsync(42, CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that cleanup propagates unexpected Prospect failures.
+    /// </summary>
+    [Fact]
+    public async Task CleanupOnboardingAsync_WhenProspectFails_Throws()
+    {
+        var (client, _) = CreateClient(new HttpResponseMessage(HttpStatusCode.BadGateway));
+
+        Func<Task> act = () => client.CleanupOnboardingAsync(42, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
     [Fact]
     public async Task MarkProspectCreationFailedAsync_IssuesPatchWithCurrentUserHeader()
     {

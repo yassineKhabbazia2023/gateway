@@ -7,4 +7,5 @@ public static class FeatureFlagKeys
     public const string IsBookingEnabled = "isBookingEnabled";
     public const string AreMocksEnabled = "isMocksEnabled";
     public const string IsOcelotConfigEnabled = "isOcelotConfigEnabled";
+    public const string IsQaSensitiveEndpointsEnabled = "isQaSensitiveEndpointsEnabled";
 }

@@ -136,6 +136,22 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         return true;
     }
 
+    /// <inheritdoc />
+    public async Task<bool> CleanupAsync(int accountId, CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsync(
+            $"api/onboarding/{accountId}/cleanup",
+            content: null,
+            ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
     /// <summary>
     /// Reads a downstream string response that may be returned either as JSON or as plain text.
     /// </summary>

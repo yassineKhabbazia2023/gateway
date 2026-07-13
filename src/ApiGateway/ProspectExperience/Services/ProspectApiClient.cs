@@ -584,6 +584,23 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         return await response.Content.ReadFromJsonAsync<DocumentRequirementsResponse>(JsonOptions, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<bool> CleanupOnboardingAsync(int accountId, CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsync(
+            $"api/onboarding/{accountId}/cleanup",
+            content: null,
+            ct);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
     /// <summary>
     /// Reads a ProblemDetails response while preserving extension fields serialized as top-level JSON properties.
     /// </summary>

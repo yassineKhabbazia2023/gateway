@@ -166,6 +166,7 @@ public static class ServiceExtensions
             .AddTransientDefinedAggregator<WalletInfoAggregator>()
             .AddDelegatingHandler<BookingSyncHandler>()
             .AddDelegatingHandler<ProspectExperienceHandler>()
+            .AddDelegatingHandler<QaSensitiveEndpointsHandler>()
             .AddDelegatingHandler<ApprovedPlatformFilterHandler>()
             .AddDelegatingHandler<FeatureFlagGateHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);

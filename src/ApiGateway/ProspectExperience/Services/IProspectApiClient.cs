@@ -292,4 +292,12 @@ public interface IProspectApiClient
     Task<DocumentRequirementsResponse?> GetDocumentRequirementsAsync(
         int prospectId,
         CancellationToken ct);
+
+    /// <summary>
+    /// Cleans Prospect onboarding data for an account.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns><c>true</c> when Prospect cleaned the account; otherwise <c>false</c> when not found.</returns>
+    Task<bool> CleanupOnboardingAsync(int accountId, CancellationToken ct);
 }

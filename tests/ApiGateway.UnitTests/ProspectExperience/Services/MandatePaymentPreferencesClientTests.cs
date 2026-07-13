@@ -336,6 +336,48 @@ public sealed class MandatePaymentPreferencesClientTests
     }
 
     /// <summary>
+    /// Verifies that cleanup sends the expected Mandat request.
+    /// </summary>
+    [Fact]
+    public async Task CleanupAsync_WhenMandatAcceptsRequest_ReturnsTrue()
+    {
+        HttpRequestMessage? captured = null;
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NoContent), request => captured = request);
+
+        var result = await client.CleanupAsync(42, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/42/cleanup");
+    }
+
+    /// <summary>
+    /// Verifies that cleanup maps Mandat not found responses to false.
+    /// </summary>
+    [Fact]
+    public async Task CleanupAsync_WhenMandatReturnsNotFound_ReturnsFalse()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await client.CleanupAsync(42, CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that cleanup propagates unexpected Mandat failures.
+    /// </summary>
+    [Fact]
+    public async Task CleanupAsync_WhenMandatFails_Throws()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.BadGateway));
+
+        Func<Task> act = () => client.CleanupAsync(42, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
     /// Creates the tested Mandat payment preferences client.
     /// </summary>
     /// <param name="response">The HTTP response to return.</param>

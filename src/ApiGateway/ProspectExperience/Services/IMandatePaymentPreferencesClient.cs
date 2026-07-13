@@ -68,4 +68,12 @@ public interface IMandatePaymentPreferencesClient
     /// <param name="ct">The cancellation token.</param>
     /// <returns>True when Mandat reset the preference; otherwise false when the account or preference is not found.</returns>
     Task<bool> ResetAsync(int accountId, CancellationToken ct);
+
+    /// <summary>
+    /// Cleans Mandat onboarding preference data for an account.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when Mandat cleaned the account; otherwise false when the account is not found.</returns>
+    Task<bool> CleanupAsync(int accountId, CancellationToken ct);
 }
