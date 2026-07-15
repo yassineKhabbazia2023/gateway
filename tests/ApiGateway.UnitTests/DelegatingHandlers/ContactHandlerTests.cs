@@ -6,6 +6,7 @@ using ApiGateway.Contact.Models;
 using ApiGateway.DelegatingHandlers;
 using ApiGateway.UnitTests.Mocks;
 using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -192,6 +193,122 @@ public class ContactHandlerTests
         // Assert
         request.RequestUri.Should().Be("https://contact-domain.api/contacts?search=firstname&contactId=2");
         _mockCacheService.Verify(cache => cache.GetAsync(userEmail), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenContactCannotBeResolved_ShouldStripClientSuppliedIdentityHeaders()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(x => x.GetService(typeof(IContactService))).Returns(_mockContactService.Object);
+        mockServiceProvider.Setup(x => x.GetService(typeof(ICacheService))).Returns(_mockCacheService.Object);
+
+        var mockServiceScope = new Mock<IServiceScope>();
+        mockServiceScope.Setup(x => x.ServiceProvider).Returns(mockServiceProvider.Object);
+        _mockServiceProviderFactory.Setup(x => x.CreateScope()).Returns(mockServiceScope.Object);
+
+        _mockCacheService.Setup(x => x.GetAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        _mockContactService.Setup(x => x.GetContactAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        _mockLogger
+            .Setup(x => x.Log(
+                LogLevel.Debug,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts?search=firstname");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
+        request.Headers.Add("ContactEmail", "victim@example.com");
+        request.Headers.Add("CurrentUser", "999");
+        request.Headers.Add("ContactType", "Collaborator");
+
+        // Act
+        await _middleware.TestSendAsync(request, CancellationToken.None);
+
+        // Assert : les headers d'identité fournis par le client ne doivent jamais partir downstream
+        request.Headers.Contains("ContactEmail").Should().BeFalse("client-supplied identity headers must never reach downstream");
+        request.Headers.Contains("CurrentUser").Should().BeFalse("client-supplied identity headers must never reach downstream");
+        request.Headers.Contains("ContactType").Should().BeFalse("client-supplied identity headers must never reach downstream");
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenContactResolutionFailsTechnically_ShouldPropagateExceptionAndNotForwardClientHeaders()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(x => x.GetService(typeof(IContactService))).Returns(_mockContactService.Object);
+        mockServiceProvider.Setup(x => x.GetService(typeof(ICacheService))).Returns(_mockCacheService.Object);
+
+        var mockServiceScope = new Mock<IServiceScope>();
+        mockServiceScope.Setup(x => x.ServiceProvider).Returns(mockServiceProvider.Object);
+        _mockServiceProviderFactory.Setup(x => x.CreateScope()).Returns(mockServiceScope.Object);
+
+        _mockCacheService.Setup(x => x.GetAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        _mockContactService.Setup(x => x.GetContactAsync(It.IsAny<string>()))
+            .ThrowsAsync(new ApiGateway.Exceptions.GatewayException(
+                StatusCodes.Status502BadGateway,
+                ApiGateway.Exceptions.Errors.ContactResolutionFailedCode,
+                string.Format(ApiGateway.Exceptions.Errors.ContactResolutionFailedMessage, 503)));
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts?search=firstname");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
+        request.Headers.Add("ContactEmail", "victim@example.com");
+
+        // Act
+        Func<Task> act = async () => await _middleware.TestSendAsync(request, CancellationToken.None);
+
+        // Assert : fail-closed, la requête est bloquée et le header client a été retiré
+        await act.Should().ThrowAsync<ApiGateway.Exceptions.GatewayException>();
+        request.Headers.Contains("ContactEmail").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenClientSendsIdentityHeaders_ShouldReplaceThemWithResolvedValues()
+    {
+        // Arrange
+        var userEmail = "user@example.com";
+        int contactId = 2;
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(x => x.GetService(typeof(IContactService))).Returns(_mockContactService.Object);
+        mockServiceProvider.Setup(x => x.GetService(typeof(ICacheService))).Returns(_mockCacheService.Object);
+
+        var mockServiceScope = new Mock<IServiceScope>();
+        mockServiceScope.Setup(x => x.ServiceProvider).Returns(mockServiceProvider.Object);
+        _mockServiceProviderFactory.Setup(x => x.CreateScope()).Returns(mockServiceScope.Object);
+
+        _mockCacheService.Setup(x => x.GetAsync(It.IsAny<string>()))
+            .ReturnsAsync(new ApiGateway.Contact.Models.Contact() { Id = contactId, Type = "Customer" });
+
+        _mockLogger
+            .Setup(x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Passing the following headers to downstream")),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://contact-domain.api/contacts?search=firstname");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(userEmail));
+        request.Headers.Add("ContactEmail", "victim@example.com");
+        request.Headers.Add("CurrentUser", "999");
+        request.Headers.Add("ContactType", "Admin");
+
+        // Act
+        await _middleware.TestSendAsync(request, CancellationToken.None);
+
+        // Assert : les valeurs falsifiées sont remplacées par celles dérivées du JWT validé
+        request.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be(userEmail);
+        request.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be(contactId.ToString());
+        request.Headers.GetValues("ContactType").Should().ContainSingle().Which.Should().Be("Customer");
     }
 
     [Fact]

@@ -101,5 +101,8 @@ namespace ApiGateway.Exceptions
         // --- Feature Flags ---
         public static readonly string FeatureFlagDisabledCode = "GTW034";
         public static readonly string FeatureFlagDisabledMessage = "La fonctionnalité '{0}' est désactivée.";
+
+        public static readonly string ContactResolutionFailedCode = "GTW035";
+        public static readonly string ContactResolutionFailedMessage = "La résolution du contact a échoué : le service Contact a répondu {0}.";
     }
 }

@@ -4,6 +4,7 @@ using ApiGateway.Contact;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Requests;
+using Microsoft.AspNetCore.Http;
 using Moq.Protected;
 using System.Text.Json;
 using Newtonsoft.Json;
@@ -13,13 +14,17 @@ namespace ApiGateway.UnitTests.Contact;
 
 public class ContactServiceTests
 {
-    [Fact]
-    public async Task GetContactAsync_WhenContactReturnNotFoundError_ShouldReturnNull()
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    public async Task GetContactAsync_WhenContactApiResponseNotSuccessfull_ShouldThrowGatewayException(HttpStatusCode statusCode)
     {
         var contactEmail = "jdoe@test.fr";
         var httpResponseMessage = new HttpResponseMessage()
         {
-            StatusCode = HttpStatusCode.NotFound
+            StatusCode = statusCode
         };
 
         var mockContactOperationHandler = new Mock<HttpMessageHandler>();
@@ -40,44 +45,11 @@ public class ContactServiceTests
 
         var contactService = new ContactService(client);
 
-        var result = await contactService.GetContactAsync(contactEmail);
+        Func<Task> act = async () => await contactService.GetContactAsync(contactEmail);
 
+        (await act.Should().ThrowAsync<GatewayException>())
+            .Which.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
         mockContactOperationHandler.Verify();
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetContactAsync_WhenContactApiResponseNotSuccessfull_ShouldReturnNull()
-    {
-        var contactEmail = "jdoe@test.fr";
-        var httpResponseMessage = new HttpResponseMessage()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Content = null
-        };
-
-        var mockContactOperationHandler = new Mock<HttpMessageHandler>();
-
-        var client = new HttpClient(mockContactOperationHandler.Object);
-        client.BaseAddress = new Uri("http://xyz.fr");
-
-        mockContactOperationHandler.Protected().Setup<Task<HttpResponseMessage>>(
-           "SendAsync",
-            ItExpr.IsAny<HttpRequestMessage>(),
-            ItExpr.IsAny<CancellationToken>())
-           .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
-           {
-               var encodedEmail = WebUtility.UrlEncode(contactEmail);
-               req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
-           }).ReturnsAsync(httpResponseMessage).Verifiable();
-
-        var contactService = new ContactService(client);
-
-        var result = await contactService.GetContactAsync(contactEmail);
-
-        mockContactOperationHandler.Verify();
-        result.Should().BeNull();
     }
 
     [Fact]

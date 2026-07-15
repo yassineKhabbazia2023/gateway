@@ -15,23 +15,26 @@ public class ContactService(HttpClient httpClient) : IContactService
     {
         var uri = ContactUrl(userEmail);
         var response = await httpClient.GetAsync(uri);
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
-            var jsonString = await response.Content.ReadAsStringAsync();
-            if (string.IsNullOrEmpty(jsonString))
-            {
-                return null;
-            }
-
-            var contactResult = JsonSerializer.Deserialize<PagingResult>(jsonString);
-            if (contactResult != null && contactResult.Items?.Count > 0)
-            {
-                return contactResult.Items[0];
-            }
-            throw new GatewayException(StatusCodes.Status404NotFound, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, userEmail));
+            // Fail-closed: a technical failure of the Contact service must not be treated
+            // as a contact not found, otherwise callers (e.g. ContactHandler) would let
+            // the request through without a validated identity.
+            throw new GatewayException(StatusCodes.Status502BadGateway, Errors.ContactResolutionFailedCode, string.Format(Errors.ContactResolutionFailedMessage, (int)response.StatusCode));
         }
 
-        return null;
+        var jsonString = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(jsonString))
+        {
+            return null;
+        }
+
+        var contactResult = JsonSerializer.Deserialize<PagingResult>(jsonString);
+        if (contactResult != null && contactResult.Items?.Count > 0)
+        {
+            return contactResult.Items[0];
+        }
+        throw new GatewayException(StatusCodes.Status404NotFound, Errors.NotFoundContactCode, string.Format(Errors.NotFoundContactMessage, userEmail));
     }
 
     public async Task<string?> GetContactIdAsync(string userEmail)

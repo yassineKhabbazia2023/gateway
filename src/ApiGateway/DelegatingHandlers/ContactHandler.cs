@@ -28,6 +28,14 @@ public class ContactHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
     CancellationToken cancellationToken)
     {
+        // These headers carry the identity resolved by the Gateway from the validated JWT.
+        // Client-supplied values are stripped before the contact is resolved, so a
+        // spoofed value can never reach downstream, even if resolution fails
+        // (contact not found, Contact service down, etc.).
+        request.Headers.Remove("CurrentUser");
+        request.Headers.Remove("ContactEmail");
+        request.Headers.Remove("ContactType");
+
         var contact = await GetCurrentUser(request);
         var contactEmail = GetUserEmail(request);
 
