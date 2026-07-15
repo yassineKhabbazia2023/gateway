@@ -1,6 +1,8 @@
 using System.Net;
+using System.Reflection;
 using System.Security.Claims;
 using ApiGateway.Account;
+using ApiGateway.Attributes;
 using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
@@ -178,5 +180,17 @@ public class EngagementLetterControllerTests
         var result = await _controller.SendEngagementLetterAsync(AccountId, BuildFile(), CancellationToken.None);
 
         result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public void SendEngagementLetterAsync_ShouldHaveRequirePermissionAttribute()
+    {
+        var method = typeof(ProspectExperienceController).GetMethod(nameof(ProspectExperienceController.SendEngagementLetterAsync));
+
+        var attribute = method!.GetCustomAttribute<RequirePermissionAttribute>();
+
+        attribute.Should().NotBeNull();
+        // Role-on-account is already enforced by ProspectAccountAuthorizationHelper in the action body.
+        attribute!.CheckAccountRole.Should().BeFalse();
     }
 }

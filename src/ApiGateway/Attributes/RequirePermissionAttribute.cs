@@ -5,6 +5,7 @@ using ApiGateway.Exceptions;
 using ApiGateway.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
@@ -224,7 +225,7 @@ public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
     }
 
     /// <summary>
-    /// Extracts account ID from query parameters, URL path, or headers
+    /// Extracts account ID from route values, query parameters, URL path, or headers
     /// </summary>
     private static int? ExtractAccountId(HttpContext httpContext)
     {
@@ -233,6 +234,12 @@ public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
             e => httpContext.Request.Path.ToString().Contains(e)))
         {
             return null;
+        }
+
+        // Try the route value first (e.g. "{accountId}" segments such as /onboarding/{accountId}/...)
+        if (int.TryParse(httpContext.GetRouteValue("accountId")?.ToString(), out var parsedRouteAccountId))
+        {
+            return parsedRouteAccountId;
         }
 
         // Try query parameter first

@@ -1,3 +1,5 @@
+using ApiGateway.Attributes;
+using ApiGateway.Authorization.Consts;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
@@ -250,6 +252,7 @@ public class ProspectExperienceController(
 
     [HttpPost("{accountId}/commercial-proposal")]
     [Consumes("multipart/form-data")]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.CommercialProposalClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -295,6 +298,7 @@ public class ProspectExperienceController(
 
     [HttpPost("{accountId}/engagement-letter")]
     [Consumes("multipart/form-data")]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.EngagementLetterClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -1,6 +1,8 @@
 using System.Net;
+using System.Reflection;
 using System.Security.Claims;
 using ApiGateway.Account;
+using ApiGateway.Attributes;
 using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
@@ -183,5 +185,17 @@ public class CommercialProposalControllerTests
 
         var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public void SendCommercialProposalAsync_ShouldHaveRequirePermissionAttribute()
+    {
+        var method = typeof(ProspectExperienceController).GetMethod(nameof(ProspectExperienceController.SendCommercialProposalAsync));
+
+        var attribute = method!.GetCustomAttribute<RequirePermissionAttribute>();
+
+        attribute.Should().NotBeNull();
+        // Role-on-account is already enforced by ProspectAccountAuthorizationHelper in the action body.
+        attribute!.CheckAccountRole.Should().BeFalse();
     }
 }

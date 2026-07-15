@@ -138,6 +138,15 @@ public static class AuthorizationMiddleware
 
         if (string.IsNullOrWhiteSpace(accountIdParam))
         {
+            var prospectAccountRoutePrefix = AuthorizationHelper.GetProspectAccountRoutePrefix(httpContext.Request.Path.Value ?? string.Empty);
+            if (prospectAccountRoutePrefix is not null)
+            {
+                accountIdParam = AuthorizationHelper.ExtractProspectAccountIdFromRoute(httpContext.Request.Path.Value!, prospectAccountRoutePrefix)?.ToString();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(accountIdParam))
+        {
             accountIdParam = httpContext.Request.Headers[GlobalsConstants.AccountIdHeader];
         }
 

@@ -14,12 +14,6 @@ namespace ApiGateway.DelegatingHandlers
     /// </summary>
     public class RoleHandler : DelegatingHandler
     {
-        // Upstream route prefixes where the first path parameter represents an accountId.
-        private static readonly string[] ProspectAccountRoutePrefixes =
-        [
-            "/gtw/prospect/api/onboarding/"
-        ];
-
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<RoleHandler> _logger;
 
@@ -51,11 +45,11 @@ namespace ApiGateway.DelegatingHandlers
 
                 var requestPath = GetRequestPath(request);
                 var isProspectAccountRoute = false;
-                var prospectAccountRoutePrefix = GetProspectAccountRoutePrefix(requestPath);
+                var prospectAccountRoutePrefix = AuthorizationHelper.GetProspectAccountRoutePrefix(requestPath);
                 if (prospectAccountRoutePrefix is not null)
                 {
                     isProspectAccountRoute = true;
-                    accountId = ExtractProspectAccountIdFromRoute(requestPath, prospectAccountRoutePrefix) ?? accountId;
+                    accountId = AuthorizationHelper.ExtractProspectAccountIdFromRoute(requestPath, prospectAccountRoutePrefix) ?? accountId;
                     contactId = null;
                 }
                 else
@@ -199,38 +193,6 @@ namespace ApiGateway.DelegatingHandlers
             return string.IsNullOrWhiteSpace(upstreamPath)
                 ? request.RequestUri?.AbsolutePath ?? string.Empty
                 : upstreamPath;
-        }
-
-        /// <summary>
-        /// Determines whether the request path targets a Prospect route whose path identifier must be handled as an account identifier.
-        /// </summary>
-        /// <param name="path">The request path to evaluate.</param>
-        /// <returns>The matched Prospect route prefix, or null when the path is not a Prospect account route.</returns>
-        private static string? GetProspectAccountRoutePrefix(string path)
-        {
-            return ProspectAccountRoutePrefixes.FirstOrDefault(prefix =>
-                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-        }
-
-        /// <summary>
-        /// Extracts the account identifier from supported Prospect upstream routes.
-        /// </summary>
-        /// <param name="path">The incoming Prospect upstream path.</param>
-        /// <param name="prefix">The matched Prospect route prefix.</param>
-        /// <returns>The account identifier found in the Prospect route, or null if none is found.</returns>
-        private static int? ExtractProspectAccountIdFromRoute(string path, string prefix)
-        {
-            var remainingPath = path[prefix.Length..];
-            var accountIdSegment = remainingPath
-                .Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault();
-
-            if (int.TryParse(accountIdSegment, out var parsedId))
-            {
-                return parsedId;
-            }
-
-            return null;
         }
 
         /// <summary>

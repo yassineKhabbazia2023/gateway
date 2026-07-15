@@ -518,6 +518,47 @@ public class RequirePermissionAttributeTests
     }
 
     [Fact]
+    public async Task OnAuthorizationAsync_WhenAccountIdInRouteValues_ShouldExtract()
+    {
+        // Arrange - path shape used by prospect onboarding routes: /onboarding/{accountId}/commercial-proposal
+        // which does not match the "/accounts/(\d+)" fallback pattern, so extraction must rely on route values.
+        var userEmail = "user@example.com";
+        var contactId = "123";
+        var accountId = 456;
+        var attribute = new RequirePermissionAttribute("CLPCONF004");
+
+        var context = CreateAuthorizationContext(
+            userEmail,
+            path: $"/gtw/prospect/api/onboarding/{accountId}/commercial-proposal",
+            routeValues: new RouteValueDictionary { ["accountId"] = accountId.ToString() });
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(userEmail))
+            .ReturnsAsync(contactId);
+
+        _mockValidationService.Setup(x => x.ValidatePermissionsAsync(
+                contactId,
+                It.IsAny<string[]>(),
+                accountId))
+            .ReturnsAsync(true);
+
+        _mockValidationService.Setup(x => x.ValidateAccountRoleAsync(
+                It.IsAny<HttpContext>(),
+                int.Parse(contactId),
+                accountId))
+            .ReturnsAsync(true);
+
+        // Act
+        await attribute.OnAuthorizationAsync(context);
+
+        // Assert - accountId extracted from route values, not the "/accounts/" path pattern
+        context.Result.Should().BeNull();
+        _mockValidationService.Verify(x => x.ValidatePermissionsAsync(
+            contactId,
+            It.IsAny<string[]>(),
+            accountId), Times.Once);
+    }
+
+    [Fact]
     public async Task OnAuthorizationAsync_WhenAccountIdInHeader_ShouldExtract()
     {
         // Arrange
@@ -705,7 +746,8 @@ public class RequirePermissionAttributeTests
     private AuthorizationFilterContext CreateAuthorizationContext(
         string userEmail,
         int? accountId = null,
-        string path = "/api/test")
+        string path = "/api/test",
+        RouteValueDictionary? routeValues = null)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Path = path;
@@ -722,6 +764,14 @@ public class RequirePermissionAttributeTests
             httpContext.Request.QueryString = new QueryString($"?accountId={accountId}");
         }
 
+        if (routeValues is not null)
+        {
+            // Mirrors what ASP.NET Core's endpoint routing middleware sets on the real request
+            // pipeline, which is what HttpContext.GetRouteValue(...) reads from.
+            httpContext.Features.Set<Microsoft.AspNetCore.Http.Features.IRouteValuesFeature>(
+                new TestRouteValuesFeature(routeValues));
+        }
+
         var services = new ServiceCollection();
         services.AddSingleton(_mockValidationService.Object);
         services.AddSingleton(_mockContactService.Object);
@@ -731,10 +781,20 @@ public class RequirePermissionAttributeTests
 
         var actionContext = new ActionContext(
             httpContext,
-            new RouteData(),
+            new RouteData(routeValues ?? new RouteValueDictionary()),
             new ActionDescriptor());
 
         return new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
+    }
+
+    private sealed class TestRouteValuesFeature : Microsoft.AspNetCore.Http.Features.IRouteValuesFeature
+    {
+        public TestRouteValuesFeature(RouteValueDictionary routeValues)
+        {
+            RouteValues = routeValues;
+        }
+
+        public RouteValueDictionary RouteValues { get; set; }
     }
 
     private static string GenerateDummyJwtToken(string userEmail)

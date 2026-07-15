@@ -244,6 +244,68 @@ public class AuthorizationMiddlewareTests
     }
 
     [Fact]
+    public async Task AuthorizationFilter_ShouldExtractAccountId_FromProspectOnboardingPath()
+    {
+        // Arrange
+        var path = "/gtw/prospect/api/onboarding/1/commercial-proposal/content";
+        var method = "GET";
+        var contactEmail = "user-demo@kpmg.fr";
+        var requiredClaims = new Dictionary<string, string>
+        {
+            { "GET", "COPROS001,CLPCONF004" },
+        };
+
+        var httpContext = Dummies.DummyHttpContext(path, method, contactEmail, requiredClaims);
+        var cacheService = new Mock<ICacheService>();
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(cacheService.Object)
+            .BuildServiceProvider();
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(It.IsAny<string>()))
+            .Callback<string>(email => email.Equals(contactEmail))
+            .ReturnsAsync("90")
+            .Verifiable();
+
+        _mockAuthorizationService.Setup(x => x.GetContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .ReturnsAsync(new List<string>())
+            .Verifiable();
+
+        _mockAccountService.Setup(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(true)
+            .Verifiable();
+
+        bool expectedAccountIdOnePassed = false;
+        var mockedAuthorizations = new List<string>() { "CLPCONF004" };
+        _mockAuthorizationService.Setup(x => x.GetAllContactAuthorizationAsync(It.IsAny<int>(), It.IsAny<int?>()))
+            .Callback<int, int?>((contactId, accountId) =>
+            {
+                if (accountId == 1)
+                {
+                    expectedAccountIdOnePassed = true;
+                }
+            })
+            .ReturnsAsync(mockedAuthorizations)
+            .Verifiable();
+
+        // Act
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () => Task.CompletedTask);
+
+        // Assert
+        // The onboarding route places the account identifier as the first path segment
+        // (e.g. /onboarding/{accountId}/...) rather than after "/accounts/" — the entity-scoped
+        // CLPCONF004 permission is only found if that accountId is correctly extracted.
+        expectedAccountIdOnePassed.Should().BeTrue();
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+        _mockContactService.VerifyAll();
+        _mockAuthorizationService.VerifyAll();
+        _mockAccountService.VerifyAll();
+    }
+
+    [Fact]
     public async Task AuthorizationFilter_WhenRequiredClaimIsEmpty_ShouldAllowsAccess()
     {
         // Arrange

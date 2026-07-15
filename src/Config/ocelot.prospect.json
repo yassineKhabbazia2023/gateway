@@ -312,6 +312,9 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "RouteClaimsRequirement": {
+        "GET": "COPROS001,CLPCONF004"
+      },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",
         "RoleHandler"
@@ -336,6 +339,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COPROS001,CLPCONF006"
       },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",

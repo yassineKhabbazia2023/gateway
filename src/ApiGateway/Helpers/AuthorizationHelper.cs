@@ -7,6 +7,44 @@ namespace ApiGateway.Helpers
 {
     public static class AuthorizationHelper
     {
+        // Upstream route prefixes where the first path parameter represents an accountId.
+        public static readonly string[] ProspectAccountRoutePrefixes =
+        [
+            "/gtw/prospect/api/onboarding/"
+        ];
+
+        /// <summary>
+        /// Determines whether the request path targets a Prospect route whose path identifier must be handled as an account identifier.
+        /// </summary>
+        /// <param name="path">The request path to evaluate.</param>
+        /// <returns>The matched Prospect route prefix, or null when the path is not a Prospect account route.</returns>
+        public static string? GetProspectAccountRoutePrefix(string path)
+        {
+            return ProspectAccountRoutePrefixes.FirstOrDefault(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Extracts the account identifier from supported Prospect upstream routes.
+        /// </summary>
+        /// <param name="path">The incoming Prospect upstream path.</param>
+        /// <param name="prefix">The matched Prospect route prefix.</param>
+        /// <returns>The account identifier found in the Prospect route, or null if none is found.</returns>
+        public static int? ExtractProspectAccountIdFromRoute(string path, string prefix)
+        {
+            var remainingPath = path[prefix.Length..];
+            var accountIdSegment = remainingPath
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault();
+
+            if (int.TryParse(accountIdSegment, out var parsedId))
+            {
+                return parsedId;
+            }
+
+            return null;
+        }
+
         public static async Task<bool> SkipRoleCheck(int? accountId, int? contactId, HttpContext httpContext)
         {
             if (accountId.HasValue && contactId.HasValue)
