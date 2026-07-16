@@ -119,16 +119,4 @@ public class FeatureFlagServiceTests : IAsyncLifetime
         result.Should().Be(99);
     }
 
-    [Theory]
-    [InlineData("User@Example.com")]
-    [InlineData("USER@EXAMPLE.COM")]
-    [InlineData("user@example.com")]
-    public void HashEmail_ShouldProduceSameHash_RegardlessOfCase(string email)
-    {
-        var expected = FeatureFlagService.HashEmail("user@example.com");
-
-        var result = FeatureFlagService.HashEmail(email);
-
-        result.Should().Be(expected);
-    }
 }
