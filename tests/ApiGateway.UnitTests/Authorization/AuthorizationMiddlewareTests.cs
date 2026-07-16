@@ -909,4 +909,227 @@ public class AuthorizationMiddlewareTests
         Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
         mockIdentityService.Verify(x => x.ValidateAdministrator(It.IsAny<HttpContext>()), Times.Once);
     }
+
+    /// <summary>
+    /// Verifies that proxied Prospect document endpoints authorize collaborators through the global Prospect permission.
+    /// </summary>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="path">The Gateway route path.</param>
+    /// <param name="routeClaims">The route claims declared in Ocelot.</param>
+    [Theory]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents", "COPROS001, CLPDOCP001, CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/supporting-documents", "COPROS001, CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001")]
+    [InlineData("DELETE", "/gtw/prospect/api/onboarding/456/documents/123", "COPROS001, CLPCONF001")]
+    public async Task AuthorizationFilter_ProspectDocumentRoute_CollaboratorWithCopros001_AllowsAccess(
+        string method,
+        string path,
+        string routeClaims)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, routeClaims, "Collaborator");
+        ConfigureCollaboratorProspectDocumentServices(httpContext, ["COPROS001"]);
+        var nextCalled = false;
+
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        nextCalled.Should().BeTrue();
+        _mockAuthorizationService.Verify(service => service.GetAllContactAuthorizationAsync(789, 456), Times.AtLeastOnce);
+    }
+
+    /// <summary>
+    /// Verifies that proxied Prospect document endpoints reject collaborators without the global Prospect permission before forwarding.
+    /// </summary>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="path">The Gateway route path.</param>
+    /// <param name="routeClaims">The route claims declared in Ocelot.</param>
+    [Theory]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents", "COPROS001, CLPDOCP001, CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/supporting-documents", "COPROS001, CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001")]
+    [InlineData("DELETE", "/gtw/prospect/api/onboarding/456/documents/123", "COPROS001, CLPCONF001")]
+    public async Task AuthorizationFilter_ProspectDocumentRoute_CollaboratorWithoutCopros001_RejectsBeforeForwarding(
+        string method,
+        string path,
+        string routeClaims)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, routeClaims, "Collaborator");
+        ConfigureCollaboratorProspectDocumentServices(httpContext, []);
+        var nextCalled = false;
+
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().Be(Errors.PermissionRequiredCode);
+        nextCalled.Should().BeFalse();
+        _mockAccountService.Verify(
+            service => service.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<string?>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that proxied Prospect document endpoints authorize customers with one accepted permission on the route account.
+    /// </summary>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="path">The Gateway route path.</param>
+    /// <param name="routeClaims">The route claims declared in Ocelot.</param>
+    /// <param name="permission">The granted account-scoped permission.</param>
+    [Theory]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents", "COPROS001, CLPDOCP001, CLPCONF002", "CLPDOCP001")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents", "COPROS001, CLPDOCP001, CLPCONF002", "CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/supporting-documents", "COPROS001, CLPCONF002", "CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001", "CLPDOCP001")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001", "CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001", "CLPCONF001")]
+    [InlineData("DELETE", "/gtw/prospect/api/onboarding/456/documents/123", "COPROS001, CLPCONF001", "CLPCONF001")]
+    public async Task AuthorizationFilter_ProspectDocumentRoute_CustomerWithRequiredAccountPermission_AllowsAccess(
+        string method,
+        string path,
+        string routeClaims,
+        string permission)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, routeClaims, "Customer");
+        ConfigureCustomerProspectDocumentServices(httpContext, 456, [permission]);
+        var nextCalled = false;
+
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        nextCalled.Should().BeTrue();
+        _mockAuthorizationService.Verify(service => service.GetAllContactAuthorizationAsync(789, 456), Times.AtLeastOnce);
+        _mockAccountService.Verify(
+            service => service.CheckContactRoleAsync(789, 456, null),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that proxied Prospect document endpoints reject customers whose matching permission belongs to another account.
+    /// </summary>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="path">The Gateway route path.</param>
+    /// <param name="routeClaims">The route claims declared in Ocelot.</param>
+    /// <param name="otherAccountPermission">A permission granted on another account.</param>
+    [Theory]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents", "COPROS001, CLPDOCP001, CLPCONF002", "CLPDOCP001")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/supporting-documents", "COPROS001, CLPCONF002", "CLPCONF002")]
+    [InlineData("GET", "/gtw/prospect/api/onboarding/456/documents/123/content", "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001", "CLPCONF001")]
+    [InlineData("DELETE", "/gtw/prospect/api/onboarding/456/documents/123", "COPROS001, CLPCONF001", "CLPCONF001")]
+    public async Task AuthorizationFilter_ProspectDocumentRoute_CustomerPermissionOnAnotherAccount_RejectsBeforeForwarding(
+        string method,
+        string path,
+        string routeClaims,
+        string otherAccountPermission)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, routeClaims, "Customer");
+        ConfigureCustomerProspectDocumentServices(httpContext, 456, []);
+        _mockAuthorizationService
+            .Setup(service => service.GetAllContactAuthorizationAsync(789, 999))
+            .ReturnsAsync(new List<string> { otherAccountPermission });
+        var nextCalled = false;
+
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.Code.Should().Be(Errors.PermissionRequiredCode);
+        nextCalled.Should().BeFalse();
+        _mockAuthorizationService.Verify(service => service.GetAllContactAuthorizationAsync(789, 456), Times.Once);
+        _mockAuthorizationService.Verify(service => service.GetAllContactAuthorizationAsync(789, 999), Times.Never);
+        _mockAccountService.Verify(
+            service => service.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<string?>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Creates an HTTP context for a secured Prospect document route.
+    /// </summary>
+    /// <param name="path">The Gateway route path.</param>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="routeClaims">The route claims declared in Ocelot.</param>
+    /// <param name="role">The current user role.</param>
+    /// <returns>The configured HTTP context.</returns>
+    private static DefaultHttpContext CreateProspectDocumentHttpContext(
+        string path,
+        string method,
+        string routeClaims,
+        string role)
+    {
+        const string contactEmail = "user-demo@kpmg.fr";
+        var context = Dummies.DummyHttpContext(
+            path,
+            method,
+            contactEmail,
+            new Dictionary<string, string> { { method, routeClaims } });
+        context.User = new ClaimsPrincipal(new ClaimsIdentity(
+            new List<Claim>
+            {
+                new(ClaimTypes.Email, contactEmail),
+                new(ClaimTypes.Role, role)
+            },
+            "TestAuthType"));
+
+        return context;
+    }
+
+    /// <summary>
+    /// Configures services required by collaborator Prospect document authorization tests.
+    /// </summary>
+    /// <param name="httpContext">The HTTP context receiving the service provider.</param>
+    /// <param name="globalPermissions">The collaborator global permissions.</param>
+    private void ConfigureCollaboratorProspectDocumentServices(DefaultHttpContext httpContext, List<string> globalPermissions)
+    {
+        _mockContactService.Setup(service => service.GetContactIdAsync(It.IsAny<string>())).ReturnsAsync("789");
+        _mockIdentityService.Setup(service => service.ValidateCollaborator(httpContext)).Returns(true);
+        _mockAuthorizationService.Setup(service => service.GetAllContactAuthorizationAsync(789, 456)).ReturnsAsync(globalPermissions);
+        _mockAuthorizationService.Setup(service => service.GetContactAuthorizationAsync(789, 456)).ReturnsAsync(new List<string>());
+        _mockAuthorizationService.Setup(service => service.GetContactAuthorizationAsync(789, -1)).ReturnsAsync(globalPermissions);
+        _mockAccountService.Setup(service => service.CheckContactRoleAsync(789, 456, null)).ReturnsAsync(true);
+        ConfigureProspectDocumentServiceProvider(httpContext);
+    }
+
+    /// <summary>
+    /// Configures services required by customer Prospect document authorization tests.
+    /// </summary>
+    /// <param name="httpContext">The HTTP context receiving the service provider.</param>
+    /// <param name="accountId">The route account identifier.</param>
+    /// <param name="accountPermissions">The permissions granted on the route account.</param>
+    private void ConfigureCustomerProspectDocumentServices(DefaultHttpContext httpContext, int accountId, List<string> accountPermissions)
+    {
+        _mockContactService.Setup(service => service.GetContactIdAsync(It.IsAny<string>())).ReturnsAsync("789");
+        _mockIdentityService.Setup(service => service.ValidateCustomerAsync(It.IsAny<string>())).ReturnsAsync(true);
+        _mockAuthorizationService.Setup(service => service.GetAllContactAuthorizationAsync(789, accountId)).ReturnsAsync(accountPermissions);
+        _mockAuthorizationService.Setup(service => service.GetContactAuthorizationAsync(789, accountId)).ReturnsAsync(accountPermissions);
+        _mockAuthorizationService.Setup(service => service.GetContactAuthorizationAsync(789, -1)).ReturnsAsync(new List<string>());
+        _mockAccountService.Setup(service => service.CheckContactRoleAsync(789, accountId, null)).ReturnsAsync(true);
+        ConfigureProspectDocumentServiceProvider(httpContext);
+    }
+
+    /// <summary>
+    /// Configures the service provider used by Prospect document authorization tests.
+    /// </summary>
+    /// <param name="httpContext">The HTTP context receiving the service provider.</param>
+    private void ConfigureProspectDocumentServiceProvider(DefaultHttpContext httpContext)
+    {
+        httpContext.RequestServices = new ServiceCollection()
+            .AddSingleton(_mockContactService.Object)
+            .AddSingleton(_mockAuthorizationService.Object)
+            .AddSingleton(_mockAccountService.Object)
+            .AddSingleton(_mockIdentityService.Object)
+            .AddSingleton(new Mock<ICacheService>().Object)
+            .AddSingleton(Mock.Of<ILogger<Program>>())
+            .BuildServiceProvider();
+    }
 }

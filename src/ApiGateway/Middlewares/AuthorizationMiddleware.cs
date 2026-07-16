@@ -7,6 +7,7 @@ using ApiGateway.Account;
 using ApiGateway.Constants;
 using ApiGateway.Exceptions;
 using ApiGateway.Identity;
+using ApiGateway.Identity.Extensions;
 using System.Text;
 using ApiGateway.Extensions;
 using ApiGateway.Cache;
@@ -22,7 +23,6 @@ public static class AuthorizationMiddleware
             await next.Invoke();
             return;
         }
-        var logger = httpContext.RequestServices.GetService<ILogger<Program>>();
         var cacheService = httpContext.RequestServices.GetService<ICacheService>();
         var userEmail = ValidateUserIdentity(httpContext);
         var contactService = httpContext.RequestServices.GetRequiredService<IContactService>();
@@ -49,7 +49,7 @@ public static class AuthorizationMiddleware
             return;
         }
 
-        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext, logger))
+        if (!await CheckClaims(requiredClaims, userEmail, accountId, contactId, httpContext))
         {
             return;
         }
@@ -91,7 +91,7 @@ public static class AuthorizationMiddleware
     }
 
 
-    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext, ILogger logger)
+    private static async Task<bool> CheckClaims(List<string> requiredClaims, string userEmail, int? accountId, string? contactId, HttpContext httpContext)
     {
         if (requiredClaims.Count != 0)
         {
@@ -105,7 +105,8 @@ public static class AuthorizationMiddleware
             }
 
             var userPermissionService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
-            var permissions = await userPermissionService!.GetAllContactAuthorizationAsync(int.Parse(contactId!), accountId) ?? [];
+            var parsedContactId = int.Parse(contactId!);
+            var permissions = await userPermissionService.GetAllContactAuthorizationAsync(parsedContactId, accountId) ?? [];
 
             if (!permissions.Any(x => requiredClaims.Contains(x)))
             {

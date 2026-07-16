@@ -116,6 +116,9 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "RouteClaimsRequirement": {
+        "GET": "COPROS001, CLPCONF002"
+      },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",
         "RoleHandler"
@@ -140,6 +143,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "COPROS001, CLPDOCP001, CLPCONF002"
       },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",
@@ -166,6 +172,9 @@
           "GIGYA MyPulse v2"
         ]
       },
+      "RouteClaimsRequirement": {
+        "GET": "COPROS001, CLPDOCP001, CLPCONF002, CLPCONF001"
+      },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",
         "RoleHandler"
@@ -190,6 +199,9 @@
           "AAD",
           "GIGYA MyPulse v2"
         ]
+      },
+      "RouteClaimsRequirement": {
+        "DELETE": "COPROS001, CLPCONF001"
       },
       "DelegatingHandlers": [
         "ProspectExperienceHandler",

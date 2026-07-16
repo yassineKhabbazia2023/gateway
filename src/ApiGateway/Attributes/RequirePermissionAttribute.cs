@@ -5,7 +5,6 @@ using ApiGateway.Exceptions;
 using ApiGateway.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
@@ -185,7 +184,7 @@ public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
             // Convert GatewayException to appropriate MVC result
             context.Result = ex.StatusCode switch
             {
-                StatusCodes.Status403Forbidden => new ForbidResult(),
+                StatusCodes.Status403Forbidden => BuildForbiddenResult(ex),
                 StatusCodes.Status401Unauthorized => new UnauthorizedResult(),
                 _ => new ObjectResult(new { error = ex.Message })
                 {
@@ -205,6 +204,23 @@ public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
+    }
+
+    /// <summary>
+    /// Builds the Gateway forbidden response without invoking an ASP.NET authentication forbid scheme.
+    /// </summary>
+    /// <param name="exception">The Gateway authorization exception.</param>
+    /// <returns>The 403 response returned to the caller.</returns>
+    private static ObjectResult BuildForbiddenResult(GatewayException exception)
+    {
+        return new ObjectResult(new
+        {
+            ErrorCode = exception.Code,
+            ErrorMessage = exception.Message
+        })
+        {
+            StatusCode = StatusCodes.Status403Forbidden
+        };
     }
 
     /// <summary>

@@ -160,6 +160,11 @@ public class ProspectExperienceController(
 
     [HttpPost("{accountId}/supporting-documents/upload")]
     [Consumes("multipart/form-data")]
+    [RequirePermission(
+        PermissionCodes.ProspectOnboardingCollaboratorAccess,
+        PermissionCodes.ProspectDocumentConsultationClientAccess,
+        PermissionCodes.ProspectConfigurationConsultationClientAccess,
+        CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

@@ -12,4 +12,13 @@ public static class PermissionCodes
 
     /// <summary>Per-entity client right to access the engagement letter.</summary>
     public const string EngagementLetterClientAccess = "CLPCONF006";
+
+    /// <summary>Account-scoped client right to consult Prospect documents.</summary>
+    public const string ProspectDocumentConsultationClientAccess = "CLPDOCP001";
+
+    /// <summary>Account-scoped client right to consult Prospect configuration.</summary>
+    public const string ProspectConfigurationConsultationClientAccess = "CLPCONF002";
+
+    /// <summary>Account-scoped client right to manage Prospect configuration.</summary>
+    public const string ProspectConfigurationManagementClientAccess = "CLPCONF001";
 }

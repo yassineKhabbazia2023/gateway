@@ -1,7 +1,10 @@
 using System.Net;
+using System.Reflection;
 using System.Security.Claims;
+using ApiGateway.Attributes;
 using ApiGateway.Account;
 using ApiGateway.Authorization;
+using ApiGateway.Authorization.Consts;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.FeatureFlags;
@@ -51,6 +54,7 @@ public class ProspectExperienceControllerTests
         _contactService.Setup(service => service.GetContactAsync(UserEmail)).ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = 789, Email = UserEmail });
         _authorizationService = new Mock<IAuthorizationService>();
         _authorizationService.Setup(service => service.GetContactAuthorizationAsync(789, It.IsAny<int?>())).ReturnsAsync(new List<string>());
+        _authorizationService.Setup(service => service.GetContactAuthorizationAsync(789, -1)).ReturnsAsync(new List<string> { "COPROS001" });
         _accountService = new Mock<IAccountService>();
         _accountService.Setup(service => service.CheckContactRoleAsync(789, It.IsAny<int?>(), null)).ReturnsAsync(true);
         _validator = new CreateProspectRequestValidator();
@@ -78,6 +82,10 @@ public class ProspectExperienceControllerTests
         {
             claims.Add(new Claim(ClaimTypes.Role, "Collaborator"));
         }
+        else
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Customer"));
+        }
         var identity = new ClaimsIdentity(
             claims,
             authenticationType: "Test",
@@ -93,12 +101,13 @@ public class ProspectExperienceControllerTests
     /// Creates a controller context containing services required by <see cref="ApiGateway.Helpers.AuthorizationHelper"/>.
     /// </summary>
     /// <returns>The controller context.</returns>
-    private ControllerContext CreateControllerContext()
+    private ControllerContext CreateControllerContext(ClaimsPrincipal? user = null)
     {
         return new ControllerContext
         {
             HttpContext = new DefaultHttpContext
             {
+                User = user ?? _userContext.Object.User,
                 RequestServices = new ServiceCollection()
                     .AddControllers()
                     .Services
@@ -283,7 +292,7 @@ public class ProspectExperienceControllerTests
             new Mock<IEngagementLetterOrchestrationService>().Object,
             _logger.Object)
         {
-            ControllerContext = CreateControllerContext()
+            ControllerContext = CreateControllerContext(nonCollaboratorUserContext.Object.User)
         };
 
         // Act
@@ -765,6 +774,72 @@ public class ProspectExperienceControllerTests
         statusCodeResult.StatusCode.Should().Be(StatusCodes.Status201Created);
     }
 
+    /// <summary>
+    /// Verifies that supporting document upload declares the same permission filter pattern as the exposed Prospect endpoints.
+    /// </summary>
+    [Fact]
+    public void UploadSupportingDocumentAsync_ShouldRequireProspectDocumentPermissions()
+    {
+        var method = typeof(ProspectExperienceController).GetMethod(nameof(ProspectExperienceController.UploadSupportingDocumentAsync));
+
+        var attribute = method!.GetCustomAttribute<RequirePermissionAttribute>();
+
+        attribute.Should().NotBeNull();
+        attribute!.CheckAccountRole.Should().BeFalse();
+        GetRequiredPermissions(attribute).Should().BeEquivalentTo(
+            PermissionCodes.ProspectOnboardingCollaboratorAccess,
+            PermissionCodes.ProspectDocumentConsultationClientAccess,
+            PermissionCodes.ProspectConfigurationConsultationClientAccess);
+    }
+
+    /// <summary>
+    /// Verifies that supporting document upload still enforces the existing account role check inside the action.
+    /// </summary>
+    [Fact]
+    public async Task UploadSupportingDocumentAsync_WhenCallerHasNoAccountRole_Returns403AndDoesNotCallDownstream()
+    {
+        const int accountId = 456;
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("document.pdf");
+        mockFile.Setup(f => f.Length).Returns(1024);
+
+        _featureFlagService
+            .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _accountService
+            .Setup(service => service.CheckContactRoleAsync(789, accountId, null))
+            .ReturnsAsync(false);
+
+        var result = await _controller.UploadSupportingDocumentAsync(accountId, "KBIS", mockFile.Object, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _prospectApiClient.Verify(
+            client => client.GetProspectIdByAccountIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _orchestrationService.Verify(
+            service => service.UploadSupportingDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<string?>(),
+                It.IsAny<UploadSupportingDocumentRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     #endregion
+
+    /// <summary>
+    /// Reads the permission codes configured on a <see cref="RequirePermissionAttribute"/>.
+    /// </summary>
+    /// <param name="attribute">The permission attribute to inspect.</param>
+    /// <returns>The permission codes declared on the attribute.</returns>
+    private static string[] GetRequiredPermissions(RequirePermissionAttribute attribute)
+    {
+        var permissionsField = typeof(RequirePermissionAttribute)
+            .GetField("_permissions", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        return (string[])permissionsField!.GetValue(attribute)!;
+    }
 }
 

@@ -137,6 +137,43 @@ public class RequirePermissionAttributeTests
     }
 
     [Fact]
+    public async Task OnAuthorizationAsync_WithRouteAccountId_ShouldPassRouteAccountIdToPermissionValidation()
+    {
+        // Arrange
+        const string userEmail = "user@example.com";
+        const string contactId = "123";
+        const int routeAccountId = 456;
+        var attribute = new RequirePermissionAttribute("CLPDOCP001", "CLPCONF002")
+        {
+            CheckAccountRole = false
+        };
+
+        var context = CreateAuthorizationContext(
+            userEmail,
+            path: "/gtw/prospect/api/onboarding/456/supporting-documents/upload",
+            routeValues: new RouteValueDictionary { ["accountId"] = routeAccountId.ToString() });
+
+        _mockContactService.Setup(x => x.GetContactIdAsync(userEmail))
+            .ReturnsAsync(contactId);
+
+        _mockValidationService.Setup(x => x.ValidatePermissionsAsync(
+                contactId,
+                It.Is<string[]>(p => p.Length == 2 && p.Contains("CLPDOCP001") && p.Contains("CLPCONF002")),
+                routeAccountId))
+            .ReturnsAsync(true);
+
+        // Act
+        await attribute.OnAuthorizationAsync(context);
+
+        // Assert
+        context.Result.Should().BeNull();
+        _mockValidationService.Verify(x => x.ValidatePermissionsAsync(
+            contactId,
+            It.IsAny<string[]>(),
+            routeAccountId), Times.Once);
+    }
+
+    [Fact]
     public async Task OnAuthorizationAsync_WithOrLogic_WhenUserHasNoPermissions_ShouldReturnForbidden()
     {
         // Arrange
@@ -162,7 +199,13 @@ public class RequirePermissionAttributeTests
         await attribute.OnAuthorizationAsync(context);
 
         // Assert
-        context.Result.Should().BeOfType<ForbidResult>();
+        var result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.PermissionRequiredCode,
+            ErrorMessage = Errors.PermissionRequiredMessage
+        });
     }
 
     [Fact]
@@ -266,7 +309,13 @@ public class RequirePermissionAttributeTests
         await attribute.OnAuthorizationAsync(context);
 
         // Assert
-        context.Result.Should().BeOfType<ForbidResult>();
+        var result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.PermissionRequiredCode,
+            ErrorMessage = Errors.PermissionRequiredMessage
+        });
     }
 
     [Fact]
@@ -295,7 +344,13 @@ public class RequirePermissionAttributeTests
         await attribute.OnAuthorizationAsync(context);
 
         // Assert
-        context.Result.Should().BeOfType<ForbidResult>();
+        var result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.PermissionRequiredCode,
+            ErrorMessage = Errors.PermissionRequiredMessage
+        });
     }
 
     #endregion
@@ -597,7 +652,7 @@ public class RequirePermissionAttributeTests
     #region Exception Handling Tests
 
     [Fact]
-    public async Task OnAuthorizationAsync_WhenGatewayException403_ShouldReturnForbidResult()
+    public async Task OnAuthorizationAsync_WhenGatewayException403_ShouldReturnForbiddenObjectResult()
     {
         // Arrange
         var userEmail = "user@example.com";
@@ -622,7 +677,13 @@ public class RequirePermissionAttributeTests
         await attribute.OnAuthorizationAsync(context);
 
         // Assert
-        context.Result.Should().BeOfType<ForbidResult>();
+        var result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Value.Should().BeEquivalentTo(new
+        {
+            ErrorCode = Errors.PermissionRequiredCode,
+            ErrorMessage = Errors.PermissionRequiredMessage
+        });
     }
 
     [Fact]
