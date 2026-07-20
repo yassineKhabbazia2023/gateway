@@ -13,6 +13,9 @@ public static class PermissionCodes
     /// <summary>Per-entity client right to access the engagement letter.</summary>
     public const string EngagementLetterClientAccess = "CLPCONF006";
 
+    /// <summary>Per-entity client right to access the SEPA payment preferences.</summary>
+    public const string SepaPaymentPreferenceClientAccess = "CLPCONF005";
+
     /// <summary>Account-scoped client right to consult Prospect documents.</summary>
     public const string ProspectDocumentConsultationClientAccess = "CLPDOCP001";
 

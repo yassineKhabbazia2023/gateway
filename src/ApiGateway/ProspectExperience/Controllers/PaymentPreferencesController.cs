@@ -1,3 +1,5 @@
+using ApiGateway.Attributes;
+using ApiGateway.Authorization.Consts;
 using ApiGateway.Contact;
 using ApiGateway.Identity.context;
 using ApiGateway.Identity.Extensions;
@@ -33,6 +35,7 @@ public sealed class PaymentPreferencesController(
     /// <response code="200">Returns the current payment preference.</response>
     /// <response code="404">The prospect is not found.</response>
     [HttpGet]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.SepaPaymentPreferenceClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentPreferenceResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PaymentPreferenceResponse>> GetAsync(
@@ -65,6 +68,7 @@ public sealed class PaymentPreferencesController(
     /// <response code="200">Returns the signed SEPA mandate as a binary stream.</response>
     /// <response code="404">The prospect or the signed mandate is not found.</response>
     [HttpGet("sepa/content")]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.SepaPaymentPreferenceClientAccess, CheckAccountRole = false)]
     [Produces("application/octet-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -103,6 +107,7 @@ public sealed class PaymentPreferencesController(
     /// <response code="400">The authenticated user email is unavailable.</response>
     /// <response code="404">The prospect or the contact is not found.</response>
     [HttpPost("other")]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.SepaPaymentPreferenceClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -156,6 +161,7 @@ public sealed class PaymentPreferencesController(
     /// <response code="502">The Mandat service failed to generate the mandate.</response>
     [HttpPost("sepa")]
     [Consumes("multipart/form-data")]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.SepaPaymentPreferenceClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SepaPaymentPreferenceResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -242,6 +248,7 @@ public sealed class PaymentPreferencesController(
     /// <response code="204">The payment preference and onboarding step were reset.</response>
     /// <response code="404">The prospect or the payment preference is not found.</response>
     [HttpDelete]
+    [RequirePermission(PermissionCodes.ProspectOnboardingCollaboratorAccess, PermissionCodes.SepaPaymentPreferenceClientAccess, CheckAccountRole = false)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetAsync(

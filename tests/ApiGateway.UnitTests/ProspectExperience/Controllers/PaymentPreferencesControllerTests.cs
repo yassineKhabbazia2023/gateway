@@ -1,6 +1,9 @@
+using System.Reflection;
 using System.Security.Claims;
 using ApiGateway.Account;
+using ApiGateway.Attributes;
 using ApiGateway.Authorization;
+using ApiGateway.Authorization.Consts;
 using ApiGateway.Contact;
 using ContactModel = ApiGateway.Contact.Models.Contact;
 using ApiGateway.Identity.context;
@@ -663,6 +666,25 @@ public sealed class PaymentPreferencesControllerTests
             Iban = "FR7630006000011234567890189",
             Bic = "AGRIFRPP"
         };
+    }
+
+    // ---- RequirePermission attribute coverage ----
+
+    [Theory]
+    [InlineData(nameof(PaymentPreferencesController.GetAsync))]
+    [InlineData(nameof(PaymentPreferencesController.DownloadSignedSepaMandateAsync))]
+    [InlineData(nameof(PaymentPreferencesController.SetOtherAsync))]
+    [InlineData(nameof(PaymentPreferencesController.SetSepaAsync))]
+    [InlineData(nameof(PaymentPreferencesController.ResetAsync))]
+    public void Action_ShouldHaveRequirePermissionAttribute(string methodName)
+    {
+        var method = typeof(PaymentPreferencesController).GetMethod(methodName);
+
+        var attribute = method!.GetCustomAttribute<RequirePermissionAttribute>();
+
+        attribute.Should().NotBeNull();
+        // Role-on-account is already enforced by ProspectAccountAuthorizationHelper in the action body.
+        attribute!.CheckAccountRole.Should().BeFalse();
     }
 }
 
