@@ -36,7 +36,6 @@ public class ProspectExperienceController(
 {
     [HttpPost("currentuser")]
     [ProducesResponseType(typeof(ProspectListItem), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -48,21 +47,32 @@ public class ProspectExperienceController(
         var validationResult = await createProspectValidator.ValidateAsync(request, ct);
         if (!validationResult.IsValid)
         {
+            var fieldErrors = validationResult.Errors
+                .GroupBy(error => error.PropertyName)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(error => error.ErrorMessage).ToArray());
+
             logger.LogError(
                 "Validation failed for prospect-creation endpoint. ServiceName: {ServiceName}, OperationName: {OperationName}, Route: {Route}, Siret: {Siret}, ValidationErrors: {@ValidationErrors}",
                 "Pulse.Back.Gateway",
                 nameof(CreateProspect),
                 HttpContext.Request.Path.Value,
                 request.Siret,
-                validationResult.Errors
-                    .GroupBy(error => error.PropertyName)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.Select(error => error.ErrorMessage).ToArray()));
-            return BadRequest(new ErrorResponse
+                fieldErrors);
+
+            var detailedMessage = string.Join(
+                " ",
+                validationResult.Errors.Select(error => error.ErrorMessage).Distinct());
+
+            var errorCode = validationResult.Errors.Any(error => error.ErrorCode == Errors.ProspectSignatoryEmailDomainForbiddenCode)
+                ? Errors.ProspectSignatoryEmailDomainForbiddenCode
+                : Errors.ProspectBadRequestCode;
+
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, new ErrorResponse
             {
-                ErrorCode = Errors.InvalidRequestCode,
-                ErrorMessage = Errors.InvalidRequestMessage
+                ErrorCode = errorCode,
+                ErrorMessage = $"{Errors.ProspectBadRequestMessage} {detailedMessage}"
             });
         }
 

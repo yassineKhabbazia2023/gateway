@@ -104,5 +104,8 @@ namespace ApiGateway.Exceptions
 
         public static readonly string ContactResolutionFailedCode = "GTW035";
         public static readonly string ContactResolutionFailedMessage = "La résolution du contact a échoué : le service Contact a répondu {0}.";
+
+        public static readonly string ProspectSignatoryEmailDomainForbiddenCode = "GTW036";
+        public static readonly string ProspectSignatoryEmailDomainForbiddenMessage = "La création d'un prospect avec une adresse email '@rydge.fr' est interdite.";
     }
 }

@@ -1,3 +1,4 @@
+using ApiGateway.Exceptions;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Validators;
 using FluentAssertions;
@@ -35,7 +36,8 @@ public class SignatoryDtoValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
             e.PropertyName == nameof(SignatoryDto.Email) &&
-            e.ErrorMessage == "La création d'un prospect avec une adresse email '@rydge.fr' est interdite.");
+            e.ErrorMessage == "La création d'un prospect avec une adresse email '@rydge.fr' est interdite." &&
+            e.ErrorCode == Errors.ProspectSignatoryEmailDomainForbiddenCode);
     }
 
     [Fact]

@@ -143,6 +143,51 @@ public class ProspectExperienceControllerTests
     };
 
     [Fact]
+    public async Task CreateProspect_WhenValidationFails_Returns422WithDetailedMessageAndDoesNotCallOrchestration()
+    {
+        // Arrange
+        var request = BuildRequest();
+        request.Siret = string.Empty;
+        request.LegalForm = string.Empty;
+
+        // Act
+        var result = await _controller.CreateProspect(request, CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        var errorResponse = objectResult.Value.Should().BeOfType<Pulse.ExceptionMiddleware.Model.ErrorResponse>().Subject;
+        errorResponse.ErrorCode.Should().Be(Errors.ProspectBadRequestCode);
+        errorResponse.ErrorMessage.Should().Contain(Errors.ProspectBadRequestMessage);
+        errorResponse.ErrorMessage.Should().Contain("Le SIRET est requis.");
+        errorResponse.ErrorMessage.Should().Contain("La forme juridique est requise.");
+        _orchestrationService.Verify(
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateProspect_WhenSignatoryEmailUsesRydgeDomain_Returns422WithSpecificErrorCode()
+    {
+        // Arrange
+        var request = BuildRequest();
+        request.Signatory.Email = "jean.dupont@rydge.fr";
+
+        // Act
+        var result = await _controller.CreateProspect(request, CancellationToken.None);
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        var errorResponse = objectResult.Value.Should().BeOfType<Pulse.ExceptionMiddleware.Model.ErrorResponse>().Subject;
+        errorResponse.ErrorCode.Should().Be(Errors.ProspectSignatoryEmailDomainForbiddenCode);
+        errorResponse.ErrorMessage.Should().Contain(Errors.ProspectSignatoryEmailDomainForbiddenMessage);
+        _orchestrationService.Verify(
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task CreateProspect_WhenFeatureFlagDisabled_Returns403AndDoesNotCallOrchestration()
     {
         // Arrange
