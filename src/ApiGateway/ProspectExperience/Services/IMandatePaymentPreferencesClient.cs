@@ -16,6 +16,18 @@ public interface IMandatePaymentPreferencesClient
     Task<MandatePaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct);
 
     /// <summary>
+    /// Extracts structured banking details from an IBAN and BIC through Mandat.
+    /// </summary>
+    /// <param name="iban">The IBAN submitted with the SEPA mandate.</param>
+    /// <param name="bic">The BIC submitted with the SEPA mandate.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The extracted banking details, or null when Mandat rejects the identifiers.</returns>
+    Task<MandateBankDetailsExtractionResponse?> ExtractBankDetailsAsync(
+        string iban,
+        string bic,
+        CancellationToken ct);
+
+    /// <summary>
     /// Marks the latest account SEPA mandate as sent to Akuiteo.
     /// </summary>
     /// <param name="accountId">The account identifier.</param>

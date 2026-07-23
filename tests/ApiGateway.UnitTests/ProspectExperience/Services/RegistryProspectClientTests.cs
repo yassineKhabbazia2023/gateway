@@ -268,4 +268,149 @@ public class RegistryProspectClientTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that extracted banking information is posted as the Registry collection contract.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAkuiteoBankingInformationAsync_WhenRegistrySucceeds_SendsFullPayload()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        HttpRequestMessage? captured = null;
+        string? body = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+        var bankingInformation = new AkuiteoBankingInformationRequest
+        {
+            Sepa = new AkuiteoSepaRequest
+            {
+                BankDetails = new AkuiteoBankDetailsRequest
+                {
+                    Entity = "30006",
+                    Counter = "00001",
+                    AccountNumber = "12345678901",
+                    Key = "89",
+                    Domiciliation = "AGRI"
+                },
+                Bic = new AkuiteoBicRequest
+                {
+                    Country = "FR",
+                    Bank = "AGRI",
+                    Location = "FR",
+                    Branch = "PP"
+                },
+                Iban = new AkuiteoIbanRequest
+                {
+                    Country = "FR",
+                    Key = "76",
+                    AccountNumber = "30006000011234567890189"
+                }
+            },
+            Action = "ADD"
+        };
+
+        var result = await client.UpdateAkuiteoBankingInformationAsync(
+            42,
+            bankingInformation,
+            CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://registry.test/api/akuiteo/account/42/banking-informations");
+        using var payload = JsonDocument.Parse(body!);
+        var items = payload.RootElement.EnumerateArray().ToArray();
+        items.Should().ContainSingle();
+        var item = items[0];
+        item.GetProperty("action").GetString().Should().Be("ADD");
+        item.GetProperty("noneSepa").ValueKind.Should().Be(JsonValueKind.Null);
+        item.GetProperty("sepa").GetProperty("bankDetails").GetProperty("entity").GetString().Should().Be("30006");
+        item.GetProperty("sepa").GetProperty("bic").GetProperty("bank").GetString().Should().Be("AGRI");
+        item.GetProperty("sepa").GetProperty("iban").GetProperty("accountNumber").GetString()
+            .Should().Be("30006000011234567890189");
+    }
+
+    /// <summary>
+    /// Verifies that Registry banking-information failures are reported to the orchestration.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAkuiteoBankingInformationAsync_WhenRegistryFails_ReturnsFalse()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Conflict)
+        {
+            Content = new StringContent("""{"title":"invalid banking information"}""")
+        };
+        var (client, _) = CreateClient(response);
+
+        var result = await client.UpdateAkuiteoBankingInformationAsync(
+            42,
+            new AkuiteoBankingInformationRequest { Sepa = new AkuiteoSepaRequest(), Action = "ADD" },
+            CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that the account PATCH sends exactly the direct-debit payload required by Akuiteo.
+    /// </summary>
+    [Fact]
+    public async Task PatchAkuiteoAccountPaymentMethodAsync_WhenRegistrySucceeds_SendsExactPayload()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        HttpRequestMessage? captured = null;
+        string? body = null;
+        var (client, _) = CreateClient(response, request =>
+        {
+            captured = request;
+            body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+        var request = new AkuiteoAccountPaymentMethodRequest
+        {
+            ConditionOfPayment = new AkuiteoConditionOfPaymentRequest
+            {
+                DeadLine = string.Empty,
+                Term = string.Empty,
+                Day = 0
+            },
+            MethodOfPayment = "DIRECT_DEBIT"
+        };
+
+        var result = await client.PatchAkuiteoAccountPaymentMethodAsync(42, request, CancellationToken.None);
+
+        result.Should().BeTrue();
+        captured!.Method.Should().Be(HttpMethod.Patch);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://registry.test/api/akuiteo/account/42");
+        using var payload = JsonDocument.Parse(body!);
+        payload.RootElement.EnumerateObject().Select(property => property.Name)
+            .Should().Equal("conditionOfPayment", "methodOfPayment");
+        var condition = payload.RootElement.GetProperty("conditionOfPayment");
+        condition.EnumerateObject().Select(property => property.Name)
+            .Should().Equal("deadLine", "term", "day");
+        condition.GetProperty("deadLine").GetString().Should().BeEmpty();
+        condition.GetProperty("term").GetString().Should().BeEmpty();
+        condition.GetProperty("day").GetInt32().Should().Be(0);
+        payload.RootElement.GetProperty("methodOfPayment").GetString().Should().Be("DIRECT_DEBIT");
+    }
+
+    /// <summary>
+    /// Verifies that Registry account-patch failures are reported to the orchestration.
+    /// </summary>
+    [Fact]
+    public async Task PatchAkuiteoAccountPaymentMethodAsync_WhenRegistryFails_ReturnsFalse()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Conflict)
+        {
+            Content = new StringContent("""{"title":"invalid account patch"}""")
+        };
+        var (client, _) = CreateClient(response);
+
+        var result = await client.PatchAkuiteoAccountPaymentMethodAsync(
+            42,
+            new AkuiteoAccountPaymentMethodRequest(),
+            CancellationToken.None);
+
+        result.Should().BeFalse();
+    }
+
 }

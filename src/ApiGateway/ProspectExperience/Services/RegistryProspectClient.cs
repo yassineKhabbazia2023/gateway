@@ -96,6 +96,42 @@ public class RegistryProspectClient(
         return false;
     }
 
+    /// <inheritdoc />
+    public async Task<bool> UpdateAkuiteoBankingInformationAsync(
+        int accountId,
+        AkuiteoBankingInformationRequest request,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/akuiteo/account/{accountId}/banking-informations",
+            new[] { request },
+            JsonOptions,
+            ct);
+
+        return IsSuccessfulAccountOperation(
+            response,
+            accountId,
+            "banking information update");
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> PatchAkuiteoAccountPaymentMethodAsync(
+        int accountId,
+        AkuiteoAccountPaymentMethodRequest request,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PatchAsJsonAsync(
+            $"api/akuiteo/account/{accountId}",
+            request,
+            JsonOptions,
+            ct);
+
+        return IsSuccessfulAccountOperation(
+            response,
+            accountId,
+            "payment method update");
+    }
+
     /// <summary>
     /// Sends the Registry document upload request to Akuiteo.
     /// </summary>
@@ -114,6 +150,31 @@ public class RegistryProspectClient(
             $"api/akuiteo/account/{Uri.EscapeDataString(accountNumber)}/documents",
             multipartContent,
             ct);
+    }
+
+    /// <summary>
+    /// Maps a Registry Akuiteo account-operation response to the orchestration result.
+    /// </summary>
+    /// <param name="response">The Registry response.</param>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="operation">The account operation description.</param>
+    /// <returns>True for a successful response; otherwise false.</returns>
+    private bool IsSuccessfulAccountOperation(
+        HttpResponseMessage response,
+        int accountId,
+        string operation)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
+        }
+
+        logger.LogWarning(
+            "Registry Akuiteo {Operation} failed. AccountId: {AccountId}, StatusCode: {StatusCode}",
+            operation,
+            accountId,
+            (int)response.StatusCode);
+        return false;
     }
 
     private static object BuildContactTypes(IEnumerable<string>? contactTypes)

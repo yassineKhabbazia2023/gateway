@@ -130,7 +130,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 RibDocumentId = 123,
                 SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
                 SignedMandateContentType = "application/pdf",
-                SignedMandateFileName = "signed.pdf"
+                SignedMandateFileName = "signed.pdf",
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP"
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -169,6 +171,44 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Callback(() => calls.Add("save-document-id"))
             .ReturnsAsync(true);
         _mandateClient
+            .Setup(client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("extract-bank-details"))
+            .ReturnsAsync(CreateExtractedBankDetails());
+        _registryClient
+            .Setup(client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.Is<AkuiteoBankingInformationRequest>(candidate =>
+                    candidate.Action == "ADD"
+                    && candidate.Sepa.BankDetails.Entity == "30006"
+                    && candidate.Sepa.BankDetails.Counter == "00001"
+                    && candidate.Sepa.BankDetails.AccountNumber == "12345678901"
+                    && candidate.Sepa.BankDetails.Key == "89"
+                    && candidate.Sepa.BankDetails.Domiciliation == "AGRI"
+                    && candidate.Sepa.Bic.Country == "FR"
+                    && candidate.Sepa.Bic.Bank == "AGRI"
+                    && candidate.Sepa.Bic.Location == "FR"
+                    && candidate.Sepa.Bic.Branch == "PP"
+                    && candidate.Sepa.Iban.Country == "FR"
+                    && candidate.Sepa.Iban.Key == "76"
+                    && candidate.Sepa.Iban.AccountNumber == "30006000011234567890189"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("update-banking-information"))
+            .ReturnsAsync(true);
+        _registryClient
+            .Setup(client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                42,
+                It.Is<AkuiteoAccountPaymentMethodRequest>(candidate =>
+                    candidate.ConditionOfPayment.DeadLine == string.Empty
+                    && candidate.ConditionOfPayment.Term == string.Empty
+                    && candidate.ConditionOfPayment.Day == 0
+                    && candidate.MethodOfPayment == "DIRECT_DEBIT"),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("patch-payment-method"))
+            .ReturnsAsync(true);
+        _mandateClient
             .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
             .Callback(() => calls.Add("mark-sent"))
             .ReturnsAsync(true);
@@ -205,6 +245,24 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _mandateClient.Verify(client => client.SaveSignedMandateDocumentIdAsync(42, It.IsAny<CancellationToken>(), "456"), Times.Once);
+        _mandateClient.Verify(
+            client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _registryClient.Verify(
+            client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _registryClient.Verify(
+            client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                42,
+                It.IsAny<AkuiteoAccountPaymentMethodRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
         _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
         _prospectService.Verify(
             service => service.CompleteStepAsync(
@@ -218,8 +276,51 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             "signed-mandate-prospect",
             "save-document-id",
             "signed-mandate-akuiteo",
+            "extract-bank-details",
+            "update-banking-information",
+            "patch-payment-method",
             "mark-sent",
             "complete-step");
+    }
+
+    /// <summary>
+    /// Verifies that signed-mandate finalization stops when Mandat omits the persisted bank identifiers.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenSignedMandateBankIdentifiersAreMissing_DoesNotStartFinalization()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+            });
+
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _prospectClient.Verify(
+            client => client.GetDocumentAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.ExtractBankDetailsAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -238,7 +339,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 PaymentType = "MANDATE_SEPA",
                 AccountId = 42,
                 RibDocumentId = 123,
-                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -285,7 +388,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 PaymentType = "MANDATE_SEPA",
                 AccountId = 42,
                 RibDocumentId = 123,
-                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -345,7 +450,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 PaymentType = "MANDATE_SEPA",
                 AccountId = 42,
                 RibDocumentId = 123,
-                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -411,7 +518,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 RibDocumentId = 123,
                 SignedMandateDocumentId = "456",
                 SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
-                SignedMandateContentType = "application/pdf"
+                SignedMandateContentType = "application/pdf",
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -423,7 +532,27 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
             .Setup(client => client.UploadAkuiteoDocumentAsync("AK-001", It.IsAny<ProspectDocumentContentResponse>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _mandateClient
-            .Setup(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()))
+            .Setup(client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateExtractedBankDetails());
+        _registryClient
+            .Setup(client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _registryClient
+            .Setup(client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                42,
+                It.IsAny<AkuiteoAccountPaymentMethodRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _mandateClient
+            .Setup(client => client.MarkSentToAkuiteoAsync(
+                42,
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
@@ -442,7 +571,11 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _mandateClient.Verify(
             client => client.SaveSignedMandateDocumentIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>(), It.IsAny<string>()),
             Times.Never);
-        _mandateClient.Verify(client => client.MarkSentToAkuiteoAsync(42, It.IsAny<CancellationToken>()), Times.Once);
+        _mandateClient.Verify(
+            client => client.MarkSentToAkuiteoAsync(
+                42,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     /// <summary>
@@ -461,7 +594,9 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 PaymentType = "MANDATE_SEPA",
                 AccountId = 42,
                 RibDocumentId = 123,
-                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6])
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
             });
         _prospectClient
             .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
@@ -734,6 +869,127 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
                 It.IsAny<CancellationToken>()),
             Times.Never);
         _prospectClient.Verify(client => client.MarkPaymentMethodInProgressAsync(10, It.IsAny<CancellationToken>()), Times.Once);
+        _mandateClient.Verify(
+            client => client.ExtractBankDetailsAsync(request.Iban, request.Bic, It.IsAny<CancellationToken>()),
+            Times.Never);
+        _registryClient.Verify(
+            client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _registryClient.Verify(
+            client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                42,
+                It.IsAny<AkuiteoAccountPaymentMethodRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that signed-mandate finalization stops before Registry when Mandat rejects bank-details extraction.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenBankDetailsExtractionFails_DoesNotMarkMandateSent()
+    {
+        SetupSignedMandateReadyForAccountUpdate();
+        _mandateClient
+            .Setup(client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MandateBankDetailsExtractionResponse?)null);
+
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _registryClient.Verify(
+            client => client.UpdateAkuiteoBankingInformationAsync(
+                It.IsAny<int>(),
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that signed-mandate finalization does not patch the payment method when the banking-information update fails.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenBankingInformationUpdateFails_DoesNotPatchPaymentMethod()
+    {
+        SetupSignedMandateReadyForAccountUpdate();
+        _mandateClient
+            .Setup(client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateExtractedBankDetails());
+        _registryClient
+            .Setup(client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _registryClient.Verify(
+            client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                It.IsAny<int>(),
+                It.IsAny<AkuiteoAccountPaymentMethodRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        _mandateClient.Verify(
+            client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that signed-mandate finalization does not mark the mandate sent when the direct-debit patch fails.
+    /// </summary>
+    [Fact]
+    public async Task GetAsync_WhenPaymentMethodPatchFails_DoesNotMarkMandateSent()
+    {
+        SetupSignedMandateReadyForAccountUpdate();
+        _mandateClient
+            .Setup(client => client.ExtractBankDetailsAsync(
+                "FR7630006000011234567890189",
+                "AGRIFRPP",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateExtractedBankDetails());
+        _registryClient
+            .Setup(client => client.UpdateAkuiteoBankingInformationAsync(
+                42,
+                It.IsAny<AkuiteoBankingInformationRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _registryClient
+            .Setup(client => client.PatchAkuiteoAccountPaymentMethodAsync(
+                42,
+                It.IsAny<AkuiteoAccountPaymentMethodRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await _service.GetAsync(10, "user@test.fr", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        _mandateClient.Verify(
+            client => client.MarkSentToAkuiteoAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _prospectService.Verify(
+            service => service.CompleteStepAsync(
+                It.IsAny<int>(),
+                It.IsAny<CompleteStepRequest>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<int>()),
+            Times.Never);
     }
 
     /// <summary>
@@ -945,6 +1201,73 @@ public sealed class PaymentPreferencesOrchestrationServiceTests
         _prospectClient.Verify(
             client => client.ResetStepAsync(10, "PAYMENT_METHOD", It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    /// <summary>
+    /// Configures a signed mandate whose documents are ready for the Akuiteo account updates.
+    /// </summary>
+    private void SetupSignedMandateReadyForAccountUpdate()
+    {
+        _prospectClient
+            .Setup(client => client.GetProspectAccountAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectAccountResponse { ProspectId = 10, AccountId = 42 });
+        _mandateClient
+            .Setup(client => client.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MandatePaymentPreferenceResponse
+            {
+                PaymentType = "MANDATE_SEPA",
+                AccountId = 42,
+                RibDocumentId = 123,
+                SignedMandateDocumentId = "456",
+                SignedMandatePdfBase64 = Convert.ToBase64String([4, 5, 6]),
+                SignedMandateContentType = "application/pdf",
+                Iban = "FR7630006000011234567890189",
+                Bic = "AGRIFRPP",
+            });
+        _prospectClient
+            .Setup(client => client.GetDocumentAsync(10, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProspectDocumentContentResponse([1, 2, 3], "application/pdf", "rib.pdf"));
+        _prospectClient
+            .Setup(client => client.GetAkuiteoAccountNumberByProspectIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("AK-001");
+        _registryClient
+            .Setup(client => client.UploadAkuiteoDocumentAsync(
+                "AK-001",
+                It.IsAny<ProspectDocumentContentResponse>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+    }
+
+    /// <summary>
+    /// Creates a complete Mandat bank-details extraction response.
+    /// </summary>
+    /// <returns>The extracted banking details.</returns>
+    private static MandateBankDetailsExtractionResponse CreateExtractedBankDetails()
+    {
+        return new MandateBankDetailsExtractionResponse
+        {
+            Iban = new MandateExtractedIbanResponse
+            {
+                CountryCode = "FR",
+                CheckDigits = "76",
+                BankAccountPart = "30006000011234567890189"
+            },
+            Rib = new MandateExtractedRibResponse
+            {
+                BankCode = "30006",
+                BranchCode = "00001",
+                AccountNumber = "12345678901",
+                RibKey = "89"
+            },
+            Bic = new MandateExtractedBicResponse
+            {
+                CountryCode = "FR",
+                BankCode = "AGRI",
+                LocationCode = "FR",
+                BranchCode = "PP"
+            },
+            Domiciliation = "AGRI"
+        };
     }
 
     /// <summary>

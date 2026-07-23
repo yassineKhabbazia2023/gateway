@@ -33,6 +33,31 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
     }
 
     /// <inheritdoc />
+    public async Task<MandateBankDetailsExtractionResponse?> ExtractBankDetailsAsync(
+        string iban,
+        string bic,
+        CancellationToken ct)
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            "api/onboarding/bank-details/extract",
+            new MandateBankDetailsExtractionRequest
+            {
+                Iban = iban,
+                Bic = bic
+            },
+            JsonOptions,
+            ct);
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MandateBankDetailsExtractionResponse>(JsonOptions, ct)
+            ?? throw new HttpRequestException("Bank-details extraction response was empty.");
+    }
+
+    /// <inheritdoc />
     public async Task<bool> MarkSentToAkuiteoAsync(int accountId, CancellationToken ct)
     {
         using var response = await httpClient.PostAsync(

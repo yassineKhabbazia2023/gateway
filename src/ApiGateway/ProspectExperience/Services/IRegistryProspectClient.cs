@@ -20,4 +20,27 @@ public interface IRegistryProspectClient
     /// <returns>True when Akuitéo accepted the document; otherwise false.</returns>
     Task<bool> UploadAkuiteoDocumentAsync(string accountNumber, ProspectDocumentContentResponse document, CancellationToken ct);
 
+    /// <summary>
+    /// Adds extracted SEPA banking information to an Akuiteo account through Registry.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="request">The extracted banking-information request.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when Registry accepted the banking information; otherwise false.</returns>
+    Task<bool> UpdateAkuiteoBankingInformationAsync(
+        int accountId,
+        AkuiteoBankingInformationRequest request,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Sets the Akuiteo account payment method to direct debit through Registry.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="request">The exact account payment-method patch.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when Registry accepted the account patch; otherwise false.</returns>
+    Task<bool> PatchAkuiteoAccountPaymentMethodAsync(
+        int accountId,
+        AkuiteoAccountPaymentMethodRequest request,
+        CancellationToken ct);
 }

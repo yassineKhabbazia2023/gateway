@@ -27,7 +27,14 @@ public sealed class MandatePaymentPreferencesClientTests
     {
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new MandatePaymentPreferenceResponse { PaymentType = "OTHER" }, options: CamelCase)
+            Content = JsonContent.Create(
+                new MandatePaymentPreferenceResponse
+                {
+                    PaymentType = "MANDATE_SEPA",
+                    Iban = "FR7630006000011234567890189",
+                    Bic = "AGRIFRPP"
+                },
+                options: CamelCase)
         };
         HttpRequestMessage? captured = null;
         var client = CreateClient(response, request => captured = request);
@@ -35,7 +42,9 @@ public sealed class MandatePaymentPreferencesClientTests
         var result = await client.GetAsync(42, CancellationToken.None);
 
         result.Should().NotBeNull();
-        result!.PaymentType.Should().Be("OTHER");
+        result!.PaymentType.Should().Be("MANDATE_SEPA");
+        result.Iban.Should().Be("FR7630006000011234567890189");
+        result.Bic.Should().Be("AGRIFRPP");
         captured!.Method.Should().Be(HttpMethod.Get);
         captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/42/payment-preferences");
     }
@@ -66,6 +75,99 @@ public sealed class MandatePaymentPreferencesClientTests
         var client = CreateClient(response);
 
         Func<Task> act = () => client.GetAsync(42, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that bank-details extraction posts the request body and returns the typed response.
+    /// </summary>
+    [Fact]
+    public async Task ExtractBankDetailsAsync_WhenMandatAcceptsIdentifiers_ReturnsExtractedDetails()
+    {
+        HttpRequestMessage? captured = null;
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new MandateBankDetailsExtractionResponse
+            {
+                Iban = new MandateExtractedIbanResponse
+                {
+                    CountryCode = "FR",
+                    CheckDigits = "76",
+                    BankAccountPart = "30006000011234567890189"
+                },
+                Rib = new MandateExtractedRibResponse
+                {
+                    BankCode = "30006",
+                    BranchCode = "00001",
+                    AccountNumber = "12345678901",
+                    RibKey = "89"
+                },
+                Bic = new MandateExtractedBicResponse
+                {
+                    CountryCode = "FR",
+                    BankCode = "AGRI",
+                    LocationCode = "FR",
+                    BranchCode = "PP"
+                },
+                Domiciliation = "AGRI"
+            }, options: CamelCase)
+        };
+        var client = CreateClient(response, request => captured = request);
+
+        var result = await client.ExtractBankDetailsAsync(
+            "FR7630006000011234567890189",
+            "AGRIFRPP",
+            CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Rib.BankCode.Should().Be("30006");
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.AbsoluteUri.Should().Be("https://mandate.test/api/onboarding/bank-details/extract");
+        using var payload = JsonDocument.Parse(await captured.Content!.ReadAsStringAsync());
+        payload.RootElement.GetProperty("iban").GetString().Should().Be("FR7630006000011234567890189");
+        payload.RootElement.GetProperty("bic").GetString().Should().Be("AGRIFRPP");
+    }
+
+    /// <summary>
+    /// Verifies that Mandat validation failures are returned as an unavailable extraction result.
+    /// </summary>
+    [Fact]
+    public async Task ExtractBankDetailsAsync_WhenMandatRejectsIdentifiers_ReturnsNull()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.BadRequest));
+
+        var result = await client.ExtractBankDetailsAsync("invalid", "invalid", CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that an empty successful extraction response is treated as a downstream failure.
+    /// </summary>
+    [Fact]
+    public async Task ExtractBankDetailsAsync_WhenResponseIsEmpty_Throws()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create((MandateBankDetailsExtractionResponse?)null, options: CamelCase)
+        };
+        var client = CreateClient(response);
+
+        Func<Task> act = () => client.ExtractBankDetailsAsync("iban", "bic", CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Verifies that unexpected Mandat extraction failures propagate to the Gateway error pipeline.
+    /// </summary>
+    [Fact]
+    public async Task ExtractBankDetailsAsync_WhenMandatFails_Throws()
+    {
+        var client = CreateClient(new HttpResponseMessage(HttpStatusCode.BadGateway));
+
+        Func<Task> act = () => client.ExtractBankDetailsAsync("iban", "bic", CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
     }

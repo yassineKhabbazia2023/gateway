@@ -1,3 +1,4 @@
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Responses;
 using Microsoft.AspNetCore.Http;
@@ -55,7 +56,7 @@ public sealed class PaymentPreferencesOrchestrationService(
 
         if (preference.HasSignedMandate)
         {
-            await UploadSignedSepaDocumentsAsync(prospectId, preference, contactEmail, ct);
+            await FinalizeSignedSepaAsync(prospectId, preference, contactEmail, ct);
         }
 
         return new PaymentPreferenceResponse { PaymentType = preference.PaymentType };
@@ -84,20 +85,76 @@ public sealed class PaymentPreferencesOrchestrationService(
     }
 
     /// <summary>
-    /// Uploads the RIB and signed SEPA mandate to Akuiteo when Mandat reports a newly signed mandate.
+    /// Finalizes a signed SEPA mandate after Mandat reports the signature.
     /// </summary>
     /// <param name="prospectId">The prospect identifier.</param>
     /// <param name="preference">The internal Mandat payment preference response.</param>
     /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private async Task UploadSignedSepaDocumentsAsync(
+    private async Task FinalizeSignedSepaAsync(
         int prospectId,
         MandatePaymentPreferenceResponse preference,
         string? contactEmail,
         CancellationToken ct)
     {
         var accountId = preference.AccountId!.Value;
+        var finalized = await FinalizeSignedSepaCoreAsync(
+            prospectId,
+            preference,
+            contactEmail,
+            ct);
+        if (!finalized)
+        {
+            return;
+        }
+
+        var marked = await mandateClient.MarkSentToAkuiteoAsync(accountId, ct);
+        if (!marked)
+        {
+            logger.LogWarning(
+                "Mandat did not mark SEPA mandate as sent to Akuiteo for account {AccountId}",
+                accountId);
+            return;
+        }
+
+        await prospectService.CompleteStepAsync(
+            accountId,
+            new Models.Requests.CompleteStepRequest { StepName = PaymentMethodStepName },
+            ct,
+            SystemUserId);
+
+        logger.LogInformation(
+            "Completed PaymentMethod step for account {AccountId} after signed SEPA finalization",
+            accountId);
+    }
+
+    /// <summary>
+    /// Executes the signed SEPA document and account operations owned by one Mandat finalization lease.
+    /// </summary>
+    /// <param name="prospectId">The prospect identifier.</param>
+    /// <param name="preference">The signed Mandat payment preference response.</param>
+    /// <param name="contactEmail">The authenticated user email used for document audit headers.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when every Akuiteo operation succeeded; otherwise false.</returns>
+    private async Task<bool> FinalizeSignedSepaCoreAsync(
+        int prospectId,
+        MandatePaymentPreferenceResponse preference,
+        string? contactEmail,
+        CancellationToken ct)
+    {
+        var accountId = preference.AccountId!.Value;
+        var iban = preference.Iban;
+        var bic = preference.Bic;
+        if (string.IsNullOrWhiteSpace(iban)
+            || string.IsNullOrWhiteSpace(bic))
+        {
+            logger.LogWarning(
+                "Cannot finalize signed SEPA mandate for account {AccountId}: Mandat did not return the persisted IBAN and BIC",
+                accountId);
+            return false;
+        }
+
         logger.LogInformation(
             "Starting signed SEPA orchestration for prospect {ProspectId}, account {AccountId}, ribDocumentId {RibDocumentId}, signedMandateDocumentId {SignedMandateDocumentId}",
             prospectId,
@@ -112,7 +169,7 @@ public sealed class PaymentPreferencesOrchestrationService(
                 "Cannot upload signed SEPA documents for account {AccountId}: RIB document {DocumentId} was not found",
                 accountId,
                 preference.RibDocumentId.Value);
-            return;
+            return false;
         }
 
         logger.LogInformation(
@@ -127,7 +184,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         if (string.IsNullOrWhiteSpace(accountNumber))
         {
             logger.LogWarning("Cannot upload signed SEPA documents for account {AccountId}: Akuiteo account number was not found", accountId);
-            return;
+            return false;
         }
 
         var signedMandateContent = Convert.FromBase64String(preference.SignedMandatePdfBase64!);
@@ -140,7 +197,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         if (!ribUploaded)
         {
             logger.LogWarning("RIB Akuiteo upload failed for signed SEPA documents on account {AccountId}", accountId);
-            return;
+            return false;
         }
 
         logger.LogInformation(
@@ -160,7 +217,7 @@ public sealed class PaymentPreferencesOrchestrationService(
             ct);
         if (!signedMandateProspectDocumentId.HasValue)
         {
-            return;
+            return false;
         }
 
         var mandate = new ProspectDocumentContentResponse(
@@ -172,7 +229,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         if (!mandateUploaded)
         {
             logger.LogWarning("Akuiteo upload failed for signed SEPA documents on account {AccountId}", accountId);
-            return;
+            return false;
         }
 
         logger.LogInformation(
@@ -181,24 +238,74 @@ public sealed class PaymentPreferencesOrchestrationService(
             accountId,
             accountNumber);
 
-        var marked = await mandateClient.MarkSentToAkuiteoAsync(accountId, ct);
-        if (!marked)
+        var paymentDetailsUpdated = await UpdateSepaPaymentDetailsAsync(
+            accountId,
+            iban,
+            bic,
+            ct);
+        if (!paymentDetailsUpdated)
         {
-            logger.LogWarning("Mandat did not mark SEPA mandate as sent to Akuiteo for account {AccountId}", accountId);
-            return;
+            return false;
         }
 
-        logger.LogInformation("Marked SEPA mandate as sent to Akuiteo for account {AccountId}", accountId);
+        return true;
+    }
 
-        await prospectService.CompleteStepAsync(
+    /// <summary>
+    /// Extracts and sends the SEPA banking details, then activates direct debit in Akuiteo.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="iban">The persisted IBAN returned by Mandat for the signed mandate.</param>
+    /// <param name="bic">The persisted BIC returned by Mandat for the signed mandate.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>True when both Registry account operations succeed; otherwise false.</returns>
+    private async Task<bool> UpdateSepaPaymentDetailsAsync(
+        int accountId,
+        string iban,
+        string bic,
+        CancellationToken ct)
+    {
+        var extractedBankDetails = await mandateClient.ExtractBankDetailsAsync(
+            iban,
+            bic,
+            ct);
+        if (extractedBankDetails is null)
+        {
+            logger.LogWarning(
+                "Mandat rejected bank-details extraction for SEPA payment preference on account {AccountId}",
+                accountId);
+            return false;
+        }
+
+        var bankingInformation = AkuiteoBankingInformationMapper.ToBankingInformationRequest(extractedBankDetails);
+        var bankingInformationUpdated = await registryClient.UpdateAkuiteoBankingInformationAsync(
             accountId,
-            new Models.Requests.CompleteStepRequest { StepName = PaymentMethodStepName },
-            ct,
-            SystemUserId);
+            bankingInformation,
+            ct);
+        if (!bankingInformationUpdated)
+        {
+            logger.LogWarning(
+                "Registry did not update Akuiteo banking information for SEPA payment preference on account {AccountId}",
+                accountId);
+            return false;
+        }
+
+        var paymentMethodUpdated = await registryClient.PatchAkuiteoAccountPaymentMethodAsync(
+            accountId,
+            AkuiteoBankingInformationMapper.ToDirectDebitPaymentMethodRequest(),
+            ct);
+        if (!paymentMethodUpdated)
+        {
+            logger.LogWarning(
+                "Registry did not set direct debit for SEPA payment preference on account {AccountId}",
+                accountId);
+            return false;
+        }
 
         logger.LogInformation(
-            "Completed PaymentMethod step for account {AccountId} after SEPA mandate signature and document upload to Akuiteo",
+            "Updated Akuiteo banking information and direct-debit payment method for SEPA payment preference on account {AccountId}",
             accountId);
+        return true;
     }
 
     /// <summary>
