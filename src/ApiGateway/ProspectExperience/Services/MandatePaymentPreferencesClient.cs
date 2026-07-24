@@ -1,19 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Responses;
 
 namespace ApiGateway.ProspectExperience.Services;
 
 /// <inheritdoc />
-public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMandatePaymentPreferencesClient
+public sealed class MandatePaymentPreferencesClient(
+    HttpClient httpClient,
+    ILogger<MandatePaymentPreferencesClient> logger) : IMandatePaymentPreferencesClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
+    private const int MaximumValidationErrorLength = 512;
+    private const string RedactedBankIdentifier = "[REDACTED]";
+    private const string MissingValidationDetails = "No validation details returned.";
 
     /// <inheritdoc />
     public async Task<MandatePaymentPreferenceResponse?> GetAsync(int accountId, CancellationToken ct)
@@ -28,7 +29,7 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<MandatePaymentPreferenceResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<MandatePaymentPreferenceResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Payment preference response for account {accountId} was empty.");
     }
 
@@ -45,15 +46,20 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
                 Iban = iban,
                 Bic = bic
             },
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
+            var validationError = await ReadSanitizedValidationErrorAsync(response, iban, bic, ct);
+            logger.LogWarning(
+                "Mandat bank-details extraction returned BadRequest ({StatusCode}). ValidationError: {ValidationError}",
+                (int)response.StatusCode,
+                validationError);
             return null;
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<MandateBankDetailsExtractionResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<MandateBankDetailsExtractionResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException("Bank-details extraction response was empty.");
     }
 
@@ -132,7 +138,7 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         using var response = await httpClient.PostAsJsonAsync(
             $"api/onboarding/{accountId}/payment-preferences/sepa",
             request,
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -140,7 +146,7 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
         }
 
         response.EnsureSuccessStatusCode();
-        var sepaResponse = await response.Content.ReadFromJsonAsync<SepaPaymentPreferenceResponse>(JsonOptions, ct)
+        var sepaResponse = await response.Content.ReadFromJsonAsync<SepaPaymentPreferenceResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"SEPA payment preference response for account {accountId} was empty.");
 
         return sepaResponse.SignatureUrl;
@@ -197,6 +203,38 @@ public sealed class MandatePaymentPreferencesClient(HttpClient httpClient) : IMa
             return trimmedContent;
         }
 
-        return JsonSerializer.Deserialize<string>(trimmedContent, JsonOptions);
+        return JsonSerializer.Deserialize<string>(trimmedContent, ProspectExperienceJsonOptions.Default);
+    }
+
+    /// <summary>
+    /// Reads a Mandat validation response while removing bank identifiers and bounding the logged value.
+    /// </summary>
+    /// <param name="response">The Mandat HTTP response.</param>
+    /// <param name="iban">The IBAN value to redact.</param>
+    /// <param name="bic">The BIC value to redact.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A single-line validation error safe for structured logging.</returns>
+    private static async Task<string> ReadSanitizedValidationErrorAsync(
+        HttpResponseMessage response,
+        string iban,
+        string bic,
+        CancellationToken ct)
+    {
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return MissingValidationDetails;
+        }
+
+        var sanitized = responseBody
+            .Replace(iban, RedactedBankIdentifier, StringComparison.OrdinalIgnoreCase)
+            .Replace(bic, RedactedBankIdentifier, StringComparison.OrdinalIgnoreCase);
+        sanitized = string.Join(
+            ' ',
+            sanitized.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+        return sanitized.Length <= MaximumValidationErrorLength
+            ? sanitized
+            : sanitized[..MaximumValidationErrorLength];
     }
 }

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 
@@ -11,12 +11,6 @@ public class RegistryProspectClient(
     HttpClient httpClient,
     ILogger<RegistryProspectClient> logger) : IRegistryProspectClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     public async Task<bool> SiretExistsInAkuiteoAsync(string siret, CancellationToken ct)
     {
         var response = await httpClient.GetAsync($"api/prospects/check-eligibility?siret={Uri.EscapeDataString(siret)}", ct);
@@ -49,9 +43,9 @@ public class RegistryProspectClient(
             request.AccountManagerContactId
         };
 
-        var response = await httpClient.PostAsJsonAsync("api/akuiteo/customers", payload, JsonOptions, ct);
+        var response = await httpClient.PostAsJsonAsync("api/akuiteo/customers", payload, ProspectExperienceJsonOptions.Default, ct);
         response.EnsureSuccessStatusCode();
-        var created = await response.Content.ReadFromJsonAsync<AkuiteoCustomerCreated>(JsonOptions, ct)
+        var created = await response.Content.ReadFromJsonAsync<AkuiteoCustomerCreated>(ProspectExperienceJsonOptions.Default, ct)
                       ?? throw new HttpRequestException("Akuiteo customer creation response was empty.");
         return created;
     }
@@ -72,7 +66,7 @@ public class RegistryProspectClient(
             signatory.MobilePhone
         };
 
-        var response = await httpClient.PostAsJsonAsync("api/akuiteo/contacts", payload, JsonOptions, ct);
+        var response = await httpClient.PostAsJsonAsync("api/akuiteo/contacts", payload, ProspectExperienceJsonOptions.Default, ct);
         response.EnsureSuccessStatusCode();
     }
 
@@ -105,7 +99,7 @@ public class RegistryProspectClient(
         using var response = await httpClient.PostAsJsonAsync(
             $"api/akuiteo/account/{accountId}/banking-informations",
             new[] { request },
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
 
         return IsSuccessfulAccountOperation(
@@ -123,7 +117,7 @@ public class RegistryProspectClient(
         using var response = await httpClient.PatchAsJsonAsync(
             $"api/akuiteo/account/{accountId}",
             request,
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
 
         return IsSuccessfulAccountOperation(

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ApiGateway.ProspectExperience.Constants;
+using ApiGateway.ProspectExperience.Helpers;
 using ApiGateway.ProspectExperience.Models.Contracts;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
@@ -13,18 +14,12 @@ namespace ApiGateway.ProspectExperience.Services;
 
 public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient> logger) : IProspectApiClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     /// <inheritdoc />
     public async Task<InpiCompanyInfo> GetInpiCompanyInfoAsync(string siret, CancellationToken ct)
     {
         var response = await httpClient.GetAsync($"api/accounts/external-companies/{Uri.EscapeDataString(siret)}", ct);
         response.EnsureSuccessStatusCode();
-        var company = await response.Content.ReadFromJsonAsync<ExternalCompanyResponse>(JsonOptions, ct)
+        var company = await response.Content.ReadFromJsonAsync<ExternalCompanyResponse>(ProspectExperienceJsonOptions.Default, ct)
                       ?? throw new HttpRequestException($"External company response for SIRET {siret} was empty.");
         var address = company.Address ?? new ExternalCompanyAddressResponse();
 
@@ -51,7 +46,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<IncompleteProspectCreationState>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<IncompleteProspectCreationState>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Incomplete prospect state response for SIRET {siret} was empty.");
     }
 
@@ -70,7 +65,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<DocumentsToUploadToExternalServiceResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<DocumentsToUploadToExternalServiceResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Document upload plan response for prospect {prospectId} and step {stepName} was empty.");
     }
 
@@ -128,7 +123,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        var upload = await response.Content.ReadFromJsonAsync<ProspectDocumentUploadResponse>(JsonOptions, ct)
+        var upload = await response.Content.ReadFromJsonAsync<ProspectDocumentUploadResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Document upload response for prospect {prospectId} was empty.");
 
         return upload.DocumentId;
@@ -143,7 +138,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         using var response = await httpClient.PostAsJsonAsync(
             $"api/prospects/{prospectId}/documents/upload-result",
             request,
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -151,7 +146,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<DocumentUploadResultResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<DocumentUploadResultResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Document upload result response for prospect {prospectId} was empty.");
     }
 
@@ -165,7 +160,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<ProspectAccountResponse>(JsonOptions, ct)
+        return await response.Content.ReadFromJsonAsync<ProspectAccountResponse>(ProspectExperienceJsonOptions.Default, ct)
             ?? throw new HttpRequestException($"Prospect account response for prospect {prospectId} was empty.");
     }
 
@@ -177,7 +172,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
             ct);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<bool>(JsonOptions, ct);
+        return await response.Content.ReadFromJsonAsync<bool>(ProspectExperienceJsonOptions.Default, ct);
     }
 
     /// <inheritdoc />
@@ -207,7 +202,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         using var response = await httpClient.PostAsJsonAsync(
             $"api/onboarding/{prospectId}/reset-step",
             new { Step = stepName },
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
         response.EnsureSuccessStatusCode();
     }
@@ -236,7 +231,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
                 SignatoryEmail = signatoryEmail,
                 CollabReceiversEmails = collabReceiversEmails
             },
-            JsonOptions,
+            ProspectExperienceJsonOptions.Default,
             ct);
 
         response.EnsureSuccessStatusCode();
@@ -267,7 +262,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/prospects")
         {
-            Content = JsonContent.Create(payload, options: JsonOptions)
+            Content = JsonContent.Create(payload, options: ProspectExperienceJsonOptions.Default)
         };
         if (request.CaseManagerContactId.HasValue)
         {
@@ -276,7 +271,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         var response = await httpClient.SendAsync(httpRequest, ct);
         response.EnsureSuccessStatusCode();
-        var created = await response.Content.ReadFromJsonAsync<CreateProspectApiResponse>(JsonOptions, ct)
+        var created = await response.Content.ReadFromJsonAsync<CreateProspectApiResponse>(ProspectExperienceJsonOptions.Default, ct)
                       ?? throw new HttpRequestException("Prospect creation response was empty.");
 
         logger.LogInformation("Successfully created prospect with ID {ProspectId} for SIRET {Siret}", created.ProspectId, inpi.Siret);
@@ -296,7 +291,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}")
         {
-            Content = JsonContent.Create(payload, options: JsonOptions)
+            Content = JsonContent.Create(payload, options: ProspectExperienceJsonOptions.Default)
         };
         httpRequest.Headers.Add("CurrentUser", contactId.ToString());
 
@@ -363,7 +358,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     {
         using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}/creation-progress")
         {
-            Content = JsonContent.Create(request, options: JsonOptions)
+            Content = JsonContent.Create(request, options: ProspectExperienceJsonOptions.Default)
         };
         httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
 
@@ -382,7 +377,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
     {
         using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"api/prospects/{prospectId}/creation-failure")
         {
-            Content = JsonContent.Create(request, options: JsonOptions)
+            Content = JsonContent.Create(request, options: ProspectExperienceJsonOptions.Default)
         };
         httpRequest.Headers.Add("CurrentUser", currentUserId.ToString());
 
@@ -406,7 +401,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<GetProspectByAccountIdResponse>(JsonOptions, ct);
+        var result = await response.Content.ReadFromJsonAsync<GetProspectByAccountIdResponse>(ProspectExperienceJsonOptions.Default, ct);
         return result?.ProspectId;
     }
 
@@ -420,7 +415,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<GetDetailedProspectResponse>(JsonOptions, ct);
+        var result = await response.Content.ReadFromJsonAsync<GetDetailedProspectResponse>(ProspectExperienceJsonOptions.Default, ct);
         if (result is null)
         {
             throw new HttpRequestException($"Empty response from GET api/prospects/{prospectId}");
@@ -438,7 +433,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<ProspectAkuiteoAccountNumberResponse>(JsonOptions, ct);
+        var result = await response.Content.ReadFromJsonAsync<ProspectAkuiteoAccountNumberResponse>(ProspectExperienceJsonOptions.Default, ct);
         return result?.AccountNumber;
     }
 
@@ -466,7 +461,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+        return await response.Content.ReadFromJsonAsync<T>(ProspectExperienceJsonOptions.Default, ct);
     }
 
     private async Task SendFileAsync(string url, int currentUserId, string? contactEmail, IFormFile file, CancellationToken ct)
@@ -548,7 +543,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
 
         response.EnsureSuccessStatusCode();
 
-        var uploadResponse = await response.Content.ReadFromJsonAsync<UploadSupportingDocumentApiResponse>(JsonOptions, ct);
+        var uploadResponse = await response.Content.ReadFromJsonAsync<UploadSupportingDocumentApiResponse>(ProspectExperienceJsonOptions.Default, ct);
 
         if (uploadResponse is null || uploadResponse.DocumentId == 0)
         {
@@ -581,7 +576,7 @@ public class ProspectApiClient(HttpClient httpClient, ILogger<ProspectApiClient>
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<DocumentRequirementsResponse>(JsonOptions, ct);
+        return await response.Content.ReadFromJsonAsync<DocumentRequirementsResponse>(ProspectExperienceJsonOptions.Default, ct);
     }
 
     /// <inheritdoc />

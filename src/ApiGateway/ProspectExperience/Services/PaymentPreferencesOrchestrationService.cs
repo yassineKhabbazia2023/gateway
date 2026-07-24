@@ -272,7 +272,7 @@ public sealed class PaymentPreferencesOrchestrationService(
         if (extractedBankDetails is null)
         {
             logger.LogWarning(
-                "Mandat rejected bank-details extraction for SEPA payment preference on account {AccountId}",
+                "Mandat returned BadRequest during bank-details extraction for SEPA payment preference on account {AccountId}; see the downstream validation warning for details",
                 accountId);
             return false;
         }

@@ -4,6 +4,8 @@ using System.Text.Json;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Responses;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Services;
@@ -140,6 +142,41 @@ public sealed class MandatePaymentPreferencesClientTests
         var result = await client.ExtractBankDetailsAsync("invalid", "invalid", CancellationToken.None);
 
         result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Verifies that Mandat validation details are logged without exposing bank identifiers.
+    /// </summary>
+    [Fact]
+    public async Task ExtractBankDetailsAsync_WhenMandatReturnsValidationDetails_LogsSanitizedError()
+    {
+        const string iban = "FR7630006000011234567890189";
+        const string bic = "AGRIFRPP";
+        var logger = new Mock<ILogger<MandatePaymentPreferencesClient>>();
+        var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent(
+                $"Invalid IBAN {iban}\r\nand BIC {bic}. {new string('x', 600)}")
+        };
+        var client = CreateClient(response, logger: logger.Object);
+
+        var result = await client.ExtractBankDetailsAsync(iban, bic, CancellationToken.None);
+
+        result.Should().BeNull();
+        logger.Verify(
+            candidate => candidate.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) =>
+                    value.ToString()!.Contains("BadRequest (400)", StringComparison.Ordinal)
+                    && value.ToString()!.Contains("[REDACTED]", StringComparison.Ordinal)
+                    && !value.ToString()!.Contains(iban, StringComparison.Ordinal)
+                    && !value.ToString()!.Contains(bic, StringComparison.Ordinal)
+                    && !value.ToString()!.Contains('\r')
+                    && !value.ToString()!.Contains('\n')),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     /// <summary>
@@ -484,10 +521,12 @@ public sealed class MandatePaymentPreferencesClientTests
     /// </summary>
     /// <param name="response">The HTTP response to return.</param>
     /// <param name="capture">The optional request capture callback.</param>
+    /// <param name="logger">The optional client logger.</param>
     /// <returns>The tested client.</returns>
     private static MandatePaymentPreferencesClient CreateClient(
         HttpResponseMessage response,
-        Action<HttpRequestMessage>? capture = null)
+        Action<HttpRequestMessage>? capture = null,
+        ILogger<MandatePaymentPreferencesClient>? logger = null)
     {
         var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         handler.Protected()
@@ -498,9 +537,11 @@ public sealed class MandatePaymentPreferencesClientTests
             .Callback<HttpRequestMessage, CancellationToken>((request, _) => capture?.Invoke(request))
             .ReturnsAsync(response);
 
-        return new MandatePaymentPreferencesClient(new HttpClient(handler.Object)
-        {
-            BaseAddress = new Uri("https://mandate.test/")
-        });
+        return new MandatePaymentPreferencesClient(
+            new HttpClient(handler.Object)
+            {
+                BaseAddress = new Uri("https://mandate.test/")
+            },
+            logger ?? NullLogger<MandatePaymentPreferencesClient>.Instance);
     }
 }
