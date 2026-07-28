@@ -4,13 +4,9 @@ parameters:
   type: boolean
   default: false
 - name: deployToItg
-  type: string
   displayName: 'Déployer sur ITG'
-  values:
-  - no
-  - itg01
-  - itg02
-  default: 'itg01'
+  type: boolean
+  default: true
 - name: deployToRec
   displayName: 'Déployer sur REC'
   type: boolean
@@ -40,7 +36,7 @@ stages:
 - ${{ if and(parameters.deployToPrd, not(parameters.deployToRec), not(parameters.isHotfix)) }}:
   - 'Deploying to REC is mandatory before deploying to PROD.': error
 
-- ${{ if and(eq(parameters.deployToItg, 'no'), not(parameters.deployToRec), not(parameters.deployToPrd)) }}:
+- ${{ if and(not(parameters.deployToItg), not(parameters.deployToRec), not(parameters.deployToPrd)) }}:
   - 'At least one environment must be chosen.': error
 
 - ${{ if and(parameters.isHotfix, not(startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))) }}:
@@ -100,15 +96,15 @@ stages:
 #                 subscription: ceg-corp-pulse-dev
 #                 serviceConnection: Rydge-dev
 
-- ${{ if ne(parameters.deployToItg, 'no') }}:
+- ${{ if parameters.deployToItg }}:
   - stage: ITG01
-    displayName: 'Integration - ${{ parameters.deployToItg }}'
+    displayName: 'Integration - itg01'
     pool: Pulse-Linux-itg
     dependsOn: Build
     jobs:
     - deployment: deploy
       displayName: 'Updating config'
-      environment: ${{ upper(parameters.deployToItg) }}
+      environment: ITG01
       strategy:
         runOnce:
           deploy:
@@ -117,7 +113,7 @@ stages:
               artifact: Module
             - template: update-config.yaml
               parameters:
-                environment: ${{ parameters.deployToItg }}
+                environment: itg01
                 subscription: ceg-corp-pulse-itg
                 serviceConnection: Rydge-itg
                 squad: ${{ parameters.squad }}

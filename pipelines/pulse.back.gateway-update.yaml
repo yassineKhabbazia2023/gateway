@@ -3,7 +3,7 @@ name: $(Date:yyyyMMdd)$(Rev:.r)-$(SourceBranchName)
 trigger:
   branches:
     include:
-     - main
+      - main
   paths:
     include:
     - src/Config
@@ -17,13 +17,9 @@ parameters:
   type: boolean
   default: false
 - name: deployToItg
-  type: string
   displayName: 'Déployer sur ITG'
-  values:
-  - no
-  - itg01
-  - itg02
-  default: 'itg01'
+  type: boolean
+  default: true
 - name: deployToRec
   displayName: 'Déployer sur REC'
   type: boolean
