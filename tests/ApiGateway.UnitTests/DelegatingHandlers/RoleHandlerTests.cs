@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using System.Net;
 using ApiGateway.Account;
+using ApiGateway.Constants;
 using ApiGateway.DelegatingHandlers;
 
 namespace ApiGateway.UnitTests.DelegatingHandlers;
@@ -136,6 +137,29 @@ public class RoleHandlerTests
     var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
 
     response.StatusCode.Should().Be(HttpStatusCode.OK); // Super admin should pass without role check
+  }
+
+  [Fact]
+  public async Task ShouldSkipRoleCheck_WhenSuperAdminPermissionIsCarriedByGlobalAccount()
+  {
+    var request = new HttpRequestMessage();
+    request.Headers.Add("CurrentUser", "892294");
+    request.RequestUri = new Uri("http://test.com/api/accounts/33372/summary");
+
+    // Nothing on the targeted account: SkipRoleCheck cannot match.
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(892294, 33372))
+        .ReturnsAsync(new List<string>())
+        .Verifiable();
+
+    // COADMI004 is carried by the global account.
+    _authorizationServiceMock.Setup(x => x.GetContactAuthorizationAsync(892294, GlobalsConstants.CollaboratorAccountId))
+        .ReturnsAsync(new List<string> { "COADMI004" })
+        .Verifiable();
+
+    var response = await _roleHandler.TestSendAsync(request, CancellationToken.None);
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    _accountServiceMock.Verify(x => x.CheckContactRoleAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<string>()), Times.Never);
   }
 
   // Test: User has no role on account
