@@ -8,7 +8,11 @@ resources:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/Release/v4.0'
+    ref: 'refs/heads/Release/v5.0'
+  - repository: PulseReview   # alias impose (reference par le template Build-Back)
+    name: 'Pulse.Operations.Review'
+    type: git
+    ref: 'refs/heads/main'
 
 extends:
   template: pipelines/pull-request/back.yaml@Pulse
@@ -17,3 +21,4 @@ extends:
     srcPath: src/ApiGateway/ApiGateway.csproj
     testsPath: tests/**/*Tests.csproj
     sonarExclusions: '**/Program.cs, **/Extensions/**,tests/**'
+    enableAiReview: true

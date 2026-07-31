@@ -1,0 +1,1296 @@
+# Fragment d'architecture — genere par scripts/archgraph/generator.py
+# `managed_by_script` : NE PAS EDITER (regenere a chaque PR).
+# `managed_by_ai` : maintenu par l'agent IA (roles, appels autorises, notes).
+schema: pulse-archgraph/v1
+service: gateway
+repo: Pulse.Back.Gateway
+generated_at: '2026-07-20T10:08:32+00:00'
+managed_by_script:
+  projects:
+  - name: ApiGateway
+    path: src/ApiGateway/ApiGateway.csproj
+    references: []
+  - name: SampleOcelotDemoApi
+    path: SampleOcelotDemoApi/SampleOcelotDemoApi.csproj
+    references: []
+  internal_packages:
+  - name: Pulse.ExceptionMiddleware
+    version: 2.73.41
+  infra:
+  - blob-storage
+  endpoints:
+  - method: POST
+    route: /gtw/authorization/api/authorizations/update
+    controller: AuthorizationController
+  - method: GET
+    route: /gtw/booking/api/enabled/currentuser
+    controller: BookingController
+  - method: GET
+    route: /gtw/connect/api/accounts/{accountId}/summary
+    controller: ConnectController
+  - method: GET
+    route: /gtw/connect/api/get-user-information
+    controller: ConnectController
+  - method: GET
+    route: /gtw/contact/me
+    controller: ContactController
+  - method: POST
+    route: /gtw/password-experience/api/createNewPassword
+    controller: CreatePasswordExperienceController
+  - method: DELETE
+    route: /mocks/delete-mock-response
+    controller: MocksController
+  - method: GET
+    route: /mocks/get-mock-index
+    controller: MocksController
+  - method: POST
+    route: /mocks/modify-mock-response
+    controller: MocksController
+  - method: GET
+    route: /api/ocelot-config
+    controller: OcelotConfigurationController
+  - method: PUT
+    route: /api/ocelot-config
+    controller: OcelotConfigurationController
+  - method: POST
+    route: /gtw/offer/api/subscription/create
+    controller: OfferController
+  - method: DELETE
+    route: /gtw/prospect/api/onboarding/{accountId}/payment-preferences
+    controller: PaymentPreferencesController
+  - method: GET
+    route: /gtw/prospect/api/onboarding/{accountId}/payment-preferences
+    controller: PaymentPreferencesController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/{accountId}/payment-preferences/other
+    controller: PaymentPreferencesController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/{accountId}/payment-preferences/sepa
+    controller: PaymentPreferencesController
+  - method: GET
+    route: /gtw/prospect/api/onboarding/{accountId}/payment-preferences/sepa/content
+    controller: PaymentPreferencesController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/currentuser
+    controller: ProspectExperienceController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/{accountId}/commercial-proposal
+    controller: ProspectExperienceController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/{accountId}/engagement-letter
+    controller: ProspectExperienceController
+  - method: POST
+    route: /gtw/prospect/api/onboarding/{accountId}/supporting-documents/upload
+    controller: ProspectExperienceController
+  - method: PUT
+    route: /gtw/prospect/api/onboarding/{prospectId}/steps/complete
+    controller: ProspectExperienceController
+  - method: GET
+    route: /gtw/userorigin
+    controller: UserOriginController
+  events:
+    publishes: []
+    consumes: []
+    push_topics: []
+    pull_topics: []
+  http_clients:
+  - (default)
+  - BookingClient
+  - PennylaneClient
+  feature_flags:
+  - FeatureFlags
+  - enableApprovedPlatform
+  - isBookingEnabled
+  - isMocksEnabled
+  - isOcelotConfigEnabled
+  - isProspectExperienceEnabled
+  gateway_routes:
+  - upstream: /gtw/entitycreator/api/{everything}
+    downstream: /api/{everything}
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports?accountId={abc}&reportTypeId={dce}
+    downstream: /api/reports?accountId={abc}&reportTypeId={dce}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports/{reportId}/embedToken
+    downstream: /api/reports/{reportId}/embedToken
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports/demoEmbedToken
+    downstream: /api/reports/demoEmbedToken
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports/currentuser
+    downstream: /api/reports/currentuser
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reporttype
+    downstream: /api/reporttype
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/account/currentuser
+    downstream: /api/account/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports/available
+    downstream: /api/reports/available
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports
+    downstream: /api/reports
+    methods:
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports/statistics
+    downstream: /api/reports/statistics
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/reporting/api/reports?accountId={abc}&reportId={def}
+    downstream: /api/reports?accountId={abc}&reportId={def}
+    methods:
+    - PATCH
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/reporting/api/report-errors
+    downstream: /api/report-errors
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/offers/{everything}
+    downstream: /api/offers/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ApprovedPlatformFilterHandler
+  - upstream: /gtw/offer/api/catalog/offers
+    downstream: /api/catalog/offers
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/catalog/offers/{offerId}
+    downstream: /api/catalog/offers/{offerId}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/catalog/{fileName}
+    downstream: /catalogs/{fileName}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/activate-offer/currentuser?accountId={abc}
+    downstream: /api/activate-offer/{abc}
+    methods:
+    - PATCH
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/offer/api/referentials/AccountReferentialInformation
+    downstream: /api/referentials/AccountReferentialInformation
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/prospect/api/referential-infos
+    downstream: /api/referentials/AccountReferentialInformation
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/prospect/api/prospects/check-eligibility
+    downstream: /api/prospects/check-eligibility
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{prospectId}/beneficiaries
+    downstream: /api/prospects/{prospectId}/beneficiaries
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents
+    downstream: /api/prospects/{prospectId}/beneficiaries/{beneficiaryId}/identity-documents
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{accountId}/supporting-documents
+    downstream: /api/prospects/{accountId}/supporting-documents
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{accountId}/documents
+    downstream: /api/prospects/{accountId}/documents
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{accountId}/documents/{documentId}/content
+    downstream: /api/prospects/accounts/{accountId}/documents/{documentId}/content
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{prospectId}/documents/{documentId}
+    downstream: /api/prospects/{prospectId}/documents/{documentId}
+    methods:
+    - DELETE
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/accounts/search
+    downstream: /api/accounts/external-search
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/collab-roles
+    downstream: /api/collab-roles
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{prospectId}/steps
+    downstream: /api/prospects/{prospectId}/steps
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{accountId}/commercial-proposal/content
+    downstream: /api/accounts/{accountId}/commercial-proposal/content
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/onboarding/{accountId}/engagement-letter/content
+    downstream: /api/accounts/{accountId}/engagement-letter/content
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/prospect/api/contacts
+    downstream: /api/contacts?Type=Collaborator
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/offer/api/referentials/hubs
+    downstream: /api/referentials/hubs
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/referentials/offices
+    downstream: /api/referentials/offices
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ventya/api/accounts/{accountId}/hubspot/submissions/currentuser
+    downstream: /api/hubspot/accounts/{accountId}/submissions/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ventya/api/accounts/{accountId}/hubspot/submissions
+    downstream: /api/hubspot/accounts/{accountId}/submissions
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ventya/api/accounts/{accountId}/demat-ready
+    downstream: /api/ventya/accounts/{accountId}/demat-ready
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription?accountId={abc}
+    downstream: /api/subscription?accountId={abc}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription
+    downstream: /api/subscription
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/{subscriptionId}
+    downstream: /api/subscription/{subscriptionId}
+    methods:
+    - GET
+    - PUT
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/{subscriptionId}
+    downstream: /api/subscription/{subscriptionId}
+    methods:
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/stats
+    downstream: /api/subscription/stats
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/{subscriptionId}/confirm-transfer
+    downstream: /api/subscription/{subscriptionId}/confirm-transfer
+    methods:
+    - PUT
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/accounts/currentuser
+    downstream: /api/accounts/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/all
+    downstream: /api/accounts/all
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/search
+    downstream: /api/accounts/search
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/{accountId}/summary
+    downstream: /api/accounts/{accountId}/summary
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/account/api/prospects/{accountId}/contacts/currentuser
+    downstream: /api/accounts/{accountId}/contacts/widget
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/{accountId}/contacts/{everything}
+    downstream: /api/accounts/{accountId}/contacts/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ventya/api/accounts/{account-id}/customers
+    downstream: /api/accounts/{account-id}/contacts?Type=Customer
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/currentuser?pageNumber={abc}&pageSize={xyz}&search={ghi}
+    downstream: /api/accounts/currentuser?pageNumber={abc}&pageSize={xyz}&search={ghi}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/{accountId}/currentuser
+    downstream: /api/accounts/{accountId}/currentuser
+    methods:
+    - GET
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/prospects/currentuser
+    downstream: /api/prospects/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/favorites/currentuser/{everything}
+    downstream: /api/favorites/currentuser/{everything}
+    methods:
+    - PATCH
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/statistics/currentuser/{everything}
+    downstream: /api/statistics/currentuser/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/internal/wallet/api/infos/account/currentuser
+    downstream: /api/entity-count-by-type/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/internal/wallet/api/infos/prospect/currentuser
+    downstream: /api/entity-count/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/contact/api/contacts/currentuser
+    downstream: /api/contacts/currentuser
+    methods:
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/contact/api/contacts/currentuser/terms
+    downstream: /api/contacts/currentuser/terms
+    methods:
+    - GET
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/contact/api/contacts/currentuser/{everything}
+    downstream: /api/contacts/currentuser/{everything}
+    methods:
+    - GET
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/customer-wallet/api/accounts/{everything}
+    downstream: /api/accounts/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/customer-wallet/api/contacts/{contactId}
+    downstream: /api/contact/{contactId}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/customer-wallet/api/contacts/{contactId}?accountId={abc}
+    downstream: /api/contacts/{contactId}
+    methods:
+    - PATCH
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/wallet/api/contacts
+    downstream: /api/contacts
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/contacts/{contactId}
+    downstream: /api/contacts/{contactId}
+    methods:
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/personas/{everything}
+    downstream: /api/personas/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/delegations/currentuser
+    downstream: /api/delegations/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/delegations/currentuser/delegator
+    downstream: /api/delegations/currentuser/delegator
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/delegations/requests/currentuser
+    downstream: /api/delegations/requests/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/delegations/requests/sent/currentuser
+    downstream: /api/delegations/requests/sent/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/delegations/requests/received/currentuser
+    downstream: /api/delegations/requests/received/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/delegations/requests/eligibility/currentuser?accountId={requestedAccountId}
+    downstream: /api/delegations/requests/eligibility/currentuser?accountId={requestedAccountId}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/delegations/requests/accept/currentuser
+    downstream: /api/delegations/requests/accept/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/account/api/delegations/requests/refuse/currentuser
+    downstream: /api/delegations/requests/refuse/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/customer-wallet/api/customers/currentuser
+    downstream: /api/accounts/contacts/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/delegations/currentuser/{everything}
+    downstream: /api/delegations/currentuser/{everything}
+    methods:
+    - GET
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorization/currentuser
+    downstream: /api/authorization/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorization/{everything}
+    downstream: /api/authorization/{everything}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration/account
+    downstream: /api/authorizations/configuration/account
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration?contactId={abc}&accountId={def}
+    downstream: /api/authorizations/configuration?contactId={abc}&accountId={def}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration?contactId={abc}
+    downstream: /api/authorizations/configuration?contactId={abc}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration/account?accountId={abc}&type={def}&configurable={ghi}
+    downstream: /api/authorizations/configuration/account?accountId={abc}&type={def}&configurable={ghi}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration/accounts/{xyz}/contacts/{abc}
+    downstream: /api/authorizations/configuration?accountId={xyz}&contactId={abc}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorizations/configuration/contacts/{abc}
+    downstream: /api/authorizations/configuration?contactId={abc}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/fakeCustomer/api/accounts/{xyz}/contacts/{abc}/ged-settings
+    downstream: /api/accounts/{xyz}/contacts/{abc}/ged-settings
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/update-password/currentuser
+    downstream: /api/authentication/update-password/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/reset-pwd-link
+    downstream: /api/authentication/reset-pwd-link
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/login
+    downstream: /api/authentication/login
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/logout
+    downstream: /api/authentication/logout
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/refreshToken
+    downstream: /api/authentication/refreshToken
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles/signatory?accountId={relativeAccountId}
+    downstream: /api/roles/signatory/{relativeAccountId}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles/check
+    downstream: /api/roles/check
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles?accountId={relativeAccountId}
+    downstream: /api/roles
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/account/api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}
+    downstream: /api/roles?accountId={relativeAccountId}&contactId={contactIdToDelete}
+    methods:
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles/self-removal
+    downstream: /api/roles/bulk-delete
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles/last-collaborator
+    downstream: /api/roles/last-collaborator
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}
+    downstream: /api/roles?accountId={relativeAccountId}&contactId={relativeContactId}&isSignatory={isSignatoryNew}
+    methods:
+    - PATCH
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/account/api/roles/currentuser/hub/contact/{everything}
+    downstream: /api/collaborators/currentuser/GetCollaboratorHubContacts/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/roles/customer-relation
+    downstream: /api/roles/customer-relation
+    methods:
+    - PATCH
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/contact/api/customers/bulk-invite/{accountNumber}?entityType={invitationEntityType}
+    downstream: /api/customers/bulk-invite/{accountNumber}?entityType={invitationEntityType}
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - ContactHandler
+  - upstream: /gtw/contact/api/customers/bulk-invite/{accountNumber}
+    downstream: /api/customers/bulk-invite/{accountNumber}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/contact/api/customers/onboarding-link
+    downstream: /api/customers/onboarding-link
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authentication/api/{everything}
+    downstream: /api/authentication/{everything}
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/customers?accountNumber={relativeAccountNumber}
+    downstream: /api/customers?accountNumber={relativeAccountNumber}
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/account/api/customers/invite/{contactId}?accountNumber={relativeAccountNumber}
+    downstream: /api/customers/{contactId}?accountNumber={relativeAccountNumber}
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/contact/api/terms/latest
+    downstream: /api/terms/latest
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/contact/api/terms/latest/content
+    downstream: /api/terms/latest/content
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/contacts
+    downstream: /api/contacts
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/contacts
+    downstream: /api/contacts
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ged/accounts/{accountId}/ged-services/currentuser
+    downstream: /api/accounts/{accountId}/ged-services/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/api/company/currentuser/{everything}
+    downstream: /api/company/currentuser/{everything}
+    methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/api/companies/currentuser
+    downstream: /api/companies/currentuser
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/desktop-client/versions/latest
+    downstream: /static/latest.exe
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/desktop-client/currentuser/generate-sso-link
+    downstream: /api/currentuser/GenerateSSOLink
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/registry/api/operations/{operationId}/currentuser
+    downstream: /api/operations/{operationId}/{deductedCurrentUserEmail}
+    methods:
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/api/health
+    downstream: /api/health
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/api/onboarding/{everything}
+    downstream: /api/onboarding/{everything}
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/social/api/silae/{everything}
+    downstream: /api/silae/{everything}
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/mandate/api/mandate/currentuser
+    downstream: /api/mandate/currentuser
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/mandate/api/mandate/{mandateId}/check/status
+    downstream: /api/mandate/{mandateId}/check/status
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/mandate/api/mandate/{everything}
+    downstream: /api/mandate/{everything}
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/mandate/api/bank/{everything}
+    downstream: /api/bank/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/mandate/api/company/{everything}
+    downstream: /api/company/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/account/favorites/currentuser
+    downstream: /api/favorites/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/accounts/currentuser?{queryString}
+    downstream: /api/accounts/currentuser?{queryString}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/recommendations/offers
+    downstream: /recommendations/offers
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/recommendations/sales-pitch
+    downstream: /recommendations/sales-pitch
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/recommendations/validation
+    downstream: /recommendations/validation
+    methods:
+    - PUT
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/monitoring/details
+    downstream: /monitoring/details
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/monitoring/summary
+    downstream: /monitoring/summary
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/monitoring/filters
+    downstream: /monitoring/filters
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/aiservices/api/recommendations/formation
+    downstream: /formation/offers
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/notifications/currentuser/unread/count
+    downstream: /api/feedcenter/notifications/unread-count/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/notifications/read/currentuser
+    downstream: /api/feedcenter/currentuser
+    methods:
+    - PUT
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/notifications/currentuser
+    downstream: /api/feedcenter/notifications/currentuser
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/feedcenter/api/settings/currentuser
+    downstream: /api/feedcenter/settings/currentuser
+    methods:
+    - GET
+    - POST
+    auth: ''
+    handlers:
+    - FeedCenterSettingsHandler
+  - upstream: /gtw/registry/api/operations
+    downstream: /api/operations/{deductedAccountNumber}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/registry/api/currentuser/operations?{everything}
+    downstream: /api/operations/currentuser?{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ged/api/93012CC8-77B9-4161-8DBD-61915D935E21/{everything}
+    downstream: /{everything}
+    methods:
+    - GET
+    - POST
+    - DELETE
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/ged/api/05B6934E-6631-4BE7-83D4-EBCC44D63156/{everything}
+    downstream: /{everything}
+    methods:
+    - GET
+    - POST
+    - DELETE
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/hub/ged/Pia/negotiate?{queryString}
+    downstream: /Pia/negotiate?{queryString}
+    methods:
+    - POST
+    - OPTIONS
+    auth: ''
+    handlers: []
+  - upstream: /gtw/hub/ged/{everything}
+    downstream: /{everything}
+    methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+    auth: ''
+    handlers: []
+  - upstream: /gtw/notifications/api/currentuser/accounts/{id}/contact/{destinationId}/message
+    downstream: /api/notifications/currentuser/message?destinationId={destinationId}&accountId={id}
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/notifications/api/currentuser/messages
+    downstream: /api/notifications/currentuser/messages
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/gedcore/api/drop/documents
+    downstream: /drop/documents
+    methods:
+    - DELETE
+    auth: ''
+    handlers: []
+  - upstream: /gtw/history/api/activities/currentuser
+    downstream: /api/activities
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/history/api/themes
+    downstream: /api/themes
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/status/currentuser?accountId={abc}
+    downstream: /api/subscription/status?accountId={abc}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/role?accountId={relativeAccountId}&contactId={relativeContactId}
+    downstream: /api/pennylane/role
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/accounts/{accountId}/documents/currentuser
+    downstream: /api/documents
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/accounts/{accountId}/documents/{id}/content/currentuser
+    downstream: /api/documents/{id}/content
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/roles?companyId={relativeCompanyId}&accountId={relativeAccountId}&contactId={relativeContactId}
+    downstream: /api/pennylane/roles?companyId={relativeCompanyId}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/pennylane/api/pennylane/role/accounts/{accountId}/contacts/{contactId}
+    downstream: /api/pennylane/role/accounts/{accountId}/contacts/{contactId}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/documents/purge/{accountNumber}
+    downstream: /api/documents/purge?accountNumber={accountNumber}
+    methods:
+    - DELETE
+    auth: ''
+    handlers:
+    - RoleHandler
+    - QaHandler
+  - upstream: /gtw/pennylane/webhooks/pennylane/events
+    downstream: /webhooks/pennylane/events
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/pennylane/api/pennylane/accounts/{accountId}/access/currentuser
+    downstream: /api/pennylane/accounts/{accountId}/access
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/access/currentuser
+    downstream: /api/pennylane/access
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/pennylane/api/pennylane/accounts/{accountId}/validation/currentuser
+    downstream: /api/pennylane/validation
+    methods:
+    - POST
+    auth: ''
+    handlers:
+    - RoleHandler
+  - upstream: /gtw/pennylane/api/pennylane/validation/currentuser
+    downstream: /api/pennylane/validation
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/pennylane/api/pennylane/terms/content
+    downstream: /api/pennylane/terms/content
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/booking/api/accounts/{accountId}/booking-link/currentuser/experts?page={page}&pageSize={pageSize}
+    downstream: /api/accounts/{accountId}/booking-link/experts?page={page}&pageSize={pageSize}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/booking-link/currentuser
+    downstream: /api/booking-link
+    methods:
+    - GET
+    - POST
+    - PUT
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/collaborators/{collaboratorId}/booking-link/currentuser
+    downstream: /api/collaborators/{collaboratorId}/booking-link
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/collaborators/currentuser
+    downstream: /api/collaborators
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/booking/businesses/email
+    downstream: /api/booking/businesses/email
+    methods:
+    - DELETE
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/booking/businesses/status/currentuser
+    downstream: /api/booking/businesses/status
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/booking/api/businesses/{configurationId}/currentuser
+    downstream: /api/booking/businesses/{configurationId}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/appointments/upcoming/currentuser?limit={limit}
+    downstream: /api/booking/appointments?period=upcoming&limit={limit}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/appointments/upcoming/count/currentuser
+    downstream: /api/booking/appointments/upcoming/count
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/appointments/past/currentuser?limit={limit}
+    downstream: /api/booking/appointments?period=past&limit={limit}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - BookingSyncHandler
+  - upstream: /gtw/booking/api/booking/businesses/currentuser
+    downstream: /api/booking/businesses
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/booking/api/booking/provisioning/currentuser
+    downstream: /api/booking/businesses
+    methods:
+    - POST
+    auth: ''
+    handlers: []
+  - upstream: /gtw/wallet/api/prospects/{prospectId}/currentuser
+    downstream: /api/prospects/{prospectId}/currentuser
+    methods:
+    - DELETE
+    auth: ''
+    handlers:
+    - ProspectExperienceHandler
+  - upstream: /gtw/booking/api/booking/businesses/{configurationId}/services/currentuser
+    downstream: /api/booking/businesses/{configurationId}/services
+    methods:
+    - PATCH
+    auth: ''
+    handlers: []
+  - upstream: /gtw/booking/api/booking/eligibility/currentuser
+    downstream: /api/booking/eligibility
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/subscription/{everything}
+    downstream: /offer/api/subscription/{everything}
+    methods:
+    - GET
+    - POST
+    - PUT
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/offers
+    downstream: /offer/api/offers
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/offer/api/offers/{offerId}
+    downstream: /offer/api/offers/{offerId}
+    methods:
+    - GET
+    auth: ''
+    handlers:
+    - ApprovedPlatformFilterHandler
+  - upstream: /gtw/account/api/accounts/currentuser/{everything}
+    downstream: /account/api/accounts/currentuser/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/authorization/api/authorization/currentuser/{everything}
+    downstream: /authorization/api/authorization/currentuser/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+  - upstream: /gtw/account/api/accounts/{everything}
+    downstream: /account/api/accounts/{everything}
+    methods:
+    - GET
+    auth: ''
+    handlers: []
+managed_by_ai:
+  role: 'API Gateway (Ocelot) : unique porte d''entree HTTP du front vers les microservices. Authentification (AAD
+    / GIGYA MyPulse), handlers de feature flags et whitelist, routage vers les services back.'
+  allowed_http_calls:
+  - target: account
+    allowed: true
+  - target: authorization
+    allowed: true
+  - target: offer
+    allowed: true
+  - target: pennylane
+    allowed: true
+  - target: registry
+    allowed: true
+  notes: []
