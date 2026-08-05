@@ -1,0 +1,28 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "BffDesktop",
+      "UpstreamPathTemplate": "/gtw/bff/api/me",
+      "DownstreamPathTemplate": "/api/me",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsebff#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isBffActivated"
+      }
+    }
+  ]
+}

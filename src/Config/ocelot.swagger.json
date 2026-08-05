@@ -197,6 +197,17 @@
           "Url": "https://appcegpulseprs#{env_id}#01.azurewebsites.net/api/v1/api.json"
         }
       ]
+    },
+    {
+      "Key": "BffDesktop",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Bff.Desktop",
+          "Version": "v1",
+          "Url": "https://appcegpulsebff#{env_id}#01.azurewebsites.net/desktop/api/v1/api.json"
+        }
+      ]
     }
   ]
 }
