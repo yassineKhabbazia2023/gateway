@@ -2,6 +2,33 @@
   "Routes": [
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/invoices/accounts/{accountId}/currentuser",
+      "DownstreamPathTemplate": "/api/invoices/{accountId}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "GET": "CLINVO001, COINVO001"
+      },
+      "Metadata": {
+        "featureFlag": "isInvoicesExperienceEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/activate-offer/currentuser?accountId={abc}",
       "DownstreamPathTemplate": "/api/activate-offer/{abc}",
       "DownstreamScheme": "https",
