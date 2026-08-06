@@ -194,6 +194,33 @@ public class ProspectOrchestrationServiceTests
     }
 
     /// <summary>
+    /// Verifies that the account creation payload carries the full address,
+    /// combining INPI data (street, city, zip code) and request data (department, region, country).
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_HappyPath_SendsFullAddressIncludingZipCodeToAccount()
+    {
+        CreateAccountRequest? capturedAccountRequest = null;
+        SetupHappyPath(42, "AK-001", 43, 99);
+        _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
+            .ReturnsAsync(new AccountCreated { AccountId = 43 });
+
+        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+
+        capturedAccountRequest.Should().NotBeNull();
+        capturedAccountRequest!.Address.Should().NotBeNull();
+        capturedAccountRequest.Address!.Street.Should().Be("10 rue des Lilas");
+        capturedAccountRequest.Address.City.Should().Be("Paris");
+        capturedAccountRequest.Address.ZipCode.Should().Be("75001");
+        capturedAccountRequest.Address.Department.Should().Be("75");
+        capturedAccountRequest.Address.Region.Should().Be("11");
+        capturedAccountRequest.Address.Country.Should().Be("FR");
+        capturedAccountRequest.NafCode.Should().Be("6201Z");
+        capturedAccountRequest.LegalForm.Should().Be("SARL");
+    }
+
+    /// <summary>
     /// Verifies that the same collaborator can receive both prospect collaborator roles.
     /// </summary>
     [Fact]
@@ -218,6 +245,55 @@ public class ProspectOrchestrationServiceTests
                 new CreateRolesBulkItem { ContactId = request.AccountManagerContactId, IsSignatory = false, RoleCode = "AM" },
                 new CreateRolesBulkItem { ContactId = request.AccountManagerContactId, IsSignatory = false, RoleCode = "CLP" }
             });
+    }
+
+    /// <summary>
+    /// Verifies that the Rydge account payload is enriched with the legal form, INPI NAF code, and address details.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_HappyPath_PopulatesAccountLegalFormNafCodeAndAddressFromRequestAndInpi()
+    {
+        CreateAccountRequest? capturedAccountRequest = null;
+        SetupHappyPath(42, "AK-001", 43, 99);
+        _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
+            .ReturnsAsync(new AccountCreated { AccountId = 43 });
+
+        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+
+        capturedAccountRequest.Should().NotBeNull();
+        capturedAccountRequest!.LegalForm.Should().Be("SARL");
+        capturedAccountRequest.NafCode.Should().Be("6201Z");
+        capturedAccountRequest.Address.Should().NotBeNull();
+        capturedAccountRequest.Address!.Street.Should().Be("10 rue des Lilas");
+        capturedAccountRequest.Address.City.Should().Be("Paris");
+        capturedAccountRequest.Address.Department.Should().Be("75");
+        capturedAccountRequest.Address.Region.Should().Be("11");
+        capturedAccountRequest.Address.Country.Should().Be("FR");
+    }
+
+    /// <summary>
+    /// Verifies that the city returned by INPI is propagated to the Rydge account address payload.
+    /// </summary>
+    [Theory]
+    [InlineData("Lyon")]
+    [InlineData(null)]
+    public async Task CreateAsync_HappyPath_PopulatesAccountAddressCityFromInpi(string? inpiCity)
+    {
+        CreateAccountRequest? capturedAccountRequest = null;
+        SetupHappyPath(42, "AK-001", 43, 99);
+        var inpi = BuildInpi();
+        inpi.City = inpiCity!;
+        _prospect.Setup(p => p.GetInpiCompanyInfoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(inpi);
+        _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
+            .ReturnsAsync(new AccountCreated { AccountId = 43 });
+
+        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+
+        capturedAccountRequest.Should().NotBeNull();
+        capturedAccountRequest!.Address.Should().NotBeNull();
+        capturedAccountRequest.Address!.City.Should().Be(inpiCity);
     }
 
     [Fact]
@@ -595,6 +671,58 @@ public class ProspectOrchestrationServiceTests
         _registry.Verify(r => r.CreateAkuiteoContactAsync("AK-001", It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _accountService.Verify(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
         _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that resuming past the INPI lookup keeps the request-derived legal form and geography
+    /// but cannot populate the INPI-only NAF code, street, or city since INPI is not fetched again on resume.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WhenResumingAfterAkuiteoCustomerCreated_PopulatesAccountWithoutInpiNafCodeOrStreet()
+    {
+        CreateAccountRequest? capturedAccountRequest = null;
+        _prospect.Setup(p => p.GetIncompleteProspectBySiretAsync("12345678901234", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IncompleteProspectCreationState
+            {
+                ProspectId = 42,
+                LegalName = "ACME SARL",
+                CreationStatus = 2,
+                LastCompletedStep = 4,
+                CompletedMilestone = ProspectCreationMilestone.AkuiteoCustomerCreated,
+                AkuiteoAccountNumber = "AK-001",
+                ResumeRequestFingerprint = BuildResumeFingerprint()
+            });
+        _prospect.Setup(p => p.UpdateCreationProgressAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<UpdateProspectCreationProgressRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.PrepareCreationResumeAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _prospect.Setup(p => p.UpdateProspectIdsAsync(42, "AK-001", 43, 99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FinalizeProspectOutcome.Updated);
+        _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
+            .ReturnsAsync(new AccountCreated { AccountId = 43 });
+        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ContactCreated { ContactId = 99 });
+        _registry.Setup(r => r.CreateAkuiteoContactAsync("AK-001", It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateRolesBulkResult());
+        _prospect.Setup(p => p.GetCreationRoleSynchronizationOutcomeAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ProspectRoleSynchronizationOutcome.Synchronized);
+        _prospect.Setup(p => p.MarkProspectCreationFailedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<MarkProspectCreationFailedRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+
+        capturedAccountRequest.Should().NotBeNull();
+        capturedAccountRequest!.LegalForm.Should().Be("SARL");
+        capturedAccountRequest.NafCode.Should().BeNull();
+        capturedAccountRequest.Address.Should().NotBeNull();
+        capturedAccountRequest.Address!.Street.Should().BeNull();
+        capturedAccountRequest.Address.City.Should().BeNull();
+        capturedAccountRequest.Address.Department.Should().Be("75");
+        capturedAccountRequest.Address.Region.Should().Be("11");
+        capturedAccountRequest.Address.Country.Should().Be("FR");
     }
 
     [Fact]

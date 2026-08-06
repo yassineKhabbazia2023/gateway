@@ -12,15 +12,17 @@ public class AccountService : IAccountService
 {
     private readonly HttpClient _httpClient;
     private readonly IProspectApiClient _prospectApiClient;
+    private readonly ILogger<AccountService> _logger;
     private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true,
     };
 
-    public AccountService(HttpClient httpClient, IProspectApiClient prospectApiClient)
+    public AccountService(HttpClient httpClient, IProspectApiClient prospectApiClient, ILogger<AccountService> logger)
     {
         _httpClient = httpClient;
         _prospectApiClient = prospectApiClient;
+        _logger = logger;
     }
     public async Task<Paging<Models.Account>> GetContactRolesAsync(int contactId)
     {
@@ -151,7 +153,7 @@ public class AccountService : IAccountService
         }
 
         var response = await _httpClient.SendAsync(httpRequest, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowWithBodyAsync(response, "POST api/accounts", ct);
         var created = await response.Content.ReadFromJsonAsync<AccountCreated>(_jsonSerializerOptions, ct)
                       ?? throw new HttpRequestException("Account creation response was empty.");
         return created;
@@ -171,7 +173,7 @@ public class AccountService : IAccountService
         }
 
         var response = await _httpClient.SendAsync(httpRequest, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowWithBodyAsync(response, $"POST api/roles/bulk?accountId={accountId}", ct);
         var result = await response.Content.ReadFromJsonAsync<CreateRolesBulkResult>(_jsonSerializerOptions, ct)
                      ?? throw new HttpRequestException("Bulk roles creation response was empty.");
         return result;
@@ -189,6 +191,41 @@ public class AccountService : IAccountService
         response.EnsureSuccessStatusCode();
         var isProspectOnly = await response.Content.ReadFromJsonAsync<bool>(_jsonSerializerOptions, ct);
         return isProspectOnly ? ProspectOnlyContactResult.ProspectOnly : ProspectOnlyContactResult.NotProspectOnly;
+    }
+
+    /// <summary>
+    /// Ensures the response indicates success; otherwise logs the response body and throws with the body included.
+    /// </summary>
+    /// <param name="response">The HTTP response to inspect.</param>
+    /// <param name="operation">A short description of the HTTP call used in logs and exception messages.</param>
+    /// <param name="ct">The cancellation token.</param>
+    private async Task EnsureSuccessOrThrowWithBodyAsync(HttpResponseMessage response, string operation, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        string responseBody;
+        try
+        {
+            responseBody = await response.Content.ReadAsStringAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            responseBody = $"<unreadable response body: {ex.Message}>";
+        }
+
+        _logger.LogError(
+            "[AccountService]: {Operation} failed - [StatusCode]: {StatusCode} - [ResponseBody]: {ResponseBody}",
+            operation,
+            (int)response.StatusCode,
+            responseBody);
+
+        throw new HttpRequestException(
+            $"{operation} returned {(int)response.StatusCode} ({response.StatusCode}). Response body: {responseBody}",
+            inner: null,
+            statusCode: response.StatusCode);
     }
 
     public async Task UpdateLastActivityDateAsync(int currentUserId, string contactType, int accountId)

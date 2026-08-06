@@ -147,7 +147,7 @@ public class ProspectOrchestrationService(
                     sanitizedPayload,
                     ct);
 
-                runtimeState.AccountId = await CreateRydgeAccountAsync(request, runtimeState.LegalName, siret, runtimeState.AccountNumber, runtimeState.ProspectId.Value, sanitizedPayload, ct);
+                runtimeState.AccountId = await CreateRydgeAccountAsync(request, runtimeState.LegalName, siret, runtimeState.AccountNumber, runtimeState.ProspectId.Value, sanitizedPayload, inpi, ct);
                 runtimeState.LastCompletedMilestone = ProspectCreationMilestone.RydgeAccountCreated;
                 await PersistRuntimeStateAsync(
                     runtimeState,
@@ -239,7 +239,7 @@ public class ProspectOrchestrationService(
 
             if (runtimeState.LastCompletedMilestone == ProspectCreationMilestone.AkuiteoContactCreated)
             {
-                runtimeState.AccountId = await CreateRydgeAccountAsync(request, runtimeState.LegalName, siret, runtimeState.AccountNumber, runtimeState.ProspectId.Value, sanitizedPayload, ct);
+                runtimeState.AccountId = await CreateRydgeAccountAsync(request, runtimeState.LegalName, siret, runtimeState.AccountNumber, runtimeState.ProspectId.Value, sanitizedPayload, inpi: null, ct);
                 runtimeState.LastCompletedMilestone = ProspectCreationMilestone.RydgeAccountCreated;
                 await PersistRuntimeStateAsync(
                     runtimeState,
@@ -374,7 +374,7 @@ public class ProspectOrchestrationService(
         }
     }
 
-    private async Task<int> CreateRydgeAccountAsync(CreateProspectRequest request, string legalName, string siret, string accountNumber, int prospectId, string sanitizedPayload, CancellationToken ct)
+    private async Task<int> CreateRydgeAccountAsync(CreateProspectRequest request, string legalName, string siret, string accountNumber, int prospectId, string sanitizedPayload, InpiCompanyInfo? inpi, CancellationToken ct)
     {
         try
         {
@@ -383,7 +383,18 @@ public class ProspectOrchestrationService(
                 AccountNumber = accountNumber,
                 LegalName = legalName,
                 Siret = siret,
-                AccountType = AccountType.PROSPECT
+                AccountType = AccountType.PROSPECT,
+                LegalForm = request.LegalForm,
+                NafCode = inpi?.NafCode,
+                Address = new AddressRequest
+                {
+                    Street = inpi?.Address,
+                    Department = request.Department,
+                    City = inpi?.City,
+                    ZipCode = inpi?.ZipCode,
+                    Region = request.Region,
+                    Country = request.Country
+                }
             };
             var result = await accountService.CreateAccountForProspectAsync(payload, request.CaseManagerContactId, ct);
             return result.AccountId;

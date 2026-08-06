@@ -11,4 +11,10 @@ public class CreateAccountRequest
 
     [Required]
     public required AccountType AccountType { get; set; }
+
+    public AddressRequest? Address { get; set; }
+
+    public string? LegalForm { get; set; }
+
+    public string? NafCode { get; set; }
 }

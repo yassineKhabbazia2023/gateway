@@ -5,6 +5,7 @@ using ApiGateway.Account;
 using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq.Protected;
 
 namespace ApiGateway.UnitTests.Authorization;
@@ -24,7 +25,7 @@ public class AccountServiceTests
         _mockProspectApiClient = new Mock<IProspectApiClient>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         _httpClient.BaseAddress = new Uri("http://local.account/api");
-        _accountService = new AccountService(_httpClient, _mockProspectApiClient.Object);
+        _accountService = new AccountService(_httpClient, _mockProspectApiClient.Object, NullLogger<AccountService>.Instance);
         _fixture = new Fixture();
     }
 
