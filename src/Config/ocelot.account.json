@@ -2,7 +2,7 @@
   "Routes": [
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/account/api/invoices/accounts/{accountId}/currentuser",
+      "UpstreamPathTemplate": "/gtw/account/api/invoices/accounts/{accountId}",
       "DownstreamPathTemplate": "/api/invoices/{accountId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
