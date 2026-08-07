@@ -14,6 +14,13 @@ namespace ApiGateway.UnitTests.Permissions
                 file => Path.GetFileName(file),
                 file => JObject.Parse(File.ReadAllText(file))["Routes"]?.ToObject<List<JObject>>() ?? new List<JObject>());
 
+        private static readonly IReadOnlyDictionary<string, List<JObject>> AggregatesByFile = Directory
+            .GetFiles(ConfigFolder, "ocelot.*.json")
+            .OrderBy(file => file, StringComparer.Ordinal)
+            .ToDictionary(
+                file => Path.GetFileName(file),
+                file => JObject.Parse(File.ReadAllText(file))["Aggregates"]?.ToObject<List<JObject>>() ?? new List<JObject>());
+
         private static string FindProjectRoot()
         {
             var currentDirectory = Directory.GetCurrentDirectory();
@@ -146,6 +153,82 @@ namespace ApiGateway.UnitTests.Permissions
 
             Assert.True(unsecuredRoutes.Count == 0,
                 $"❌ Les routes Prospect onboarding doivent utiliser ProspectExperienceHandler et RoleHandler : [{string.Join(", ", unsecuredRoutes)}]");
+        }
+
+        /// <summary>
+        /// Ocelot valide au démarrage que chaque RouteKey d'un agrégat correspond à une route existante
+        /// (<c>AllRoutesForAggregateExist</c>). Une clé orpheline fait échouer la validation de configuration
+        /// et empêche le démarrage de la gateway entière, pas seulement de l'endpoint agrégé.
+        /// Les fichiers étant concaténés par Merge-OcelotConfig.ps1, la résolution se fait tous fichiers confondus.
+        /// </summary>
+        [Fact]
+        public void EnsureAggregateRouteKeysReferenceExistingRoutes()
+        {
+            var declaredRouteKeys = RoutesByFile
+                .SelectMany(file => file.Value)
+                .Select(route => route["Key"]?.ToString())
+                .Where(key => !string.IsNullOrEmpty(key))
+                .ToHashSet(StringComparer.Ordinal);
+
+            var aggregates = AggregatesByFile
+                .SelectMany(file => file.Value.Select(aggregate => (FileName: file.Key, Aggregate: aggregate)))
+                .ToList();
+
+            Assert.NotEmpty(aggregates);
+
+            var errors = new List<string>();
+
+            foreach (var (fileName, aggregate) in aggregates)
+            {
+                var upstream = aggregate["UpstreamPathTemplate"]?.ToString();
+                var routeKeys = aggregate["RouteKeys"]?.Select(key => key.ToString()).ToList() ?? [];
+
+                if (routeKeys.Count == 0)
+                {
+                    errors.Add($"❌ L'agrégat '{upstream}' ({fileName}) ne déclare aucun RouteKeys.");
+                    continue;
+                }
+
+                foreach (var missingKey in routeKeys.Where(key => !declaredRouteKeys.Contains(key)))
+                {
+                    errors.Add($"❌ L'agrégat '{upstream}' ({fileName}) référence le RouteKey '{missingKey}' qui ne correspond à aucune route déclarée (propriété 'Key').");
+                }
+            }
+
+            if (errors.Any())
+            {
+                Assert.Fail($"❌ {errors.Count} incohérences trouvées :\n" + string.Join("\n", errors));
+            }
+        }
+
+        /// <summary>
+        /// Toute route agrégée dans /gtw/wallet/api/infos/currentuser qui tape sur pulse.back.prospect
+        /// (host appcegpulseprs*) doit porter ProspectExperienceHandler : c'est ce qui garantit qu'aucun appel
+        /// ne part vers Prospect quand le feature flag est désactivé.
+        /// Le test tolère l'absence de la route : elle disparaîtra au décommissionnement de Prospect.
+        /// </summary>
+        [Fact]
+        public void EnsureWalletInfoProspectRouteIsGatedByProspectFeatureFlag()
+        {
+            var prospectWalletInfoRoute = RoutesByFile
+                .SelectMany(file => file.Value)
+                .FirstOrDefault(route => route["Key"]?.ToString() == "WalletInfoProspect");
+
+            if (prospectWalletInfoRoute is null)
+            {
+                return;
+            }
+
+            var handlers = prospectWalletInfoRoute["DelegatingHandlers"]?.Select(handler => handler.ToString()).ToList() ?? [];
+
+            Assert.True(handlers.Contains("ProspectExperienceHandler"),
+                "❌ La route 'WalletInfoProspect' doit utiliser ProspectExperienceHandler pour que l'appel à Prospect soit court-circuité quand le feature flag est désactivé.");
+
+            var hosts = prospectWalletInfoRoute["DownstreamHostAndPorts"]?
+                .Select(hostAndPort => hostAndPort["Host"]?.ToString())
+                .ToList() ?? [];
+
+            Assert.All(hosts, host => Assert.Contains("prs", host!, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

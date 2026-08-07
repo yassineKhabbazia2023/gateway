@@ -64,6 +64,45 @@ public class ProspectExperienceHandlerTests
         result.Should().BeEquivalentTo(expected);
     }
 
+    /// <summary>
+    /// Preuve directe de l'exigence « aucun appel ne doit partir vers pulse.back.prospect » : flag coupé,
+    /// le handler interne — qui porte l'appel HTTP réel vers le downstream — n'est jamais invoqué.
+    /// S'applique à la route WalletInfoProspect agrégée dans /gtw/wallet/api/infos/currentuser.
+    /// </summary>
+    [Fact]
+    public async Task Should_Not_Call_Downstream_When_ProspectExperience_Is_Disabled()
+    {
+        // Arrange
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var innerMock = new Mock<HttpMessageHandler>();
+        innerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+        var handler = new ProspectExperienceHandler(featureFlagService.Object, NullLogger<ProspectExperienceHandler>.Instance)
+        {
+            InnerHandler = innerMock.Object
+        };
+        using var invoker = new HttpMessageInvoker(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://appcegpulseprs01.azurewebsites.net/api/entity-count/currentuser");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken("user@test.fr"));
+
+        // Act
+        var result = await invoker.SendAsync(request, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        innerMock.Protected().Verify<Task<HttpResponseMessage>>("SendAsync", Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
     [Fact]
     public async Task Should_Forward_Request_When_ProspectExperience_Is_Enabled()
     {

@@ -18,14 +18,17 @@ using ApiGateway.Offer;
 using ApiGateway.Pennylane;
 using ApiGateway.ProspectExperience.Services;
 using ApiGateway.ProspectExperience.Validators;
+using ApiGateway.Requester;
 using ApiGateway.TokenRevocation;
-using FluentValidation;
 using Azure.Storage.Blobs;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Ocelot.DependencyInjection;
+using Ocelot.Requester;
 using Polly;
 using Polly.Extensions.Http;
 using Pulse.ExceptionMiddleware.Model;
@@ -170,6 +173,10 @@ public static class ServiceExtensions
             .AddDelegatingHandler<ApprovedPlatformFilterHandler>()
             .AddDelegatingHandler<FeatureFlagGateHandler>(true)
             .AddDelegatingHandler<MockResponseHandler>(true);
+
+             services.AddSingleton<MessageInvokerHttpRequester>();
+             services.Replace(ServiceDescriptor.Singleton<IHttpRequester, WalletInfoProspectFeatureFlagRequester>());
+
 
         services.AddHttpClient("BookingClient", client =>
         {
