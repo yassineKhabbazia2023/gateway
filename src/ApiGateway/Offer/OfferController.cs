@@ -1,4 +1,4 @@
-﻿using ApiGateway.Account;
+using ApiGateway.Account;
 using ApiGateway.Attributes;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Enum;
@@ -102,7 +102,10 @@ public class OfferController : ControllerBase
                 (requestedPlanCode, userNumber) = await GetPlanInfoAsync(subscriptionRequest);
 
                 var offerUserEmail = GetUserEmail();
-                var offerContext = FeatureContext.FromEmail(offerUserEmail);
+                var offerContact = string.IsNullOrWhiteSpace(offerUserEmail)
+                    ? null
+                    : await _contactService.GetContactAsync(offerUserEmail);
+                var offerContext = FeatureContext.FromContactId(offerContact?.Id.ToString());
                 if (requestedPlanCode == OfferPlanCodes.ApprovedPlatform
                     && !await _featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, context: offerContext))
                 {

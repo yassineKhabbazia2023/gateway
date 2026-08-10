@@ -2,14 +2,13 @@ namespace ApiGateway.FeatureFlags.Models;
 
 public sealed class FeatureContext
 {
-    private readonly string _email = null!;
+    public string? Email { get; init; }
 
-    public required string Email
-    {
-        get => _email;
-        init => _email = Guard.Against.NullOrWhiteSpace(value);
-    }
+    public string? ContactId { get; init; }
 
     public static FeatureContext? FromEmail(string? email)
-        => string.IsNullOrWhiteSpace(email) ? null : new FeatureContext { Email = email };
+        => string.IsNullOrWhiteSpace(email) ? null : new FeatureContext { Email = email.Trim() };
+
+    public static FeatureContext? FromContactId(string? contactId)
+        => string.IsNullOrWhiteSpace(contactId) ? null : new FeatureContext { ContactId = contactId.Trim() };
 }

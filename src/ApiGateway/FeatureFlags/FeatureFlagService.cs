@@ -1,4 +1,4 @@
-﻿using ApiGateway.FeatureFlags.Models;
+using ApiGateway.FeatureFlags.Models;
 using OpenFeature;
 using OpenFeature.Model;
 
@@ -12,7 +12,7 @@ public class FeatureFlagService(ILogger<FeatureFlagService> logger) : IFeatureFl
     {
         var evaluationContext = BuildEvaluationContext(context);
         var result = await _client.Value.GetBooleanValueAsync(flagKey, defaultValue, evaluationContext, cancellationToken: ct);
-        logger.LogDebug("Feature flag '{FlagKey}' evaluated to {Result} for user {Email}", flagKey, result, context?.Email ?? "anonymous");
+        logger.LogDebug("Feature flag '{FlagKey}' evaluated to {Result} for contact {ContactId}", flagKey, result, context?.ContactId ?? "anonymous");
         return result;
     }
 
@@ -31,6 +31,18 @@ public class FeatureFlagService(ILogger<FeatureFlagService> logger) : IFeatureFl
     private static EvaluationContext? BuildEvaluationContext(FeatureContext? context)
     {
         if (context is null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(context.ContactId))
+        {
+            return EvaluationContext.Builder()
+                .Set("Identifier", context.ContactId)
+                .Build();
+        }
+
+        if (string.IsNullOrWhiteSpace(context.Email))
         {
             return null;
         }

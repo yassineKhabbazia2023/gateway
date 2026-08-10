@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Pulse.ExceptionMiddleware.Model;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text.Json.Nodes;
 
 namespace ApiGateway.UnitTests.Offer;
@@ -1322,6 +1323,52 @@ public class OfferControllerTests
         errorResponse.ErrorMessage.Should().Be(Errors.ApprovedPlatformDisabledMessage);
         _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()), Times.Never);
         _mockPennylaneService.Verify(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenApprovedPlatformPlan_ShouldEvaluateFlagWithResolvedContactId()
+    {
+        // Arrange: utilisateur authentifié, contact résolu → le flag doit être ciblé sur son contactId (pas l'email)
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }]
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockContactService.Setup(x => x.GetContactAsync("user@test.fr"))
+            .ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = 456 });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("upn", "user@test.fr")]))
+            }
+        };
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var forbiddenResult = result.Result as ObjectResult;
+        forbiddenResult.Should().NotBeNull();
+        forbiddenResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _mockContactService.Verify(x => x.GetContactAsync("user@test.fr"), Times.Once);
+        _mockFeatureFlagService.Verify(
+            x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == "456"), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

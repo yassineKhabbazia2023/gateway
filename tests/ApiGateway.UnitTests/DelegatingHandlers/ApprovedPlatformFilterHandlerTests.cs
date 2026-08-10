@@ -2,6 +2,7 @@ using ApiGateway.DelegatingHandlers;
 using ApiGateway.FeatureFlags;
 using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Offer.Constants;
+using Microsoft.Extensions.Logging;
 using Moq.Protected;
 using System.Net;
 
@@ -9,16 +10,6 @@ namespace ApiGateway.UnitTests.DelegatingHandlers;
 
 public class ApprovedPlatformFilterHandlerTests
 {
-    private static string GenerateDummyJwtToken(string email)
-    {
-        var header = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("{\"alg\":\"none\",\"typ\":\"JWT\"}"))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        var payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
-                System.Text.Json.JsonSerializer.Serialize(new { email })))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        return $"{header}.{payload}.";
-    }
-
     private static (HttpMessageInvoker Invoker, Func<HttpRequestMessage?> GetCapturedRequest) CreateInvoker(
         Mock<IFeatureFlagService> featureFlagService)
     {
@@ -31,7 +22,7 @@ public class ApprovedPlatformFilterHandlerTests
             .Callback<HttpRequestMessage, CancellationToken>((req, _) => captured = req)
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
 
-        var handler = new ApprovedPlatformFilterHandler(featureFlagService.Object)
+        var handler = new ApprovedPlatformFilterHandler(featureFlagService.Object, Mock.Of<ILogger<ApprovedPlatformFilterHandler>>())
         {
             InnerHandler = innerMock.Object
         };
@@ -99,24 +90,64 @@ public class ApprovedPlatformFilterHandlerTests
     }
 
     [Fact]
-    public async Task Should_Pass_UserEmail_To_FeatureFlagService()
+    public async Task Should_Pass_ContactId_From_CurrentUser_Header_To_FeatureFlagService()
     {
         // Arrange
-        const string expectedEmail = "user@test.fr";
+        const string expectedContactId = "12345";
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == expectedContactId), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var (invoker, _) = CreateInvoker(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateDummyJwtToken(expectedEmail));
+        request.Headers.Add("CurrentUser", expectedContactId);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
         featureFlagService.Verify(
-            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()),
+            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == expectedContactId), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Exclude_Plan_When_Flag_Evaluation_Throws()
+    {
+        // Arrange : le provider de feature flags est en erreur, le handler doit dégrader en fail closed
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("ConfigCat KO"));
+        var (invoker, getCaptured) = CreateInvoker(featureFlagService);
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
+
+        // Act : aucune exception ne doit remonter vers le client
+        await invoker.SendAsync(request, CancellationToken.None);
+
+        // Assert : traité comme flag désactivé → plan masqué
+        var captured = getCaptured();
+        captured.Should().NotBeNull();
+        captured!.RequestUri!.Query.Should().Contain($"excludePlanCodes={OfferPlanCodes.ApprovedPlatform}");
+    }
+
+    [Fact]
+    public async Task Should_Evaluate_Without_Context_When_CurrentUser_Header_Is_Missing()
+    {
+        // Arrange
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        var (invoker, _) = CreateInvoker(featureFlagService);
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
+
+        // Act
+        await invoker.SendAsync(request, CancellationToken.None);
+
+        // Assert : sans header CurrentUser, le contexte est null (fail closed côté règle de ciblage)
+        featureFlagService.Verify(
+            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c == null), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }
