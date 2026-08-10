@@ -73,14 +73,23 @@ public class ContactService(HttpClient httpClient) : IContactService
         return null;
     }
 
-    public async Task<ContactCreated> CreateContactForProspectAsync(CreateContactRequest request, CancellationToken ct)
+    public async Task<ContactCreated> CreateContactForProspectAsync(CreateContactRequest request, string? contactEmail, CancellationToken ct)
     {
         var jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        var response = await httpClient.PostAsJsonAsync("contacts", request, jsonOptions, ct);
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "contacts")
+        {
+            Content = JsonContent.Create(request, options: jsonOptions)
+        };
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            httpRequest.Headers.Add("ContactEmail", contactEmail);
+        }
+
+        var response = await httpClient.SendAsync(httpRequest, ct);
         response.EnsureSuccessStatusCode();
         var created = await response.Content.ReadFromJsonAsync<ContactCreated>(jsonOptions, ct)
                       ?? throw new HttpRequestException("Contact creation response was empty.");

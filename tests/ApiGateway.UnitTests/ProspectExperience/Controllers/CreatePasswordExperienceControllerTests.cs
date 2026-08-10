@@ -3,6 +3,7 @@ using System.Text;
 using ApiGateway.ProspectExperience.Controllers;
 using ApiGateway.ProspectExperience.Models.Requests;
 using ApiGateway.ProspectExperience.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.UnitTests.ProspectExperience.Controllers;
@@ -20,7 +21,13 @@ public class CreatePasswordExperienceControllerTests
     /// </summary>
     public CreatePasswordExperienceControllerTests()
     {
-        controller = new CreatePasswordExperienceController(createPasswordExperienceService.Object);
+        controller = new CreatePasswordExperienceController(createPasswordExperienceService.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
     }
 
     /// <summary>

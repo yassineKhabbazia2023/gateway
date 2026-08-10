@@ -5,7 +5,7 @@ namespace ApiGateway.ProspectExperience.Services;
 
 public interface IProspectService
 {
-    Task<ProspectListItem> CreateAsync(CreateProspectRequest request, CancellationToken ct);
+    Task<ProspectListItem> CreateAsync(CreateProspectRequest request, string? contactEmail, CancellationToken ct);
 
     /// <summary>
     /// Orchestrates the completion of a prospect onboarding step.

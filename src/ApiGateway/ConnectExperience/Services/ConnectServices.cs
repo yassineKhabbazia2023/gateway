@@ -3,8 +3,11 @@ using ApiGateway.Authorization;
 using ApiGateway.ConnectExperience.Models;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
+using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Models;
 using ApiGateway.Offer;
+using ApiGateway.ProspectExperience.Enum;
 using Pulse.ExceptionMiddleware.Exceptions;
 
 namespace ApiGateway.ConnectExperience.Services;
@@ -13,7 +16,9 @@ public class ConnectServices(
     IContactService contactService,
     IAuthorizationService authorizationService,
     IOfferService offerService,
-    IAccountService accountService) : IConnectServices
+    IAccountService accountService,
+    IFeatureFlagService featureFlagService,
+    ILogger<ConnectServices> logger) : IConnectServices
 {
     public async Task<UserInformation> GetUserInformation(string userEmail)
     {
@@ -73,6 +78,19 @@ public class ConnectServices(
             ?? throw new BadRequestException(Errors.NotFoundContactCode, Errors.NotFoundContactMessage);
         var account = await accountService.GetAccountAsync(accountId)
             ?? throw new BadRequestException(Errors.NotFoundAccountCode, string.Format(Errors.NotFoundAccountMessage, accountId));
+
+        var isProspectEntityType = string.Equals(entityType, AccountType.PROSPECT.ToString(), StringComparison.OrdinalIgnoreCase);
+        var isProspectExperienceEnabled = await featureFlagService.IsEnabledAsync(
+            FeatureFlagKeys.IsProspectExperienceEnabled,
+            context: FeatureContext.FromEmail(userEmail));
+
+        if (isProspectEntityType && !isProspectExperienceEnabled)
+        {
+            logger.LogWarning(
+                "Prospect bulk invitation rejected because prospect experience feature flag is disabled for account {AccountNumber}",
+                account.AccountNumber);
+            throw new ForbiddenException(Errors.ProspectExperienceDisabledCode, Errors.ProspectExperienceDisabledMessage);
+        }
 
         var invitedCustomerIDs = await contactService.SendEmailAsync(contact.Id, account.AccountNumber!, customerIDs, entityType);
         await accountService.UpdateLastActivityDateAsync(contact.Id, contact.Type!, accountId);

@@ -3,7 +3,10 @@ using ApiGateway.Authorization;
 using ApiGateway.Contact;
 using ApiGateway.Exceptions;
 using ApiGateway.ConnectExperience.Services;
+using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Models;
+using Microsoft.Extensions.Logging;
 using Pulse.ExceptionMiddleware.Exceptions;
 using ContactModel = ApiGateway.Contact.Models.Contact;
 using ApiGateway.Offer;
@@ -16,8 +19,10 @@ public class ExperienceServicesTests
     private readonly Mock<IAuthorizationService> _authMock = new();
     private readonly Mock<IAccountService> _accountMock = new();
     private readonly Mock<IOfferService> _offerMock = new();
+    private readonly Mock<IFeatureFlagService> _featureFlagMock = new();
+    private readonly Mock<ILogger<ConnectServices>> _loggerMock = new();
     private ConnectServices CreateService() =>
-        new(_contactMock.Object, _authMock.Object, _offerMock.Object, _accountMock.Object);
+        new(_contactMock.Object, _authMock.Object, _offerMock.Object, _accountMock.Object, _featureFlagMock.Object, _loggerMock.Object);
     private readonly string _collabType = "Collaborator";
 
     [Fact]
@@ -218,6 +223,9 @@ public class ExperienceServicesTests
 
         _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync(contact);
         _accountMock.Setup(x => x.GetAccountAsync(accountId)).ReturnsAsync(account);
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _contactMock
             .Setup(x => x.SendEmailAsync(contact.Id, account.AccountNumber!, customerIds, entityType))
             .ReturnsAsync(invitedIds)
@@ -238,6 +246,70 @@ public class ExperienceServicesTests
         _accountMock.Verify(x => x.GetAccountAsync(accountId), Times.Once);
         _contactMock.Verify();
         _accountMock.Verify();
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_ShouldThrowForbidden_WhenProspectEntityTypeRequestedAndFlagDisabled()
+    {
+        // Arrange
+        const string userEmail = "john@example.com";
+        const int accountId = 42;
+        var customerIds = new[] { 10, 20 };
+        const string entityType = "PROSPECT";
+
+        var contact = new ContactModel { Id = 123, Type = "Collaborator" };
+        var account = new ApiGateway.Models.Account { AccountId = accountId, AccountNumber = "0000000042" };
+
+        _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync(contact);
+        _accountMock.Setup(x => x.GetAccountAsync(accountId)).ReturnsAsync(account);
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SendEmailAsync(userEmail, accountId, customerIds, entityType);
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(act);
+        ex.Code.Should().Be(Errors.ProspectExperienceDisabledCode);
+        ex.Message.Should().Be(Errors.ProspectExperienceDisabledMessage);
+        _contactMock.Verify(x => x.SendEmailAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Never);
+        _accountMock.Verify(x => x.UpdateLastActivityDateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_ShouldSendInvites_WhenEntityTypeIsNotProspectAndFlagDisabled()
+    {
+        // Arrange
+        const string userEmail = "john@example.com";
+        const int accountId = 42;
+        var customerIds = new[] { 10, 20 };
+
+        var contact = new ContactModel { Id = 123, Type = "Collaborator" };
+        var account = new ApiGateway.Models.Account { AccountId = accountId, AccountNumber = "0000000042" };
+        var invitedIds = new[] { 10, 20 };
+
+        _contactMock.Setup(x => x.GetContactAsync(userEmail)).ReturnsAsync(contact);
+        _accountMock.Setup(x => x.GetAccountAsync(accountId)).ReturnsAsync(account);
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _contactMock
+            .Setup(x => x.SendEmailAsync(contact.Id, account.AccountNumber!, customerIds, null))
+            .ReturnsAsync(invitedIds);
+        _accountMock
+            .Setup(x => x.UpdateLastActivityDateAsync(contact.Id, contact.Type!, accountId))
+            .Returns(Task.CompletedTask);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.SendEmailAsync(userEmail, accountId, customerIds, entityType: null);
+
+        // Assert
+        result.Should().BeEquivalentTo(invitedIds);
     }
 
     [Fact]

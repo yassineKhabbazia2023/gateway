@@ -43,6 +43,7 @@ public class CreatePasswordExperienceServiceTests
         var request = BuildRequest(contactId: 42);
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.OK);
+        SetupNoContactEmailFound(request.contactId!.Value);
         featureFlagService
             .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -70,6 +71,45 @@ public class CreatePasswordExperienceServiceTests
     }
 
     /// <summary>
+    /// Ensures a missing bearer-token email is resolved via Contact using the request's ContactId,
+    /// since the create-password flow is anonymous and never carries a bearer token.
+    /// </summary>
+    [Fact]
+    public async Task CreateNewPasswordAsync_WhenNoBearerEmailAndContactIdPresent_ResolvesEmailFromContactById()
+    {
+        // Arrange
+        const string resolvedEmail = "resolved@rydge.fr";
+        var request = BuildRequest(contactId: 42);
+        var expectedContactRequest = BuildContactRequest(request);
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        contactService
+            .Setup(s => s.GetContactByIdAsync(42))
+            .ReturnsAsync(new global::ApiGateway.Contact.Models.Contact { Id = 42, Email = resolvedEmail });
+        featureFlagService
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        contactService
+            .Setup(s => s.CreateNewPasswordAsync(
+                It.Is<CreateNewPasswordRequest>(r => Matches(r, expectedContactRequest)),
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await service.CreateNewPasswordAsync(request, CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(response);
+        contactService.Verify(s => s.GetContactByIdAsync(42), Times.Once);
+        contactService.Verify(
+            s => s.CreateNewPasswordAsync(
+                It.Is<CreateNewPasswordRequest>(r => Matches(r, expectedContactRequest)),
+                null,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
     /// Ensures the Prospect path sends entityType PROSPECT when Account confirms the contact is prospect-only.
     /// </summary>
     [Fact]
@@ -80,6 +120,7 @@ public class CreatePasswordExperienceServiceTests
         var request = BuildRequest(contactId);
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.OK);
+        SetupNoContactEmailFound(contactId);
         SetupFeatureFlagEnabled();
         accountService
             .Setup(s => s.GetProspectOnlyContactResultAsync(contactId, It.IsAny<CancellationToken>()))
@@ -119,6 +160,7 @@ public class CreatePasswordExperienceServiceTests
         var request = BuildRequest(contactId);
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.OK);
+        SetupNoContactEmailFound(contactId);
         SetupFeatureFlagEnabled();
         accountService
             .Setup(s => s.GetProspectOnlyContactResultAsync(contactId, It.IsAny<CancellationToken>()))
@@ -180,6 +222,7 @@ public class CreatePasswordExperienceServiceTests
         // Arrange
         var contactId = 42;
         var request = BuildRequest(contactId);
+        SetupNoContactEmailFound(contactId);
         SetupFeatureFlagEnabled();
         accountService
             .Setup(s => s.GetProspectOnlyContactResultAsync(contactId, It.IsAny<CancellationToken>()))
@@ -205,6 +248,7 @@ public class CreatePasswordExperienceServiceTests
         var request = BuildRequest(contactId: 42);
         var expectedContactRequest = BuildContactRequest(request);
         var response = new HttpResponseMessage(HttpStatusCode.Forbidden);
+        SetupNoContactEmailFound(request.contactId!.Value);
         featureFlagService
             .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -284,6 +328,17 @@ public class CreatePasswordExperienceServiceTests
         return actual.token == expected.token
             && actual.newPassword == expected.newPassword
             && actual.isCreatePasswordAction == expected.isCreatePasswordAction;
+    }
+
+    /// <summary>
+    /// Configures the Contact-by-id lookup to return no contact, simulating no resolvable email for the given id.
+    /// </summary>
+    /// <param name="contactId">The contact identifier expected to be looked up.</param>
+    private void SetupNoContactEmailFound(int contactId)
+    {
+        contactService
+            .Setup(s => s.GetContactByIdAsync(contactId))
+            .ReturnsAsync((global::ApiGateway.Contact.Models.Contact?)null);
     }
 
     /// <summary>

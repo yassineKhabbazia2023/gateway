@@ -115,7 +115,7 @@ public class ProspectOrchestrationServiceTests
         _registry.Setup(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>())).ReturnsAsync(new AkuiteoCustomerCreated { AccountNumber = accountNumber });
         _registry.Setup(r => r.CreateAkuiteoContactAsync(It.IsAny<string>(), It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreated { AccountId = accountId });
-        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>())).ReturnsAsync(new ContactCreated { ContactId = contactId });
+        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new ContactCreated { ContactId = contactId });
         _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>())).ReturnsAsync(new CreateRolesBulkResult());
         _prospect.Setup(p => p.UpdateProspectIdsAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(FinalizeProspectOutcome.Updated);
         _prospect.Setup(p => p.PrepareCreationResumeAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -139,8 +139,8 @@ public class ProspectOrchestrationServiceTests
         CreateContactRequest? capturedContactRequest = null;
         var executedSteps = new List<string>();
         SetupHappyPath(prospectId, accountNumber, accountId, contactId);
-        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<CreateContactRequest, CancellationToken>((request, _) => capturedContactRequest = request)
+        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateContactRequest, string?, CancellationToken>((request, _, _) => capturedContactRequest = request)
             .ReturnsAsync(new ContactCreated { ContactId = contactId });
         _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
             .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((id, items, _, _) =>
@@ -157,7 +157,7 @@ public class ProspectOrchestrationServiceTests
             .Callback(() => executedSteps.Add("Beneficiary"))
             .ReturnsAsync(true);
 
-        var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        var result = await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         result.Should().NotBeNull();
         result.AccountId.Should().Be(accountId);
@@ -187,7 +187,7 @@ public class ProspectOrchestrationServiceTests
         _registry.Verify(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>()), Times.Once);
         _registry.Verify(r => r.CreateAkuiteoContactAsync(accountNumber, It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _accountService.Verify(a => a.CreateAccountForProspectAsync(It.Is<CreateAccountRequest>(r => r.AccountNumber == accountNumber && r.Siret == "12345678901234" && r.AccountType == AccountType.PROSPECT), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
-        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.UpdateCreationProgressAsync(prospectId, 100, It.IsAny<UpdateProspectCreationProgressRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(6));
         _prospect.Verify(p => p.UpdateProspectIdsAsync(prospectId, accountNumber, accountId, contactId, It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.PersistBeneficiariesAsync(prospectId, It.IsAny<CancellationToken>()), Times.Once);
@@ -206,7 +206,7 @@ public class ProspectOrchestrationServiceTests
             .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
             .ReturnsAsync(new AccountCreated { AccountId = 43 });
 
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         capturedAccountRequest.Should().NotBeNull();
         capturedAccountRequest!.Address.Should().NotBeNull();
@@ -235,7 +235,7 @@ public class ProspectOrchestrationServiceTests
             .Callback<int, IReadOnlyCollection<CreateRolesBulkItem>, int?, CancellationToken>((_, items, _, _) => capturedItems = items)
             .ReturnsAsync(new CreateRolesBulkResult());
 
-        await _service.CreateAsync(request, CancellationToken.None);
+        await _service.CreateAsync(request, null, CancellationToken.None);
 
         capturedItems.Should().NotBeNull();
         capturedItems!.Where(item => item.ContactId == request.AccountManagerContactId)
@@ -259,7 +259,7 @@ public class ProspectOrchestrationServiceTests
             .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
             .ReturnsAsync(new AccountCreated { AccountId = 43 });
 
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         capturedAccountRequest.Should().NotBeNull();
         capturedAccountRequest!.LegalForm.Should().Be("SARL");
@@ -289,7 +289,7 @@ public class ProspectOrchestrationServiceTests
             .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
             .ReturnsAsync(new AccountCreated { AccountId = 43 });
 
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         capturedAccountRequest.Should().NotBeNull();
         capturedAccountRequest!.Address.Should().NotBeNull();
@@ -301,7 +301,7 @@ public class ProspectOrchestrationServiceTests
     {
         _registry.Setup(r => r.SiretExistsInAkuiteoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         await act.Should().ThrowAsync<SiretAlreadyExistsException>();
         _prospect.Verify(p => p.GetInpiCompanyInfoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -347,7 +347,7 @@ public class ProspectOrchestrationServiceTests
                 _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("6"));
                 break;
             case 7:
-                _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("7"));
+                _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("7"));
                 break;
             case 8:
                 _prospect.Setup(p => p.UpdateProspectIdsAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("8"));
@@ -364,7 +364,7 @@ public class ProspectOrchestrationServiceTests
         ProspectOrchestrationException? caught = null;
         try
         {
-            await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+            await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
         }
         catch (ProspectOrchestrationException ex)
         {
@@ -386,12 +386,12 @@ public class ProspectOrchestrationServiceTests
         SetupHappyPath(42, "AK-001", 43, 99);
         _registry.Setup(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("boom"));
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         await act.Should().ThrowAsync<ProspectOrchestrationException>();
         _registry.Verify(r => r.CreateAkuiteoContactAsync(It.IsAny<string>(), It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()), Times.Never);
         _accountService.Verify(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
-        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _accountService.Verify(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
         _prospect.Verify(p => p.UpdateProspectIdsAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _prospect.Verify(
@@ -412,7 +412,7 @@ public class ProspectOrchestrationServiceTests
         SetupHappyPath(42, "AK-001", 43, 99);
         _registry.Setup(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("boom"));
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
         await act.Should().ThrowAsync<ProspectOrchestrationException>();
 
         _logger.Verify(
@@ -447,12 +447,12 @@ public class ProspectOrchestrationServiceTests
                     .ThrowsAsync(new HttpRequestException("step-6"));
                 break;
             case 7:
-                _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
+                _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new HttpRequestException("step-7"));
                 break;
         }
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<ProspectOrchestrationException>();
         exception.Which.Step.Should().Be(failingStep);
@@ -464,7 +464,7 @@ public class ProspectOrchestrationServiceTests
 
         if (failingStep <= 6)
         {
-            _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+            _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         _prospect.Verify(p => p.UpdateProspectIdsAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -494,7 +494,7 @@ public class ProspectOrchestrationServiceTests
                     : FinalizeProspectOutcome.Updated;
             });
 
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         executedSteps.Should().Equal("patch-attempt-1", "patch-attempt-2", "accountRoles");
         _prospect.Verify(p => p.UpdateProspectIdsAsync(42, "AK-001", 43, 99, It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -511,7 +511,7 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.UpdateProspectIdsAsync(42, "AK-001", 43, 99, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinalizeProspectOutcome.SynchronizationPending);
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<ProspectOrchestrationException>();
         exception.Which.Step.Should().Be(8);
@@ -538,7 +538,7 @@ public class ProspectOrchestrationServiceTests
                 ]
             });
 
-        var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        var result = await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         result.AccountId.Should().Be(43);
         result.Signatory.ContactId.Should().Be(99);
@@ -582,7 +582,7 @@ public class ProspectOrchestrationServiceTests
                     : ProspectRoleSynchronizationOutcome.Synchronized;
             });
 
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         _prospect.Verify(p => p.GetCreationRoleSynchronizationOutcomeAsync(42, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _prospect.Verify(
@@ -604,7 +604,7 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.GetCreationRoleSynchronizationOutcomeAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ProspectRoleSynchronizationOutcome.SynchronizationPending);
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<ProspectOrchestrationException>();
         exception.Which.Step.Should().Be(ProspectOrchestrationDiagnosticSteps.ConfirmRoleSynchronization);
@@ -647,7 +647,7 @@ public class ProspectOrchestrationServiceTests
             .ReturnsAsync(FinalizeProspectOutcome.Updated);
         _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AccountCreated { AccountId = 43 });
-        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
+        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ContactCreated { ContactId = 99 });
         _registry.Setup(r => r.CreateAkuiteoContactAsync("AK-001", It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -660,7 +660,7 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.MarkProspectCreationFailedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<MarkProspectCreationFailedRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        var result = await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         result.AccountNumber.Should().Be("AK-001");
         _registry.Verify(r => r.SiretExistsInAkuiteoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -670,59 +670,7 @@ public class ProspectOrchestrationServiceTests
         _registry.Verify(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>()), Times.Never);
         _registry.Verify(r => r.CreateAkuiteoContactAsync("AK-001", It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()), Times.Once);
         _accountService.Verify(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
-        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Verifies that resuming past the INPI lookup keeps the request-derived legal form and geography
-    /// but cannot populate the INPI-only NAF code, street, or city since INPI is not fetched again on resume.
-    /// </summary>
-    [Fact]
-    public async Task CreateAsync_WhenResumingAfterAkuiteoCustomerCreated_PopulatesAccountWithoutInpiNafCodeOrStreet()
-    {
-        CreateAccountRequest? capturedAccountRequest = null;
-        _prospect.Setup(p => p.GetIncompleteProspectBySiretAsync("12345678901234", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new IncompleteProspectCreationState
-            {
-                ProspectId = 42,
-                LegalName = "ACME SARL",
-                CreationStatus = 2,
-                LastCompletedStep = 4,
-                CompletedMilestone = ProspectCreationMilestone.AkuiteoCustomerCreated,
-                AkuiteoAccountNumber = "AK-001",
-                ResumeRequestFingerprint = BuildResumeFingerprint()
-            });
-        _prospect.Setup(p => p.UpdateCreationProgressAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<UpdateProspectCreationProgressRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        _prospect.Setup(p => p.PrepareCreationResumeAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        _prospect.Setup(p => p.UpdateProspectIdsAsync(42, "AK-001", 43, 99, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(FinalizeProspectOutcome.Updated);
-        _accountService.Setup(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
-            .Callback<CreateAccountRequest, int?, CancellationToken>((request, _, _) => capturedAccountRequest = request)
-            .ReturnsAsync(new AccountCreated { AccountId = 43 });
-        _contactService.Setup(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ContactCreated { ContactId = 99 });
-        _registry.Setup(r => r.CreateAkuiteoContactAsync("AK-001", It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _accountService.Setup(a => a.CreateRolesAsync(It.IsAny<int>(), It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CreateRolesBulkResult());
-        _prospect.Setup(p => p.GetCreationRoleSynchronizationOutcomeAsync(42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ProspectRoleSynchronizationOutcome.Synchronized);
-        _prospect.Setup(p => p.MarkProspectCreationFailedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<MarkProspectCreationFailedRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
-        await _service.CreateAsync(BuildRequest(), CancellationToken.None);
-
-        capturedAccountRequest.Should().NotBeNull();
-        capturedAccountRequest!.LegalForm.Should().Be("SARL");
-        capturedAccountRequest.NafCode.Should().BeNull();
-        capturedAccountRequest.Address.Should().NotBeNull();
-        capturedAccountRequest.Address!.Street.Should().BeNull();
-        capturedAccountRequest.Address.City.Should().BeNull();
-        capturedAccountRequest.Address.Department.Should().Be("75");
-        capturedAccountRequest.Address.Region.Should().Be("11");
-        capturedAccountRequest.Address.Country.Should().Be("FR");
+        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -742,7 +690,7 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.PrepareCreationResumeAsync(42, 100, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("resume"));
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         var exception = await act.Should().ThrowAsync<ProspectOrchestrationException>();
         exception.Which.Step.Should().Be(ProspectOrchestrationDiagnosticSteps.PrepareCreationResume);
@@ -764,7 +712,7 @@ public class ProspectOrchestrationServiceTests
                 ResumeRequestFingerprint = "DIFFERENT"
             });
 
-        Func<Task> act = () => _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        Func<Task> act = () => _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         await act.Should().ThrowAsync<ProspectResumePayloadMismatchException>();
         _prospect.Verify(p => p.PrepareCreationResumeAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -797,7 +745,7 @@ public class ProspectOrchestrationServiceTests
         _prospect.Setup(p => p.MarkProspectCreationFailedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<MarkProspectCreationFailedRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        var result = await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         result.AccountId.Should().Be(43);
         result.Signatory.ContactId.Should().Be(99);
@@ -805,7 +753,7 @@ public class ProspectOrchestrationServiceTests
         _registry.Verify(r => r.CreateAkuiteoCustomerAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<InpiCompanyInfo>(), It.IsAny<CancellationToken>()), Times.Never);
         _registry.Verify(r => r.CreateAkuiteoContactAsync(It.IsAny<string>(), It.IsAny<SignatoryDto>(), It.IsAny<CancellationToken>()), Times.Never);
         _accountService.Verify(a => a.CreateAccountForProspectAsync(It.IsAny<CreateAccountRequest>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
-        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        _contactService.Verify(c => c.CreateContactForProspectAsync(It.IsAny<CreateContactRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _prospect.Verify(p => p.UpdateProspectIdsAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _accountService.Verify(a => a.CreateRolesAsync(43, It.IsAny<IReadOnlyCollection<CreateRolesBulkItem>>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Once);
         _prospect.Verify(p => p.UpdateCreationProgressAsync(42, 100, It.Is<UpdateProspectCreationProgressRequest>(r => r.CompletedMilestone == ProspectCreationMilestone.RolesAssigned), It.IsAny<CancellationToken>()), Times.Once);
@@ -838,7 +786,7 @@ public class ProspectOrchestrationServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await _service.CreateAsync(BuildRequest(), CancellationToken.None);
+        var result = await _service.CreateAsync(BuildRequest(), null, CancellationToken.None);
 
         result.AccountId.Should().Be(43);
         _accountService.Verify(
@@ -875,7 +823,7 @@ public class ProspectOrchestrationServiceTests
         var request = BuildRequest();
         request.Signatory.ContactTypes = ["COFFRE_FORT_NUMERIQUE"];
 
-        await _service.CreateAsync(request, CancellationToken.None);
+        await _service.CreateAsync(request, null, CancellationToken.None);
 
         capturedItems.Should().NotBeNull();
         capturedItems!.Single(i => i.ContactId == contactId).ContactFlagPortailFactures.Should().BeTrue();
@@ -898,7 +846,7 @@ public class ProspectOrchestrationServiceTests
         var request = BuildRequest();
         request.Signatory.ContactTypes = ["coffre_fort_numerique"];
 
-        await _service.CreateAsync(request, CancellationToken.None);
+        await _service.CreateAsync(request, null, CancellationToken.None);
 
         capturedItems.Should().NotBeNull();
         capturedItems!.Single(i => i.ContactId == contactId).ContactFlagPortailFactures.Should().BeTrue();
@@ -920,7 +868,7 @@ public class ProspectOrchestrationServiceTests
         var request = BuildRequest();
         request.Signatory.ContactTypes = ["SIGNATAIRE", "RECOUVREMENT"];
 
-        await _service.CreateAsync(request, CancellationToken.None);
+        await _service.CreateAsync(request, null, CancellationToken.None);
 
         capturedItems.Should().NotBeNull();
         capturedItems!.Should().AllSatisfy(i => i.ContactFlagPortailFactures.Should().BeNull());

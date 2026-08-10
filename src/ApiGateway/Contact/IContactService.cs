@@ -33,9 +33,10 @@ public interface IContactService
     /// Creates a contact for the Prospect experience.
     /// </summary>
     /// <param name="request">The contact creation request.</param>
+    /// <param name="contactEmail">The optional current user email, forwarded as the ContactEmail header.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The created contact result.</returns>
-    Task<ContactCreated> CreateContactForProspectAsync(CreateContactRequest request, CancellationToken ct);
+    Task<ContactCreated> CreateContactForProspectAsync(CreateContactRequest request, string? contactEmail, CancellationToken ct);
 
     /// <summary>
     /// Calls the Contact authentication endpoint to create a new password.

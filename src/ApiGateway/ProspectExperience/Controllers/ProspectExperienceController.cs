@@ -101,7 +101,8 @@ public class ProspectExperienceController(
                 });
         }
 
-        var prospect = await prospectService.CreateAsync(request, ct);
+
+        var prospect = await prospectService.CreateAsync(request, userEmail, ct);
         return StatusCode(StatusCodes.Status201Created, prospect);
     }
 

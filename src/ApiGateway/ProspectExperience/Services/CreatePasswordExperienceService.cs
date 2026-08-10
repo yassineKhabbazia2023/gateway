@@ -1,6 +1,7 @@
 using ApiGateway.Account;
 using ApiGateway.Contact;
 using ApiGateway.FeatureFlags;
+using ApiGateway.FeatureFlags.Models;
 using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
@@ -16,13 +17,14 @@ public class CreatePasswordExperienceService(
     IContactService contactService,
     ILogger<CreatePasswordExperienceService> logger) : ICreatePasswordExperienceService
 {
-    private static readonly string ProspectEntityType = AccountType.PROSPECT.ToString();
-
     /// <inheritdoc />
     public async Task<HttpResponseMessage> CreateNewPasswordAsync(CreatePasswordExperienceRequest request, CancellationToken ct)
     {
+        // First-time password creation is anonymous, so there is no bearer token to extract an email from.
+        // ContactId is the only reliable identity we have in that case, so resolve the email through it.
+        var resolvedContactEmail = await ResolveContactEmailAsync(request.contactId, ct);
         var contactRequest = request.ToContactRequest();
-        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, ct: ct))
+        if (!await featureFlagService.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, context: FeatureContext.FromEmail(resolvedContactEmail), ct: ct))
         {
             return await contactService.CreateNewPasswordAsync(contactRequest, entityType: null, ct);
         }
@@ -58,6 +60,24 @@ public class CreatePasswordExperienceService(
     }
 
     /// <summary>
+    /// Resolves the contact email to forward downstream via a Contact lookup by <paramref name="contactId"/>,
+    /// since the create-password flow is anonymous and never carries a bearer token.
+    /// </summary>
+    /// <param name="contactId">The contact identifier from the request payload, if any.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The resolved contact email, or <see langword="null"/> if it cannot be determined.</returns>
+    private async Task<string?> ResolveContactEmailAsync(int? contactId, CancellationToken ct)
+    {
+        if (!contactId.HasValue)
+        {
+            return null;
+        }
+
+        var contact = await contactService.GetContactByIdAsync(contactId.Value);
+        return contact?.Email;
+    }
+
+    /// <summary>
     /// Calls Contact with the Prospect entity type.
     /// </summary>
     /// <param name="request">The create-new-password request.</param>
@@ -69,7 +89,7 @@ public class CreatePasswordExperienceService(
         logger.LogInformation(
             "Account returned true for prospect-only check. Calling Contact create-password with entityType PROSPECT for ContactId {ContactId}",
             contactId);
-        return await contactService.CreateNewPasswordAsync(request, ProspectEntityType, ct);
+        return await contactService.CreateNewPasswordAsync(request, AccountType.PROSPECT.ToString(), ct);
     }
 
     /// <summary>

@@ -1,8 +1,10 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using ApiGateway.Contact;
 using ApiGateway.Contact.Models;
 using ApiGateway.Exceptions;
+using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Models.Requests;
 using Microsoft.AspNetCore.Http;
 using Moq.Protected;
@@ -496,6 +498,175 @@ public class ContactServiceTests
 
         // Assert
         result.Should().BeNull();
+    }
+
+    private static CreateContactRequest BuildContactRequest() => new()
+    {
+        Email = "jean.dupont@test.fr",
+        FirstName = "Jean",
+        LastName = "Dupont",
+        MobilePhone = "0612345678",
+        OfficeCode = "PAR",
+        JobDescription = "Dirigeant",
+        OldId = Guid.NewGuid(),
+        AccountNumber = "AK-001"
+    };
+
+    /// <summary>
+    /// Ensures the Contact client posts to the contacts endpoint with a camelCase body and forwards the ContactEmail header when provided.
+    /// </summary>
+    [Fact]
+    public async Task CreateContactForProspectAsync_WithContactEmail_PostsCamelCaseBodyAndForwardsHeader()
+    {
+        // Arrange
+        var request = BuildContactRequest();
+        var responsePayload = new ContactCreated { ContactId = 42, Message = "created" };
+        HttpRequestMessage? captured = null;
+        string? bodyJson = null;
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
+            {
+                captured = req;
+                bodyJson = req.Content?.ReadAsStringAsync(c).GetAwaiter().GetResult();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = JsonContent.Create(responsePayload, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+            });
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.CreateContactForProspectAsync(request, "collab@test.fr", CancellationToken.None);
+
+        // Assert
+        result.ContactId.Should().Be(42);
+        result.Message.Should().Be("created");
+        captured!.Method.Should().Be(HttpMethod.Post);
+        captured.RequestUri!.PathAndQuery.Should().Be("/contacts");
+        captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("collab@test.fr");
+
+        using var json = JsonDocument.Parse(bodyJson!);
+        var root = json.RootElement;
+        root.GetProperty("email").GetString().Should().Be(request.Email);
+        root.GetProperty("firstName").GetString().Should().Be(request.FirstName);
+        root.GetProperty("lastName").GetString().Should().Be(request.LastName);
+        root.GetProperty("mobilePhone").GetString().Should().Be(request.MobilePhone);
+        root.GetProperty("officeCode").GetString().Should().Be(request.OfficeCode);
+        root.GetProperty("jobDescription").GetString().Should().Be(request.JobDescription);
+        root.GetProperty("accountNumber").GetString().Should().Be(request.AccountNumber);
+    }
+
+    /// <summary>
+    /// Ensures the Contact client omits the ContactEmail header when no email is supplied.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task CreateContactForProspectAsync_WhenContactEmailIsBlank_DoesNotSendContactEmailHeader(string? contactEmail)
+    {
+        // Arrange
+        var request = BuildContactRequest();
+        var responsePayload = new ContactCreated { ContactId = 7 };
+        HttpRequestMessage? captured = null;
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, c) => captured = req)
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = JsonContent.Create(responsePayload, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+            });
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        var result = await contactService.CreateContactForProspectAsync(request, contactEmail, CancellationToken.None);
+
+        // Assert
+        result.ContactId.Should().Be(7);
+        captured!.Headers.Contains("ContactEmail").Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Ensures the Contact client throws when the downstream response is not successful.
+    /// </summary>
+    [Fact]
+    public async Task CreateContactForProspectAsync_WhenResponseIsNotSuccessful_Throws()
+    {
+        // Arrange
+        var request = BuildContactRequest();
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest));
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        Func<Task> act = () => contactService.CreateContactForProspectAsync(request, "collab@test.fr", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    /// <summary>
+    /// Ensures the Contact client throws when the successful response body is empty.
+    /// </summary>
+    [Fact]
+    public async Task CreateContactForProspectAsync_WhenResponseIsEmpty_Throws()
+    {
+        // Arrange
+        var request = BuildContactRequest();
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create((ContactCreated?)null)
+            });
+
+        var httpClient = new HttpClient(mockHttpMessageHandler.Object)
+        {
+            BaseAddress = new Uri("http://xyz.fr/")
+        };
+        var contactService = new ContactService(httpClient);
+
+        // Act
+        Func<Task> act = () => contactService.CreateContactForProspectAsync(request, "collab@test.fr", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("Contact creation response was empty.");
     }
 
     /// <summary>

@@ -84,7 +84,7 @@ public class ProspectOrchestrationService(
             uploadResult.FailedDocumentIds);
     }
 
-    public async Task<ProspectListItem> CreateAsync(CreateProspectRequest request, CancellationToken ct)
+    public async Task<ProspectListItem> CreateAsync(CreateProspectRequest request, string? contactEmail, CancellationToken ct)
     {
         var siret = request.Siret;
         var runtimeState = new ProspectCreationRuntimeState();
@@ -158,7 +158,7 @@ public class ProspectOrchestrationService(
                     sanitizedPayload,
                     ct);
 
-                runtimeState.ContactId = await CreateRydgeContactAsync(request, siret, runtimeState.ProspectId.Value, runtimeState.AccountNumber, sanitizedPayload, ct);
+                runtimeState.ContactId = await CreateRydgeContactAsync(request, siret, runtimeState.ProspectId.Value, runtimeState.AccountNumber, sanitizedPayload, contactEmail, ct);
                 runtimeState.LastCompletedMilestone = ProspectCreationMilestone.RydgeContactCreated;
                 await PersistRuntimeStateAsync(
                     runtimeState,
@@ -257,7 +257,7 @@ public class ProspectOrchestrationService(
 
             if (runtimeState.LastCompletedMilestone == ProspectCreationMilestone.RydgeAccountCreated)
             {
-                runtimeState.ContactId = await CreateRydgeContactAsync(request, siret, runtimeState.ProspectId.Value, runtimeState.AccountNumber, sanitizedPayload, ct);
+                runtimeState.ContactId = await CreateRydgeContactAsync(request, siret, runtimeState.ProspectId.Value, runtimeState.AccountNumber, sanitizedPayload, contactEmail, ct);
                 runtimeState.LastCompletedMilestone = ProspectCreationMilestone.RydgeContactCreated;
                 await PersistRuntimeStateAsync(
                     runtimeState,
@@ -406,12 +406,13 @@ public class ProspectOrchestrationService(
         }
     }
 
-    private async Task<int> CreateRydgeContactAsync(CreateProspectRequest request, string siret, int prospectId, string accountNumber, string sanitizedPayload, CancellationToken ct)
+    private async Task<int> CreateRydgeContactAsync(CreateProspectRequest request, string siret, int prospectId, string accountNumber, string sanitizedPayload, string? contactEmail, CancellationToken ct)
     {
         try
         {
             var payload = CreateContactRequest.FromSignatory(request.Signatory, request.OfficeCode, accountNumber);
-            var result = await contactService.CreateContactForProspectAsync(payload, ct);
+
+            var result = await contactService.CreateContactForProspectAsync(payload, contactEmail, ct);
 
             return result.ContactId;
         }

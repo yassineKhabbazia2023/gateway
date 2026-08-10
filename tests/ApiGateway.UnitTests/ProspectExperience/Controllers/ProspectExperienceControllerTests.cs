@@ -162,7 +162,7 @@ public class ProspectExperienceControllerTests
         errorResponse.ErrorMessage.Should().Contain("Le SIRET est requis.");
         errorResponse.ErrorMessage.Should().Contain("La forme juridique est requise.");
         _orchestrationService.Verify(
-            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -183,7 +183,7 @@ public class ProspectExperienceControllerTests
         errorResponse.ErrorCode.Should().Be(Errors.ProspectSignatoryEmailDomainForbiddenCode);
         errorResponse.ErrorMessage.Should().Contain(Errors.ProspectSignatoryEmailDomainForbiddenMessage);
         _orchestrationService.Verify(
-            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -207,7 +207,7 @@ public class ProspectExperienceControllerTests
             ErrorMessage = Errors.ProspectExperienceDisabledMessage
         });
         _orchestrationService.Verify(
-            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -236,7 +236,7 @@ public class ProspectExperienceControllerTests
             .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
-            .Setup(s => s.CreateAsync(request, It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateAsync(request, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(prospect);
 
         // Act
@@ -261,7 +261,7 @@ public class ProspectExperienceControllerTests
             .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
-            .Setup(s => s.CreateAsync(request, It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateAsync(request, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ProspectListItem
             {
                 AccountId = 43,
@@ -274,7 +274,7 @@ public class ProspectExperienceControllerTests
         var result = await _controller.CreateProspect(request, CancellationToken.None);
 
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be((int)HttpStatusCode.Created);
-        _orchestrationService.Verify(s => s.CreateAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+        _orchestrationService.Verify(s => s.CreateAsync(request, It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -285,7 +285,7 @@ public class ProspectExperienceControllerTests
             .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
-            .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ProspectOrchestrationException(step: 4));
 
         // Act
@@ -316,7 +316,7 @@ public class ProspectExperienceControllerTests
             f => f.IsEnabledAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _orchestrationService.Verify(
-            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -352,7 +352,7 @@ public class ProspectExperienceControllerTests
             ErrorMessage = string.Format(Errors.NotValidCollaboratorMessage, UserEmail)
         });
         _orchestrationService.Verify(
-            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()),
+            s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -364,7 +364,7 @@ public class ProspectExperienceControllerTests
             .Setup(f => f.IsEnabledAsync(FeatureFlagKeys.IsProspectExperienceEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _orchestrationService
-            .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateAsync(It.IsAny<CreateProspectRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new SiretAlreadyExistsException("12345678901234"));
 
         // Act
