@@ -2,6 +2,29 @@
   "Routes": [
     {
       "SwaggerKey": "ContactRegistry",
+      "UpstreamPathTemplate": "/gtw/registry/api/akuiteo/contacts?{everything}",
+      "DownstreamPathTemplate": "/api/akuiteo/contacts?{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsereg#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "QaSensitiveEndpointsHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "ContactRegistry",
       "UpstreamPathTemplate": "/gtw/registry/api/invoices/{invoiceNumber}/accounts/{accountId}/content",
       "DownstreamPathTemplate": "/api/invoices/{invoiceNumber}/accounts/{accountId}/content",
       "DownstreamScheme": "https",
