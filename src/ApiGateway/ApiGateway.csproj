@@ -50,10 +50,5 @@
 		<PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
 		<PackageReference Include="System.Text.Json" Version="10.0.3" />
 	</ItemGroup>
-	<ItemGroup>
-		<Content Update="Configuration\ocelot.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
 
 </Project>

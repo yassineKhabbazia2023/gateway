@@ -47,7 +47,7 @@ public class AuthorizationService : IAuthorizationService
 
     public async Task<bool> CreateOrUpdateContactAccountAuthorizationAsync(int contactId, int accountId, IList<string> codes)
     {
-        var url = $"/api/authorizations/configuration?contactId={contactId}&accountId={accountId}";
+        var url = $"api/authorizations/configuration?contactId={contactId}&accountId={accountId}";
         try
         {
             _logger.LogInformation("Updating authorizations for ContactId {ContactId}, AccountId {AccountId} via {Url}", contactId, accountId, url);

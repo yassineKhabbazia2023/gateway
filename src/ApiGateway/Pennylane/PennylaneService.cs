@@ -29,7 +29,7 @@ public class PennylaneService(
     public async Task<CreateCompanyResult> CreateCompanyAsync(CreateCompanyRequest request)
     {
         var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
-        var url = "/api/pennylane/companies/onboarding";
+        var url = "api/pennylane/companies/onboarding";
 
         logger.LogDebug("Calling Pennylane API: POST {Url} with AccountId: {AccountId}, Contacts: {ContactCount}",
             url, request.AccountId, request.Contacts.Count);
@@ -70,7 +70,7 @@ public class PennylaneService(
     public async Task<GrantPennylaneAccessResult> GrantPennylaneAccessAsync(PennylaneAuthorizationRequest request)
     {
         var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
-        var url = "/api/pennylane/role/create";
+        var url = "api/pennylane/role/create";
 
         try
         {
@@ -123,7 +123,7 @@ public class PennylaneService(
     public async Task<GrantPennylaneAccessResult> UpdatePennylaneRoleAsync(PennylaneAuthorizationRequest request)
     {
         var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
-        var url = "/api/pennylane/role";
+        var url = "api/pennylane/role";
 
 
         logger.LogInformation("Updating Pennylane role via POST {Url} for ContactId: {ContactId}, AccountId: {AccountId}, Role: {Role}",
@@ -157,7 +157,7 @@ public class PennylaneService(
     public async Task<RevokePennylaneAccessResult> RevokePennylaneAccessAsync(RevokeAccessRequest request)
     {
         var pennylaneClient = httpClientFactory.CreateClient("PennylaneClient");
-        var url = "/api/pennylane/role/revoke";
+        var url = "api/pennylane/role/revoke";
 
         logger.LogInformation("Revoking Pennylane access via POST {Url} for ContactId: {ContactId}, AccountId: {AccountId}",
             url, request.ContactId, request.AccountId);

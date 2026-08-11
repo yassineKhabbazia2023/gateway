@@ -62,7 +62,8 @@ flowchart LR
 `managed_by_script.gateway_routes`, générée depuis `ocelot.json`) ; vue par service downstream :
 graphe consolidé `pulse.graph.yaml`, edges `routes`.
 
-> **Contrat de référence** : `src/Config/ocelot.json` (production) — `src/ApiGateway/Configuration/ocelot.json` (dev, sous-ensemble).
+> **Contrat de référence** : `src/Config/ocelot.*.json`, source unique pour la production comme
+> pour un lancement sur poste (où `AddLocalRouting` les fusionne et réécrit les downstreams).
 > Convention upstream : `/gtw/{service}/api/...` → downstream `appcegpulse{trigramme}#{env_id}#01.azurewebsites.net`.
 
 Anatomie d'une route :
@@ -178,13 +179,13 @@ Pulse.Back.Gateway/
 ├── src/
 │   ├── ApiGateway/               # Projet unique (PAS de Clean Architecture — feature folders)
 │   │   ├── Program.cs            # Pipeline + Ocelot
-│   │   ├── Configuration/ocelot.json    # Routes DEV
+│   │   ├── LocalRouting/         # Config Ocelot d'un lancement sur poste (depuis src/Config)
 │   │   ├── DelegatingHandlers/   # 11 handlers
 │   │   ├── Middlewares/          # TokenRevocation, Authorization, GatewayException
 │   │   ├── Identity/ TokenRevocation/ Authorization/ FeatureFlags/
 │   │   ├── Aggregator/           # 4 agrégateurs de réponses
 │   │   └── {Contact,Account,Offer,Pennylane,...}/  # services scoped par feature
-│   └── Config/ocelot.json        # Routes PROD (tokenisé #{env_id}#)
+│   └── Config/ocelot.*.json      # Routes, une par domaine (tokenisé #{env_id}#)
 ├── tests/ApiGateway.UnitTests/   # miroir 1:1 de src
 └── pipelines/                    # 8 YAML Azure DevOps (PR, delivery, hotfix, update)
 ```

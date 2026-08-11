@@ -18,8 +18,8 @@ src/
   ApiGateway/
     Program.cs                     # Entry point + Ocelot pipeline
     GlobalUsings.cs
-    Configuration/                 # Ocelot config, service config, Swagger
-      ocelot.json                  # Dev-only routes
+    Configuration/                 # Service config, Swagger, shared constants
+    LocalRouting/                  # Ocelot config of a workstation run, built from Config/
     DelegatingHandlers/            # Custom Ocelot handlers (global + per-route)
       Mocks/                       # Mock response system
     Middlewares/                   # Ocelot pipeline middleware (auth, exceptions, token revocation)
@@ -61,8 +61,8 @@ tests/
 | Interfaces                | `{Feature}/` or feature root          |
 | Models/DTOs               | `{Feature}/Models/` or `Models/`      |
 | DI registration           | `Extensions/*ServiceExtensions.cs`    |
-| Ocelot config (prod)      | `Config/ocelot.<domain>.json`         |
-| Ocelot config (dev)       | `Configuration/ocelot.json`           |
+| Ocelot config             | `Config/ocelot.<domain>.json`         |
+| Routage local (dev)       | `LocalRouting/`                       |
 | Constants                 | `Constants/GlobalConstants.cs`        |
 | Error codes               | `Exceptions/Errors.cs`               |
 
@@ -155,7 +155,7 @@ The Gateway is a **single project** — not Clean Architecture. Code is organize
 
 - NEVER remove or rename a published route without deprecation period
 - Adding `RouteClaimsRequirement` to an existing open route is a breaking change — coordinate with frontend
-- New routes MUST be added to both the matching domain file `Config/ocelot.<domain>.json` (prod) and `Configuration/ocelot.json` (dev)
+- New routes are added ONLY to the matching domain file `Config/ocelot.<domain>.json` — it is the single source for every environment. A run on a developer workstation merges those same files in memory (`LocalRouting/`), so no separate dev route file exists
 
 
 ## DelegatingHandlers

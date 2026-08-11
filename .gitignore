@@ -363,7 +363,15 @@ MigrationBackup/
 FodyWeavers.xsd
 .idea
 
-/.vscode/launch.json
 nuget.config
+
+# Editor configuration files
+.vscode/launch.json
 .vscode/tasks.json
+.vscode/settings.json
+
+# AI stuff
+.claude
+
+# Local environment files
 /src/ApiGateway/appsettings.local.json

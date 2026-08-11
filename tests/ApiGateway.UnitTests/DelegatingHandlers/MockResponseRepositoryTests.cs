@@ -17,7 +17,28 @@ public class MockResponseRepositoryTests
             .Returns(_blobClientMock.Object);
     }
 
-    private MockResponseRepository CreateRepository() => new(_containerClientMock.Object);
+    private MockResponseRepository CreateRepository() =>
+        new(new Lazy<BlobContainerClient>(() => _containerClientMock.Object));
+
+    // ---- Construction ----
+
+    [Fact]
+    public void Constructor_ShouldNotResolveTheBlobClient()
+    {
+        // Arrange
+        var resolved = false;
+        var lazyClient = new Lazy<BlobContainerClient>(() =>
+        {
+            resolved = true;
+            return new BlobContainerClient(new Uri("http://127.0.0.1:10000/devstoreaccount1/mocks"));
+        });
+
+        // Act
+        _ = new MockResponseRepository(lazyClient);
+
+        // Assert
+        resolved.Should().BeFalse("the blob client must only be built on the first mock read");
+    }
 
     // ---- ToSafeBlobName / FromBlobName ----
 
@@ -150,5 +171,73 @@ public class MockResponseRepositoryTests
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    // ---- ListAllAsync ----
+
+    [Fact]
+    public async Task ListAllAsync_ReturnsOneEntryPerBlob_WithDecodedRouteKeys()
+    {
+        // Arrange
+        SetupBlobs(
+            ("get--__api__contacts__list.json", "{\"contacts\":[]}"),
+            ("post--__api__users.json", "{\"id\":1}"));
+
+        var repository = CreateRepository();
+
+        // Act
+        var entries = await repository.ListAllAsync();
+
+        // Assert
+        entries.Should().HaveCount(2);
+        entries[0].RouteKey.Should().Be("get:/api/contacts/list");
+        entries[0].JsonContent.Should().Be("{\"contacts\":[]}");
+        entries[1].RouteKey.Should().Be("post:/api/users");
+        entries[1].JsonContent.Should().Be("{\"id\":1}");
+    }
+
+    [Fact]
+    public async Task ListAllAsync_NoBlob_ReturnsEmptyList()
+    {
+        // Arrange
+        SetupBlobs();
+
+        var repository = CreateRepository();
+
+        // Act
+        var entries = await repository.ListAllAsync();
+
+        // Assert
+        entries.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Enumerating the container only yields names: each content is served by the matching
+    /// blob client.
+    /// </summary>
+    private void SetupBlobs(params (string BlobName, string JsonContent)[] blobs)
+    {
+        var items = blobs.Select(blob => BlobsModelFactory.BlobItem(name: blob.BlobName)).ToList();
+
+        _containerClientMock
+            .Setup(c => c.GetBlobsAsync(
+                It.IsAny<BlobTraits>(),
+                It.IsAny<BlobStates>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(AsyncPageable<BlobItem>.FromPages(
+                [Page<BlobItem>.FromValues(items, null, Mock.Of<Response>())]));
+
+        foreach (var (blobName, jsonContent) in blobs)
+        {
+            var blobClientMock = new Mock<BlobClient>();
+            blobClientMock
+                .Setup(b => b.DownloadContentAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Response.FromValue(
+                    BlobsModelFactory.BlobDownloadResult(content: BinaryData.FromString(jsonContent)),
+                    Mock.Of<Response>()));
+
+            _containerClientMock.Setup(c => c.GetBlobClient(blobName)).Returns(blobClientMock.Object);
+        }
     }
 }

@@ -36,7 +36,7 @@ public class BookingSyncTrigger(
         try
         {
             var client = httpClientFactory.CreateClient("BookingClient");
-            var syncRequest = new HttpRequestMessage(HttpMethod.Post, "/api/booking/sync");
+            var syncRequest = new HttpRequestMessage(HttpMethod.Post, "api/booking/sync");
             syncRequest.Headers.Add("CurrentUser", contactId.ToString());
             await client.SendAsync(syncRequest);
         }

@@ -1,5 +1,5 @@
 {
   "GlobalConfiguration": {
-    "BaseUrl": "https://api-#{env_id}#.#{env}#.kpmg-pulse.fr/desktop/api"
+    "BaseUrl": "https://api-#{env_id}#.#{env}#.pulse.rydge.fr/desktop/api"
   }
 }

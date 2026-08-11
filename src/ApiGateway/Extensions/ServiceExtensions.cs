@@ -91,28 +91,28 @@ public static class ServiceExtensions
 
         services.AddHttpClient<IContactService, ContactService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["ContactApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "ContactApiUri");
         })
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IAuthorizationService, AuthorizationService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["AuthorizationApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "AuthorizationApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IAccountService, AccountService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["AccountApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "AccountApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IOfferService, OfferService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["OfferApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "OfferApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
@@ -120,7 +120,7 @@ public static class ServiceExtensions
         // Add Pennylane HttpClient for company creation
         services.AddHttpClient("PennylaneClient", client =>
         {
-            client.BaseAddress = new Uri(configuration["PennylaneApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "PennylaneApiUri");
             client.Timeout = TimeSpan.FromSeconds(30); // Add explicit timeout
 
         })
@@ -129,28 +129,28 @@ public static class ServiceExtensions
 
         services.AddHttpClient<IIdentityService, IdentityService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["GigyaApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "GigyaApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IProspectApiClient, ProspectApiClient>(client =>
         {
-            client.BaseAddress = new Uri(configuration["ProspectApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "ProspectApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IRegistryProspectClient, RegistryProspectClient>(client =>
         {
-            client.BaseAddress = new Uri(configuration["RegistryApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "RegistryApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
 
         services.AddHttpClient<IMandatePaymentPreferencesClient, MandatePaymentPreferencesClient>(client =>
         {
-            client.BaseAddress = new Uri(configuration["MandateApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "MandateApiUri");
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
         .AddPolicyHandler(GetRetryPolicy());
@@ -180,7 +180,7 @@ public static class ServiceExtensions
 
         services.AddHttpClient("BookingClient", client =>
         {
-            client.BaseAddress = new Uri(configuration["BookingApiUri"]!);
+            client.BaseAddress = GetBaseUri(configuration, "BookingApiUri");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
         .SetHandlerLifetime(TimeSpan.FromMinutes(5))
@@ -250,16 +250,20 @@ public static class ServiceExtensions
 
     private static void ConfigureMockService(IServiceCollection services, IConfiguration configuration)
     {
-        var credential = new Azure.Storage.StorageSharedKeyCredential(
-            configuration["IsvcAzureStorageName"]!,
-            configuration["IsvcAzureStorageKey"]!);
-        var containerUri = new Uri($"{configuration["IsvcAzureBlobStorageUri"]!.TrimEnd('/')}/{MocksConstants.ContainerName}");
-        services.AddSingleton(_ =>
+        // Everything is deferred: with the mocks disabled no storage is required. Building
+        // the credential and the URI stays inside the factory, otherwise an empty
+        // configuration fails the service registration for a blob that is never used.
+        services.AddSingleton(_ => new Lazy<BlobContainerClient>(() =>
         {
+            var credential = new Azure.Storage.StorageSharedKeyCredential(
+                configuration["IsvcAzureStorageName"]!,
+                configuration["IsvcAzureStorageKey"]!);
+            var containerUri = new Uri($"{configuration["IsvcAzureBlobStorageUri"]!.TrimEnd('/')}/{MocksConstants.ContainerName}");
+
             var client = new BlobContainerClient(containerUri, credential);
             client.CreateIfNotExists();
             return client;
-        });
+        }));
         services.AddSingleton<IMockResponseRepository, MockResponseRepository>();
     }
 
@@ -269,6 +273,24 @@ public static class ServiceExtensions
         configuration.AddJsonFile(FileHelper.GetOcelotConfigFullPathName(configuration),
             optional: false,
             reloadOnChange: true);
+    }
+
+    /// <summary>
+    /// Reads a downstream base URI and guarantees a trailing slash.
+    /// Without it, <see cref="HttpClient"/> drops the last segment of the base path when
+    /// combining it with a relative request URI, so a base URL carrying a path prefix
+    /// (a reverse proxy route such as /offer) would silently lose it.
+    /// </summary>
+    internal static Uri GetBaseUri(IConfiguration configuration, string key)
+    {
+        var value = configuration[key];
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new GatewayException(StatusCodes.Status500InternalServerError, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, key));
+        }
+
+        return new Uri($"{value.TrimEnd('/')}/");
     }
 
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
@@ -297,7 +319,7 @@ public static class ServiceExtensions
         {
             if (configuration is not null)
             {
-                opt.GigyaApiKey = configuration["GigyaApiKey"]!;
+                opt.GigyaApiKey = configuration[ConfigConstants.GigyaApiKeyConfigKey]!;
                 opt.GigyaSecret = configuration["GigyaSecret"]!;
                 opt.GigyaUserKey = configuration["GigyaUserKey"]!;
                 opt.CollaboratorsSecurityGroup = configuration["CollaboratorsSecurityGroup"]!;

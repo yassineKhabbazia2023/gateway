@@ -19,30 +19,34 @@ namespace ApiGateway.Identity.Extensions
     [ExcludeFromCodeCoverage]
     public static class PulseIdentityServiceAuthenticationExtensions
     {
-        public static AuthenticationBuilder AddPulseIdentityServiceAsync(
+        /// <param name="authorityRepository">
+        /// Replacement source for the authorities. Only provided for a local run, where the
+        /// Azure table sits behind an unreachable private endpoint.
+        /// </param>
+        /// <returns>The names of the registered authentication schemes.</returns>
+        public static async Task<string[]> AddPulseIdentityServiceAsync(
             this AuthenticationBuilder builder,
             AzureTableAuthorityRepositoryOptions azureTableAuthorityRepositoryOptions,
             IPulseHttpClientFactory httpClientFactory,
-            out string[] schemeNames)
+            IAuthorityRepository? authorityRepository = null)
         {
             var httpClient = httpClientFactory.CreateClient();
 
-            var authorities = FetchAuthorities(azureTableAuthorityRepositoryOptions);
-
-            schemeNames = authorities.Select(a => a.Name).ToArray();
+            var authorities = authorityRepository is null
+                ? await FetchAuthoritiesAsync(azureTableAuthorityRepositoryOptions)
+                : await authorityRepository.FindAuthorities();
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<JwtBearerOptions>, JwtBearerPostConfigureOptions>());
 
             foreach (var authority in authorities)
             {
-                builder.RegisterJwtBearerHandler<PulseJwtBearerHandler>(authority, httpClient);
+                await builder.RegisterJwtBearerHandlerAsync(authority, httpClient);
             }
 
-            return builder;
-
+            return authorities.Select(a => a.Name).ToArray();
         }
 
-        private static IEnumerable<AuthorityJson> FetchAuthorities(AzureTableAuthorityRepositoryOptions options)
+        private static async Task<IReadOnlyList<AuthorityJson>> FetchAuthoritiesAsync(AzureTableAuthorityRepositoryOptions options)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddAzureTableAuthorityRepositoryProvider(opt =>
@@ -56,32 +60,30 @@ namespace ApiGateway.Identity.Extensions
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var provider = serviceProvider.GetRequiredService<IAuthorityRepository>();
 
-            return Task.Run(() => provider.FindAuthorities()).GetAwaiter().GetResult();
+            return await provider.FindAuthorities();
         }
 
-        private static AuthenticationBuilder RegisterJwtBearerHandler<T>(
+        private static async Task RegisterJwtBearerHandlerAsync(
             this AuthenticationBuilder builder,
             AuthorityJson authorityConfig,
-            IPulseHttpClientAdapter httpClient) where T : AuthenticationHandler<JwtBearerOptions>
+            IPulseHttpClientAdapter httpClient)
         {
-            var signingKeys = FetchSigningKeys(authorityConfig, httpClient);
+            var signingKeys = await FetchSigningKeysAsync(authorityConfig, httpClient);
 
-            builder.AddScheme<JwtBearerOptions, T>(authorityConfig.Name, jwtOptions =>
+            builder.AddScheme<JwtBearerOptions, PulseJwtBearerHandler>(authorityConfig.Name, jwtOptions =>
             {
                 ConfigureJwtBearerOptions(jwtOptions, authorityConfig, signingKeys);
             });
-
-            return builder;
         }
 
-        private static List<JsonWebKey> FetchSigningKeys(AuthorityJson authorityConfig, IPulseHttpClientAdapter httpClient)
+        private static async Task<List<JsonWebKey>> FetchSigningKeysAsync(AuthorityJson authorityConfig, IPulseHttpClientAdapter httpClient)
         {
             var keys = authorityConfig.SigningKeys.Select(k => new JsonWebKey(k.JsonWebKey)).ToList();
 
             if (!string.IsNullOrWhiteSpace(authorityConfig.JsonWebKeyFetchUrl)
                 && Uri.TryCreate(authorityConfig.JsonWebKeyFetchUrl, UriKind.Absolute, out var jsonWebKeyFetchUri))
             {
-                var key = httpClient.GetStringAsync(jsonWebKeyFetchUri).GetAwaiter().GetResult();
+                var key = await httpClient.GetStringAsync(jsonWebKeyFetchUri);
                 keys.Add(new JsonWebKey(key));
             }
 
