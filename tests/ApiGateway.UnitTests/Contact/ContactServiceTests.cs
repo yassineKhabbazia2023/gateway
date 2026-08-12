@@ -42,7 +42,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/api/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -78,7 +78,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/api/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -120,7 +120,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/api/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -177,7 +177,7 @@ public class ContactServiceTests
            {
                var encodedEmail = WebUtility.UrlEncode(contactEmail);
                req.Method.Should().Be(HttpMethod.Get);
-               req?.RequestUri?.PathAndQuery.Should().Be($"/contacts?Email={encodedEmail}");
+               req?.RequestUri?.PathAndQuery.Should().Be($"/api/contacts?Email={encodedEmail}");
            }).ReturnsAsync(httpResponseMessage).Verifiable();
 
         var contactService = new ContactService(client);
@@ -385,7 +385,7 @@ public class ContactServiceTests
             .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
             {
                 req.Method.Should().Be(HttpMethod.Get);
-                req.RequestUri?.PathAndQuery.Should().Be($"/contact/{contactId}");
+                req.RequestUri?.PathAndQuery.Should().Be($"/api/contact/{contactId}");
             })
             .ReturnsAsync(new HttpResponseMessage
             {
@@ -553,7 +553,7 @@ public class ContactServiceTests
         result.ContactId.Should().Be(42);
         result.Message.Should().Be("created");
         captured!.Method.Should().Be(HttpMethod.Post);
-        captured.RequestUri!.PathAndQuery.Should().Be("/contacts");
+        captured.RequestUri!.PathAndQuery.Should().Be("/api/contacts");
         captured.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("collab@test.fr");
 
         using var json = JsonDocument.Parse(bodyJson!);
@@ -687,7 +687,7 @@ public class ContactServiceTests
             .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
             {
                 req.Method.Should().Be(HttpMethod.Post);
-                req.RequestUri?.PathAndQuery.Should().Be("/authentication/createNewPassword");
+                req.RequestUri?.PathAndQuery.Should().Be("/api/authentication/createNewPassword");
                 bodyJson = req.Content?.ReadAsStringAsync(c).GetAwaiter().GetResult();
             })
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
@@ -727,7 +727,7 @@ public class ContactServiceTests
             .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
             {
                 req.Method.Should().Be(HttpMethod.Post);
-                req.RequestUri?.PathAndQuery.Should().Be("/authentication/createNewPassword?entityType=PROSPECT");
+                req.RequestUri?.PathAndQuery.Should().Be("/api/authentication/createNewPassword?entityType=PROSPECT");
             })
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
 
@@ -763,7 +763,7 @@ public class ContactServiceTests
             .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
             {
                 req.Method.Should().Be(HttpMethod.Post);
-                req.RequestUri?.PathAndQuery.Should().Be($"/customers/bulk-invite/{accountNumber}");
+                req.RequestUri?.PathAndQuery.Should().Be($"/api/customers/bulk-invite/{accountNumber}");
                 req.Headers.Contains("CurrentUser").Should().BeTrue();
                 req.Headers.GetValues("CurrentUser").Should().ContainSingle().Which.Should().Be(currentUserId.ToString());
                 bodyJson = req.Content?.ReadAsStringAsync(c).GetAwaiter().GetResult();
@@ -808,7 +808,7 @@ public class ContactServiceTests
             .Callback<HttpRequestMessage, CancellationToken>((req, c) =>
             {
                 req.Method.Should().Be(HttpMethod.Post);
-                req.RequestUri?.PathAndQuery.Should().Be($"/customers/bulk-invite/{accountNumber}?entityType=PROSPECT%20FLOW");
+                req.RequestUri?.PathAndQuery.Should().Be($"/api/customers/bulk-invite/{accountNumber}?entityType=PROSPECT%20FLOW");
             })
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {

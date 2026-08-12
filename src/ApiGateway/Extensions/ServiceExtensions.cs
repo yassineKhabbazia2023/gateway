@@ -40,6 +40,9 @@ namespace ApiGateway.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceExtensions
 {
+    /// <summary>Suffix the downstream base URIs must not carry: the client paths own it.</summary>
+    private const string ApiPathSegment = "/api";
+
     public static void AddApiGatewayServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Add services to the container.
@@ -276,10 +279,21 @@ public static class ServiceExtensions
     }
 
     /// <summary>
-    /// Reads a downstream base URI and guarantees a trailing slash.
-    /// Without it, <see cref="HttpClient"/> drops the last segment of the base path when
-    /// combining it with a relative request URI, so a base URL carrying a path prefix
-    /// (a reverse proxy route such as /offer) would silently lose it.
+    /// Reads a downstream base URI and normalises it to the root of the service, with a
+    /// trailing slash.
+    ///
+    /// The trailing slash is one half of the contract: without it <see cref="HttpClient"/>
+    /// drops the last segment of the base path when combining it with a relative request URI,
+    /// so a base URL carrying a path prefix (a reverse proxy route such as /offer) would
+    /// silently lose it.
+    ///
+    /// Dropping a trailing /api segment is the other half. The clients used to address their
+    /// downstream with a root relative path (/api/subscription), which makes HttpClient
+    /// discard the base path entirely: whatever the configured value carried was dead weight,
+    /// and several environments do carry an /api suffix. Now that every client path is
+    /// relative and starts with api/, keeping that suffix would produce /api/api. Normalising
+    /// here keeps those deployed values working instead of requiring a settings change in
+    /// every environment.
     /// </summary>
     internal static Uri GetBaseUri(IConfiguration configuration, string key)
     {
@@ -290,7 +304,17 @@ public static class ServiceExtensions
             throw new GatewayException(StatusCodes.Status500InternalServerError, Errors.NullConfigurationCode, string.Format(Errors.NullConfigurationMessage, key));
         }
 
-        return new Uri($"{value.TrimEnd('/')}/");
+        // Parsed rather than trimmed as a string: a host such as api-itg01.itg.pulse.rydge.fr
+        // must never be mistaken for the segment being stripped.
+        var uri = new Uri(value, UriKind.Absolute);
+        var path = uri.AbsolutePath.TrimEnd('/');
+
+        if (path.EndsWith(ApiPathSegment, StringComparison.OrdinalIgnoreCase))
+        {
+            path = path[..^ApiPathSegment.Length];
+        }
+
+        return new UriBuilder(uri) { Path = $"{path}/" }.Uri;
     }
 
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()

@@ -11,8 +11,9 @@ namespace ApiGateway.UnitTests.Extensions;
 /// The services address their downstream with a relative URI (api/subscription, not
 /// /api/subscription): a root relative path would drop the prefix carried by the base
 /// address behind the public entry point. <see cref="ServiceExtensions.GetBaseUri"/> is the
-/// other half of that contract, the trailing slash without which the framework drops the
-/// last segment of the base path.
+/// other half of that contract: the trailing slash without which the framework drops the
+/// last segment of the base path, and the normalisation down to the root of the service, so
+/// that a configured value still carrying an /api suffix does not produce /api/api.
 /// </summary>
 public class ServiceExtensionsBaseUriTests
 {
@@ -32,9 +33,30 @@ public class ServiceExtensionsBaseUriTests
     // Behind the public entry point the base address carries the service prefix.
     [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer", "https://api-itg01.itg.pulse.rydge.fr/offer/")]
     [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer/", "https://api-itg01.itg.pulse.rydge.fr/offer/")]
-    // A deeper prefix, as used for Contact.
-    [InlineData("https://api-itg01.itg.pulse.rydge.fr/contact/api", "https://api-itg01.itg.pulse.rydge.fr/contact/api/")]
+    // A host merely containing "api" is not a path segment: nothing to strip here.
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr", "https://api-itg01.itg.pulse.rydge.fr/")]
     public void GetBaseUri_ShouldGuaranteeATrailingSlash(string configured, string expected)
+    {
+        var actual = ServiceExtensions.GetBaseUri(ConfigurationWith(configured), Key);
+
+        actual.ToString().Should().Be(expected);
+    }
+
+    /// <summary>
+    /// Until the clients addressed their downstream with a root relative path, the /api suffix
+    /// carried by some configured values was dead weight: HttpClient discarded the whole base
+    /// path. Now that every client path is relative and starts with api/, that suffix would be
+    /// duplicated into /api/api. The base address is therefore normalised down to the root of
+    /// the service, which keeps the deployed values that still carry the suffix working.
+    /// </summary>
+    [Theory]
+    [InlineData("https://appcegpulseoff.example.net/api", "https://appcegpulseoff.example.net/")]
+    [InlineData("https://appcegpulseoff.example.net/api/", "https://appcegpulseoff.example.net/")]
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer/api", "https://api-itg01.itg.pulse.rydge.fr/offer/")]
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr/contact/api/", "https://api-itg01.itg.pulse.rydge.fr/contact/")]
+    // Only a trailing segment is a suffix: an /api in the middle belongs to the prefix.
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr/api/offer", "https://api-itg01.itg.pulse.rydge.fr/api/offer/")]
+    public void GetBaseUri_WhenTheConfiguredValueCarriesTheApiSuffix_ShouldNormaliseItAway(string configured, string expected)
     {
         var actual = ServiceExtensions.GetBaseUri(ConfigurationWith(configured), Key);
 
@@ -71,7 +93,12 @@ public class ServiceExtensionsBaseUriTests
     [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer", "api/subscription", "https://api-itg01.itg.pulse.rydge.fr/offer/api/subscription")]
     // The query string must survive the composition.
     [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer", "api/subscription/status?accountId=602", "https://api-itg01.itg.pulse.rydge.fr/offer/api/subscription/status?accountId=602")]
-    [InlineData("https://api-itg01.itg.pulse.rydge.fr/contact/api", "contacts?Email=a%40b.fr", "https://api-itg01.itg.pulse.rydge.fr/contact/api/contacts?Email=a%40b.fr")]
+    // Contact is configured with an /api suffix: normalising the base and prefixing the client
+    // path lands on the very same URL, which is what makes the change safe for that service.
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr/contact/api", "api/contacts?Email=a%40b.fr", "https://api-itg01.itg.pulse.rydge.fr/contact/api/contacts?Email=a%40b.fr")]
+    // The offending case: an /api suffix would double up without the normalisation.
+    [InlineData("https://appcegpulseoff.example.net/api", "api/subscription", "https://appcegpulseoff.example.net/api/subscription")]
+    [InlineData("https://api-itg01.itg.pulse.rydge.fr/offer/api", "api/subscription/status?accountId=602", "https://api-itg01.itg.pulse.rydge.fr/offer/api/subscription/status?accountId=602")]
     public async Task GetBaseUri_CombinedWithARelativeRequest_ShouldPreserveThePathPrefix(
         string configured,
         string requestUri,

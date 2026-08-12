@@ -60,7 +60,7 @@ public class ContactService(HttpClient httpClient) : IContactService
 
     public async Task<Models.Contact?> GetContactByIdAsync(int contactId)
     {
-        var response = await httpClient.GetAsync($"contact/{contactId}");
+        var response = await httpClient.GetAsync($"api/contact/{contactId}");
         if (response.IsSuccessStatusCode)
         {
             var jsonString = await response.Content.ReadAsStringAsync();
@@ -80,7 +80,7 @@ public class ContactService(HttpClient httpClient) : IContactService
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "contacts")
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/contacts")
         {
             Content = JsonContent.Create(request, options: jsonOptions)
         };
@@ -100,8 +100,8 @@ public class ContactService(HttpClient httpClient) : IContactService
     public async Task<HttpResponseMessage> CreateNewPasswordAsync(CreateNewPasswordRequest request, string? entityType, CancellationToken ct)
     {
         var url = string.IsNullOrWhiteSpace(entityType)
-            ? "authentication/createNewPassword"
-            : $"authentication/createNewPassword?entityType={Uri.EscapeDataString(entityType)}";
+            ? "api/authentication/createNewPassword"
+            : $"api/authentication/createNewPassword?entityType={Uri.EscapeDataString(entityType)}";
 
         return await httpClient.PostAsJsonAsync(url, request, cancellationToken: ct);
     }
@@ -109,14 +109,14 @@ public class ContactService(HttpClient httpClient) : IContactService
     private string ContactUrl(string userEmail)
     {
         string encodedEmail = HttpUtility.UrlEncode(userEmail);
-        return $"contacts?Email={encodedEmail}";
+        return $"api/contacts?Email={encodedEmail}";
     }
 
     public async Task<IEnumerable<int>> SendEmailAsync(int currentUserId, string accountNumber, int[] customerIDs, string? entityType = null)
     {
         var url = string.IsNullOrWhiteSpace(entityType)
-            ? $"customers/bulk-invite/{accountNumber}"
-            : $"customers/bulk-invite/{accountNumber}?entityType={Uri.EscapeDataString(entityType)}";
+            ? $"api/customers/bulk-invite/{accountNumber}"
+            : $"api/customers/bulk-invite/{accountNumber}?entityType={Uri.EscapeDataString(entityType)}";
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
         httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");

@@ -34,6 +34,12 @@ La seconde clé (`AccountApiUri`) vise les appels que la gateway émet elle-mêm
 agrégateurs, qui ne passent pas par Ocelot. Ajoutez-la si vous voulez que ces appels aussi visent
 votre instance locale ; sinon, omettez-la.
 
+Une clé `*ApiUri` désigne la **racine du service**, sans `/api` : ce segment appartient aux chemins
+des clients, qui sont tous relatifs (`api/subscription`, jamais `/api/subscription` — un chemin
+absolu ferait perdre le préfixe porté par la base). `GetBaseUri` retire un `/api` final s'il en
+trouve un, pour rester compatible avec les valeurs déployées qui le portent encore : avant que les
+chemins ne passent en relatif, ce suffixe était ignoré par `HttpClient` et donc sans effet.
+
 Si un segment déclaré ne correspond à aucune route, un avertissement `[LocalRouting]` s'affiche sur
 la sortie standard au démarrage : c'est le signe d'une faute de frappe dans le segment.
 
