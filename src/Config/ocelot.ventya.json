@@ -67,8 +67,8 @@
     },
     {
       "SwaggerKey": "Account",
-      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{account-id}/customers",
-      "DownstreamPathTemplate": "/api/accounts/{account-id}/contacts?Type=Customer",
+      "UpstreamPathTemplate": "/gtw/ventya/api/accounts/{accountId}/customers",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts?Type=Customer",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
