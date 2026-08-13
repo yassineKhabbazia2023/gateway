@@ -40,6 +40,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{CC933C
 		src\Config\ocelot.offer.json = src\Config\ocelot.offer.json
 		src\Config\ocelot.pennylane.json = src\Config\ocelot.pennylane.json
 		src\Config\ocelot.prospect.json = src\Config\ocelot.prospect.json
+		src\Config\ocelot.referential.json = src\Config\ocelot.referential.json
 		src\Config\ocelot.registry.json = src\Config\ocelot.registry.json
 		src\Config\ocelot.reporting.json = src\Config\ocelot.reporting.json
 		src\Config\ocelot.social.json = src\Config\ocelot.social.json

@@ -1,0 +1,25 @@
+{
+  "Routes": [
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/referential/api/infos",
+      "DownstreamPathTemplate": "/api/referentials/AccountReferentialInformation",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      }
+    }
+  ]
+}

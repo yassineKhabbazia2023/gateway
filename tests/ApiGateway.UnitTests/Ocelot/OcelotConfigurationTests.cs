@@ -230,5 +230,95 @@ namespace ApiGateway.UnitTests.Permissions
 
             Assert.All(hosts, host => Assert.Contains("prs", host!, StringComparison.OrdinalIgnoreCase));
         }
+
+        /// <summary>
+        /// L'endpoint de référentiel est exposé sous le domaine referential (/gtw/referential/api/infos) :
+        /// il n'a rien de « prospect », il interroge le référentiel porté par Account.
+        /// L'upstream historique /gtw/prospect/api/referential-infos reste en place — il est consommé par
+        /// d'autres sujets — les deux routes coexistent donc en alias.
+        /// </summary>
+        [Fact]
+        public void EnsureReferentialInfosRouteIsDeclaredInReferentialDomain()
+        {
+            Assert.True(RoutesByFile.ContainsKey("ocelot.referential.json"),
+                "❌ Le domaine 'referential' doit être déclaré dans src/Config/ocelot.referential.json.");
+
+            var route = RoutesByFile["ocelot.referential.json"]
+                .SingleOrDefault(r => r["UpstreamPathTemplate"]?.ToString() == "/gtw/referential/api/infos");
+
+            Assert.NotNull(route);
+            Assert.Equal("/api/referentials/AccountReferentialInformation", route!["DownstreamPathTemplate"]?.ToString());
+            Assert.Equal("https", route["DownstreamScheme"]?.ToString());
+            Assert.Equal("Account", route["SwaggerKey"]?.ToString());
+
+            var methods = route["UpstreamHttpMethod"]?.Select(method => method.ToString()).ToList() ?? [];
+            Assert.Equal(["GET"], methods);
+
+            var providers = route["AuthenticationOptions"]?["AuthenticationProviderKeys"]
+                ?.Select(provider => provider.ToString())
+                .ToList() ?? [];
+            Assert.Equal(["AAD", "GIGYA MyPulse v2"], providers);
+
+            var hosts = route["DownstreamHostAndPorts"]?
+                .Select(hostAndPort => hostAndPort["Host"]?.ToString())
+                .ToList() ?? [];
+            Assert.All(hosts, host => Assert.Contains("acc", host!, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// /gtw/referential/api/infos est un alias strict de /gtw/prospect/api/referential-infos :
+        /// seul l'UpstreamPathTemplate diffère. Les deux upstreams doivent rester alignés — si l'un évolue
+        /// (downstream, host, auth, handlers, claims), l'autre doit suivre, sinon les deux consommateurs
+        /// n'obtiennent plus le même comportement.
+        /// L'upstream historique est conservé : il est utilisé par d'autres sujets.
+        /// </summary>
+        [Fact]
+        public void EnsureReferentialInfosAliasMirrorsLegacyProspectRoute()
+        {
+            var legacyRoute = RoutesByFile["ocelot.prospect.json"]
+                .SingleOrDefault(route => route["UpstreamPathTemplate"]?.ToString() == "/gtw/prospect/api/referential-infos");
+            var aliasRoute = RoutesByFile["ocelot.referential.json"]
+                .SingleOrDefault(route => route["UpstreamPathTemplate"]?.ToString() == "/gtw/referential/api/infos");
+
+            Assert.NotNull(legacyRoute);
+            Assert.NotNull(aliasRoute);
+
+            var legacyWithoutUpstream = (JObject)legacyRoute!.DeepClone();
+            var aliasWithoutUpstream = (JObject)aliasRoute!.DeepClone();
+            legacyWithoutUpstream.Remove("UpstreamPathTemplate");
+            aliasWithoutUpstream.Remove("UpstreamPathTemplate");
+
+            Assert.True(JToken.DeepEquals(legacyWithoutUpstream, aliasWithoutUpstream),
+                "❌ Les deux routes doivent être identiques hors UpstreamPathTemplate.\n"
+                + $"ocelot.prospect.json  : {legacyWithoutUpstream.ToString(Newtonsoft.Json.Formatting.None)}\n"
+                + $"ocelot.referential.json : {aliasWithoutUpstream.ToString(Newtonsoft.Json.Formatting.None)}");
+        }
+
+        /// <summary>
+        /// Un même upstream ne doit être déclaré qu'une fois : après le merge de Merge-OcelotConfig.ps1,
+        /// un doublon rend la seconde déclaration inatteignable (Ocelot retient la première correspondance).
+        /// </summary>
+        [Fact]
+        public void EnsureUpstreamTemplatesAreNotDuplicated()
+        {
+            var duplicates = RoutesByFile
+                .SelectMany(file => file.Value.Select(route => new
+                {
+                    File = file.Key,
+                    Upstream = route["UpstreamPathTemplate"]?.ToString(),
+                    Methods = string.Join(",", (route["UpstreamHttpMethod"]?.Select(method => method.ToString()) ?? [])
+                        .OrderBy(method => method, StringComparer.Ordinal))
+                }))
+                .Where(route => !string.IsNullOrEmpty(route.Upstream))
+                .GroupBy(route => (route.Upstream, route.Methods))
+                .Where(group => group.Count() > 1)
+                .Select(group => $"'{group.Key.Upstream}' [{group.Key.Methods}] déclaré {group.Count()} fois dans : [{string.Join(", ", group.Select(route => route.File))}]")
+                .ToList();
+
+            if (duplicates.Any())
+            {
+                Assert.Fail($"❌ {duplicates.Count} upstream(s) dupliqué(s) :\n" + string.Join("\n", duplicates));
+            }
+        }
     }
 }
