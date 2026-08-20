@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{CC933C
 		src\Config\ocelot.booking.json = src\Config\ocelot.booking.json
 		src\Config\ocelot.contact.json = src\Config\ocelot.contact.json
 		src\Config\ocelot.customer-wallet.json = src\Config\ocelot.customer-wallet.json
+		src\Config\ocelot.demat.json = src\Config\ocelot.demat.json
 		src\Config\ocelot.entitycreator.json = src\Config\ocelot.entitycreator.json
 		src\Config\ocelot.fakecustomer.json = src\Config\ocelot.fakecustomer.json
 		src\Config\ocelot.feedcenter.json = src\Config\ocelot.feedcenter.json
