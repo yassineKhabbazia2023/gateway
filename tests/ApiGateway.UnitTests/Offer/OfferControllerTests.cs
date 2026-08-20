@@ -95,7 +95,7 @@ public class OfferControllerTests
 
         var expectedSubscriptionId = 999;
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(expectedSubscriptionId);
 
         // Act
@@ -116,14 +116,14 @@ public class OfferControllerTests
         var request = new Fixture().Create<CreateSubscriptionOffer>();
         var subscriptionId = 123;
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(subscriptionId);
 
         // Act
         await _controller.CreateSubscription(request);
 
         // Assert
-        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request), Times.Once);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class OfferControllerTests
 
         var subscriptionId = 789;
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(subscriptionId);
 
         // Act
@@ -161,7 +161,7 @@ public class OfferControllerTests
         // Arrange
         var request = new Fixture().Create<CreateSubscriptionOffer>();
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ThrowsAsync(new HttpRequestException("Service error"));
 
         // Act
@@ -178,7 +178,7 @@ public class OfferControllerTests
         // Arrange
         var request = new Fixture().Create<CreateSubscriptionOffer>();
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ThrowsAsync(new BadHttpRequestException("Service error"));
 
         // Act
@@ -196,7 +196,7 @@ public class OfferControllerTests
         var request = new Fixture().Create<CreateSubscriptionOffer>();
         var expectedId = 12345;
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(expectedId);
 
         // Act
@@ -259,7 +259,7 @@ public class OfferControllerTests
             req.NumberOfUsers == "1 utilisateur")))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -317,7 +317,7 @@ public class OfferControllerTests
         errorCode.Should().Be(Errors.PennylaneFirmAssignmentRequiredCode);
         errorMessage.Should().Be(Errors.PennylaneFirmAssignmentRequiredMessage);
 
-        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()), Times.Never);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()), Times.Never);
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(888))
             .Returns(false);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -398,7 +398,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
@@ -449,7 +449,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new HttpRequestException("Pennylane service error"));
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
@@ -469,7 +469,7 @@ public class OfferControllerTests
             Times.Once);
 
         // Should still call subscription creation
-        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request), Times.Once);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()), Times.Once);
 
         // Should still return OK result
         var okResult = result.Result as OkObjectResult;
@@ -510,7 +510,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new InvalidOperationException("Company creation failed"));
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(expectedSubscriptionId);
 
         _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId))
@@ -520,37 +520,10 @@ public class OfferControllerTests
         var result = await _controller.CreateSubscription(request);
 
         // Assert
-        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request), Times.Once);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()), Times.Once);
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
         okResult.Value.Should().Be(expectedSubscriptionId);
-    }
-
-    [Fact]
-    public async Task CreateSubscription_ShouldLogDebugWithFullRequest()
-    {
-        // Arrange
-        var request = new CreateSubscriptionOffer
-        {
-            AccountId = 123,
-            OfferId = 456
-        };
-
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
-            .ReturnsAsync(789);
-
-        // Act
-        await _controller.CreateSubscription(request);
-
-        // Assert
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Debug,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Full request")),
-                It.IsAny<Exception>(),
-                It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
-            Times.Once);
     }
 
     [Fact]
@@ -601,7 +574,7 @@ public class OfferControllerTests
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(777);
 
         // Act
@@ -654,7 +627,7 @@ public class OfferControllerTests
                 Status = "created"
             });
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -716,7 +689,7 @@ public class OfferControllerTests
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -765,8 +738,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -812,8 +785,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -859,8 +832,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -906,8 +879,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -947,8 +920,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new HttpRequestException("Pennylane service error"));
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -988,8 +961,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new InvalidOperationException("Deserialization error"));
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -1016,8 +989,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(888))
             .Returns(false);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -1057,8 +1030,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ThrowsAsync(new BadHttpRequestException("Bad request"));
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -1104,8 +1077,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .ReturnsAsync(companyResult);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -1193,7 +1166,7 @@ public class OfferControllerTests
                 Status = PennylaneControllerStatuses.Created
             });
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -1219,7 +1192,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(888))
             .Returns(false);
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -1275,7 +1248,7 @@ public class OfferControllerTests
                 Status = PennylaneControllerStatuses.Created
             });
 
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request))
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>()))
             .ReturnsAsync(456);
 
         // Act
@@ -1321,14 +1294,14 @@ public class OfferControllerTests
         errorResponse.Should().NotBeNull();
         errorResponse!.ErrorCode.Should().Be(Errors.ApprovedPlatformDisabledCode);
         errorResponse.ErrorMessage.Should().Be(Errors.ApprovedPlatformDisabledMessage);
-        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()), Times.Never);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()), Times.Never);
         _mockPennylaneService.Verify(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()), Times.Never);
     }
 
     [Fact]
-    public async Task CreateSubscription_WhenApprovedPlatformPlan_ShouldEvaluateFlagWithResolvedContactId()
+    public async Task CreateSubscription_WhenApprovedPlatformPlan_ShouldEvaluateFlagWithUserEmail()
     {
-        // Arrange: utilisateur authentifié, contact résolu → le flag doit être ciblé sur son contactId (pas l'email)
+        // Arrange: utilisateur authentifié → le flag doit être ciblé sur son email (issu du JWT)
         var request = new CreateSubscriptionOffer
         {
             AccountId = 123,
@@ -1344,8 +1317,6 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
         _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
         _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
-        _mockContactService.Setup(x => x.GetContactAsync("user@test.fr"))
-            .ReturnsAsync(new ApiGateway.Contact.Models.Contact { Id = 456 });
         _mockFeatureFlagService
             .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -1365,10 +1336,98 @@ public class OfferControllerTests
         var forbiddenResult = result.Result as ObjectResult;
         forbiddenResult.Should().NotBeNull();
         forbiddenResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
-        _mockContactService.Verify(x => x.GetContactAsync("user@test.fr"), Times.Once);
         _mockFeatureFlagService.Verify(
-            x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == "456"), It.IsAny<CancellationToken>()),
+            x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == "user@test.fr"), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenUpnClaimIsMapped_ShouldEvaluateFlagWithUserEmail()
+    {
+        // Arrange: le validateur JWT renomme "upn" en ClaimTypes.Upn sur le principal validé —
+        // l'email doit quand même être résolu (cas constaté en ITG : HasEmail: False sinon)
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }]
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Upn, "user@test.fr")]))
+            }
+        };
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var forbiddenResult = result.Result as ObjectResult;
+        forbiddenResult.Should().NotBeNull();
+        forbiddenResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        _mockFeatureFlagService.Verify(
+            x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == "user@test.fr"), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateSubscription_WhenUserEmailResolved_ShouldForwardEmailToOfferService()
+    {
+        // Arrange: l'email issu du JWT doit être forwardé à l'Offer API (header ContactEmail)
+        // pour le garde-fou Sérénité côté Offer (OFF021)
+        var request = new CreateSubscriptionOffer
+        {
+            AccountId = 123,
+            OfferId = 8,
+            PlanId = 99,
+        };
+
+        var offerWithApprovedPlatform = new OfferDetails
+        {
+            OfferId = 8,
+            Plans = [new() { PlanId = 99, PlanCode = OfferPlanCodes.ApprovedPlatform }]
+        };
+        _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(8)).Returns(true);
+        _mockAccountService.Setup(x => x.GetAccountAsync(123)).ReturnsAsync((ApiGateway.Models.Account?)null);
+        _mockOfferService.Setup(x => x.GetOfferByIdAsync(8)).ReturnsAsync(offerWithApprovedPlatform);
+        _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
+            .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
+        _mockFeatureFlagService
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(555);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("upn", "user@test.fr")]))
+            }
+        };
+
+        // Act
+        var result = await _controller.CreateSubscription(request);
+
+        // Assert
+        var okResult = result.Result as OkObjectResult;
+        okResult.Should().NotBeNull();
+        okResult!.Value.Should().Be(555);
+        _mockOfferService.Verify(x => x.CreateSubscriptionAsync(request, "user@test.fr"), Times.Once);
     }
 
     [Fact]
@@ -1395,7 +1454,7 @@ public class OfferControllerTests
         _mockFeatureFlagService
             .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(555);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(555);
 
         // Act
         var result = await _controller.CreateSubscription(request);
@@ -1424,7 +1483,7 @@ public class OfferControllerTests
         _mockFeatureFlagService
             .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(777);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(777);
 
         // Act
         var result = await _controller.CreateSubscription(request);
@@ -1461,8 +1520,8 @@ public class OfferControllerTests
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(r => captured = r)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((r, _) => captured = r)
             .ReturnsAsync(555);
 
         // Act
@@ -1500,8 +1559,8 @@ public class OfferControllerTests
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(r => captured = r)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((r, _) => captured = r)
             .ReturnsAsync(555);
 
         // Act
@@ -1528,8 +1587,8 @@ public class OfferControllerTests
             .ReturnsAsync(new CreateCompanyResult { Status = PennylaneControllerStatuses.Created });
 
         CreateSubscriptionOffer? captured = null;
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(r => captured = r)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((r, _) => captured = r)
             .ReturnsAsync(777);
 
         // Act
@@ -1564,8 +1623,8 @@ public class OfferControllerTests
             .ReturnsAsync(true);
 
         CreateSubscriptionOffer? captured = null;
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(r => captured = r)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((r, _) => captured = r)
             .ReturnsAsync(999);
 
         // Act
@@ -1783,7 +1842,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -1829,7 +1888,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -1873,7 +1932,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -1925,7 +1984,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -1978,7 +2037,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2020,7 +2079,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2067,7 +2126,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2111,7 +2170,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2155,7 +2214,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2199,7 +2258,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request)).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(request, It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2251,8 +2310,8 @@ public class OfferControllerTests
         _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
         _mockOfferService.Setup(x => x.GetOfferByIdAsync(999)).ReturnsAsync(offerDetails);
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>())).ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedRequest = req)
             .ReturnsAsync(456);
 
         // Act
@@ -2306,7 +2365,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2344,7 +2403,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.ShouldCreateCompanyForOffer(999)).Returns(true);
         _mockAccountService.Setup(x => x.GetAccountAsync(request.AccountId)).ReturnsAsync(account);
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>())).ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2386,7 +2445,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>())).ReturnsAsync(456);
 
         // Act
         await _controller.CreateSubscription(request);
@@ -2434,7 +2493,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>())).ReturnsAsync(456);
 
         await _controller.CreateSubscription(request);
 
@@ -2476,7 +2535,7 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>())).ReturnsAsync(456);
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>())).ReturnsAsync(456);
 
         await _controller.CreateSubscription(request);
 
@@ -2523,8 +2582,8 @@ public class OfferControllerTests
         _mockPennylaneService.Setup(x => x.CreateCompanyAsync(It.IsAny<CreateCompanyRequest>()))
             .Callback<CreateCompanyRequest>(req => capturedCompanyRequest = req)
             .ReturnsAsync(companyResult);
-        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>()))
-            .Callback<CreateSubscriptionOffer>(req => capturedSubscriptionRequest = req)
+        _mockOfferService.Setup(x => x.CreateSubscriptionAsync(It.IsAny<CreateSubscriptionOffer>(), It.IsAny<string?>()))
+            .Callback<CreateSubscriptionOffer, string?>((req, _) => capturedSubscriptionRequest = req)
             .ReturnsAsync(456);
 
         await _controller.CreateSubscription(request);

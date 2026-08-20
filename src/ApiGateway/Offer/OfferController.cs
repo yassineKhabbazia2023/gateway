@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pulse.ExceptionMiddleware.Model;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
+using System.Security.Claims;
 
 [assembly: InternalsVisibleTo("ApiGateway.UnitTests")]
 namespace ApiGateway.Offer;
@@ -61,7 +61,9 @@ public class OfferController : ControllerBase
     public async Task<ActionResult<int>> CreateSubscription([FromBody] CreateSubscriptionOffer subscriptionRequest)
     {
         _logger.LogInformation("Creating subscription for AccountId: {AccountId}, OfferId: {OfferId}", subscriptionRequest.AccountId, subscriptionRequest.OfferId);
-        _logger.LogDebug("Full request: {Request}", JsonSerializer.Serialize(subscriptionRequest));
+
+        // Email resolved from the JWT, forwarded to the Offer API (ContactEmail header) for feature flag targeting
+        string? offerUserEmail = null;
 
         // Step 1: Check if we should create company in Pennylane for this OfferId
         if (_pennylaneService.ShouldCreateCompanyForOffer(subscriptionRequest.OfferId))
@@ -101,14 +103,16 @@ public class OfferController : ControllerBase
                 string? userNumber;
                 (requestedPlanCode, userNumber) = await GetPlanInfoAsync(subscriptionRequest);
 
-                var offerUserEmail = GetUserEmail();
-                var offerContact = string.IsNullOrWhiteSpace(offerUserEmail)
-                    ? null
-                    : await _contactService.GetContactAsync(offerUserEmail);
-                var offerContext = FeatureContext.FromContactId(offerContact?.Id.ToString());
+                offerUserEmail = GetUserEmail();
+                var offerContext = FeatureContext.FromEmail(offerUserEmail);
                 if (requestedPlanCode == OfferPlanCodes.ApprovedPlatform
                     && !await _featureFlagService.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, context: offerContext))
                 {
+                    _logger.LogWarning(
+                        "Approved platform subscription denied for AccountId {AccountId}, OfferId {OfferId} (HasEmail: {HasEmail})",
+                        subscriptionRequest.AccountId,
+                        subscriptionRequest.OfferId,
+                        !string.IsNullOrWhiteSpace(offerUserEmail));
                     return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
                     {
                         ErrorCode = Errors.ApprovedPlatformDisabledCode,
@@ -173,13 +177,18 @@ public class OfferController : ControllerBase
         }
 
         // Step 2: Create subscription (continues even if company creation failed/skipped)
-        var subscriptionId = await _offerService.CreateSubscriptionAsync(subscriptionRequest);
+        var subscriptionId = await _offerService.CreateSubscriptionAsync(subscriptionRequest, offerUserEmail);
         return Ok(subscriptionId);
     }
 
     private string? GetUserEmail()
     {
-        return User?.FindFirst("upn")?.Value ?? User?.FindFirst("email")?.Value;
+        // Inbound claim mapping renames "upn"/"email" to the XML schema URIs on the validated
+        // principal (JwtHelper reads the raw token, which is why other components are unaffected)
+        return User?.FindFirst("upn")?.Value
+            ?? User?.FindFirst(ClaimTypes.Upn)?.Value
+            ?? User?.FindFirst("email")?.Value
+            ?? User?.FindFirst(ClaimTypes.Email)?.Value;
     }
 
     internal async Task<Tuple<string?, string?>> GetPlanInfoAsync(CreateSubscriptionOffer subscriptionRequest)

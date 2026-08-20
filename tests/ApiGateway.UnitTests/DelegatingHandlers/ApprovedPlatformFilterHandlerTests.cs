@@ -4,7 +4,9 @@ using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Offer.Constants;
 using Microsoft.Extensions.Logging;
 using Moq.Protected;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Claims;
 
 namespace ApiGateway.UnitTests.DelegatingHandlers;
 
@@ -90,24 +92,24 @@ public class ApprovedPlatformFilterHandlerTests
     }
 
     [Fact]
-    public async Task Should_Pass_ContactId_From_CurrentUser_Header_To_FeatureFlagService()
+    public async Task Should_Pass_Email_From_Jwt_To_FeatureFlagService()
     {
         // Arrange
-        const string expectedContactId = "12345";
+        const string expectedEmail = "user@test.fr";
         var featureFlagService = new Mock<IFeatureFlagService>();
         featureFlagService
-            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == expectedContactId), It.IsAny<CancellationToken>()))
+            .Setup(s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var (invoker, _) = CreateInvoker(featureFlagService);
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/offer/api/offers/8");
-        request.Headers.Add("CurrentUser", expectedContactId);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", BuildJwt(expectedEmail));
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
         featureFlagService.Verify(
-            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.ContactId == expectedContactId), It.IsAny<CancellationToken>()),
+            s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c != null && c.Email == expectedEmail), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -132,7 +134,7 @@ public class ApprovedPlatformFilterHandlerTests
     }
 
     [Fact]
-    public async Task Should_Evaluate_Without_Context_When_CurrentUser_Header_Is_Missing()
+    public async Task Should_Evaluate_Without_Context_When_Authorization_Header_Is_Missing()
     {
         // Arrange
         var featureFlagService = new Mock<IFeatureFlagService>();
@@ -145,9 +147,34 @@ public class ApprovedPlatformFilterHandlerTests
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
 
-        // Assert : sans header CurrentUser, le contexte est null (fail closed côté règle de ciblage)
+        // Assert : sans token, le contexte est null (fail closed côté règle de ciblage)
         featureFlagService.Verify(
             s => s.IsEnabledAsync(FeatureFlagKeys.EnableApprovedPlatform, It.IsAny<bool>(), It.Is<FeatureContext?>(c => c == null), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Forward_Request_Unchanged_When_RequestUri_Is_Null()
+    {
+        // Arrange
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        var (invoker, getCaptured) = CreateInvoker(featureFlagService);
+        var request = new HttpRequestMessage();
+
+        // Act
+        await invoker.SendAsync(request, CancellationToken.None);
+
+        // Assert : pas d'évaluation de flag possible sans URI, la requête est transmise telle quelle
+        var captured = getCaptured();
+        captured.Should().NotBeNull();
+        featureFlagService.Verify(
+            s => s.IsEnabledAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    private static string BuildJwt(string email)
+    {
+        var token = new JwtSecurityToken(claims: [new Claim("upn", email)]);
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

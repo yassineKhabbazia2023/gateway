@@ -238,6 +238,68 @@ public class OfferServiceTests
             .WithMessage("*NotFound*");
     }
 
+    [Fact]
+    public async Task CreateSubscriptionAsync_WithContactEmail_ShouldForwardContactEmailHeader()
+    {
+        // Arrange: l'email doit être forwardé via le header ContactEmail (garde-fou Sérénité côté Offer)
+        var createRequest = new Fixture().Create<ApiGateway.Offer.Model.CreateSubscriptionOffer>();
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(123)
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _offerService.CreateSubscriptionAsync(createRequest, "user@test.fr");
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Headers.GetValues("ContactEmail").Should().ContainSingle().Which.Should().Be("user@test.fr");
+    }
+
+    [Fact]
+    public async Task CreateSubscriptionAsync_WithoutContactEmail_ShouldNotSendContactEmailHeader()
+    {
+        // Arrange
+        var createRequest = new Fixture().Create<ApiGateway.Offer.Model.CreateSubscriptionOffer>();
+
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(123)
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        await _offerService.CreateSubscriptionAsync(createRequest);
+
+        // Assert
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Headers.Contains("ContactEmail").Should().BeFalse();
+    }
+
     #endregion
 
     #region GetOfferByIdAsync Tests

@@ -5,10 +5,17 @@ namespace ApiGateway.Offer;
 
 public class OfferService(HttpClient httpClient) : IOfferService
 {
-    public async Task<int> CreateSubscriptionAsync(CreateSubscriptionOffer createRequest)
+    public async Task<int> CreateSubscriptionAsync(CreateSubscriptionOffer createRequest, string? contactEmail = null)
     {
         var url = "api/subscription";
-        var response = await httpClient.PostAsJsonAsync(url, createRequest);
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(createRequest) };
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            // ContactEmail header expected by the Offer API for feature flag targeting (Sérénité plan guard)
+            request.Headers.Add("ContactEmail", contactEmail);
+        }
+
+        var response = await httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {

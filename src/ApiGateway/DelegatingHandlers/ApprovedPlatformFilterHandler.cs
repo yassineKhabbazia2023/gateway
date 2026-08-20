@@ -1,5 +1,6 @@
 using ApiGateway.FeatureFlags;
 using ApiGateway.FeatureFlags.Models;
+using ApiGateway.Helpers;
 using ApiGateway.Offer.Constants;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -16,11 +17,10 @@ public class ApprovedPlatformFilterHandler(IFeatureFlagService featureFlagServic
             return await base.SendAsync(request, cancellationToken);
         }
 
-        var contactId = request.Headers.TryGetValues("CurrentUser", out var currentUserValues)
-            ? currentUserValues.FirstOrDefault()
-            : null;
+        var token = JwtHelper.ExtractBearerToken(request);
+        var userEmail = string.IsNullOrEmpty(token) ? null : JwtHelper.ExtractUserEmailFromToken(token);
 
-        var context = FeatureContext.FromContactId(contactId);
+        var context = FeatureContext.FromEmail(userEmail);
 
         if (await IsApprovedPlatformEnabledAsync(context, cancellationToken))
         {

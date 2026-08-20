@@ -21,22 +21,4 @@ public class FeatureContextTests
         context.Should().NotBeNull();
         context!.Email.Should().Be("user@test.fr");
     }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void FromContactId_WhenContactIdIsBlank_ShouldReturnNull(string? contactId)
-    {
-        FeatureContext.FromContactId(contactId).Should().BeNull();
-    }
-
-    [Fact]
-    public void FromContactId_WhenContactIdHasSurroundingWhitespace_ShouldTrim()
-    {
-        var context = FeatureContext.FromContactId("  12345  ");
-
-        context.Should().NotBeNull();
-        context!.ContactId.Should().Be("12345");
-    }
 }
