@@ -156,6 +156,64 @@ namespace ApiGateway.UnitTests.Permissions
         }
 
         /// <summary>
+        /// Keymoments est livré derrière un flag ConfigCat : le domaine entier doit pouvoir être coupé
+        /// d'un seul geste. Une route qui perdrait son <c>Metadata.featureFlag</c> resterait ouverte
+        /// alors que le flag est à off, sans que rien ne le signale au runtime.
+        /// </summary>
+        [Fact]
+        public void EnsureKeymomentsRoutesAreGatedByFeatureFlag()
+        {
+            var routes = RoutesByFile["ocelot.keymoments.json"];
+
+            Assert.NotEmpty(routes);
+
+            var ungatedRoutes = routes
+                .Where(route => route["Metadata"]?["featureFlag"]?.ToString() != "isKeyMomentsEnabled")
+                .Select(route => $"{string.Join('/', route["UpstreamHttpMethod"]?.Select(method => method.ToString()) ?? [])} {route["UpstreamPathTemplate"]}")
+                .ToList();
+
+            Assert.True(ungatedRoutes.Count == 0,
+                $"❌ Toutes les routes Keymoments doivent porter Metadata.featureFlag = 'isKeyMomentsEnabled' : [{string.Join(", ", ungatedRoutes)}]");
+        }
+
+        /// <summary>
+        /// Ajouter une clé Gigya à une route est une décision de sécurité : ce test la rend explicite.
+        /// Le référentiel (<c>/templates</c>, <c>/indicators/{code}</c>) reste AAD seul ; le client
+        /// passe par <c>/key-moment/template</c>, qui résout la version publiée.
+        /// <c>/exercices</c> reste AAD seul aussi : c'est le listing back-office, le client obtient
+        /// ses <c>exerciceId</c> via <c>/key-moments</c>, son unique point d'entrée.
+        /// <c>/indicators</c> est la seule route client sans <c>accountId</c>, donc sans contrôle de
+        /// rôle : assumé, elle ne sert que le vocabulaire financier, identique pour tous.
+        /// L'épinglage porte sur le chemin seul, pas sur la méthode.
+        /// </summary>
+        [Fact]
+        public void EnsureKeymomentsCustomerSurfaceIsPinned()
+        {
+            string[] expectedCustomerRoutes =
+            [
+                "/gtw/keymoments/api/accounts/{accountId}/key-moments",
+                "/gtw/keymoments/api/accounts/{accountId}/exercices/{exerciceId}/key-moment",
+                "/gtw/keymoments/api/accounts/{accountId}/exercices/{exerciceId}/key-moment/document",
+                "/gtw/keymoments/api/accounts/{accountId}/exercices/{exerciceId}/key-moment/template",
+                "/gtw/keymoments/api/indicators",
+            ];
+
+            var customerRoutes = RoutesByFile["ocelot.keymoments.json"]
+                .Where(route => route["AuthenticationOptions"]?["AuthenticationProviderKeys"]?
+                    .Any(key => key.ToString() == "GIGYA MyPulse v2") == true)
+                .Select(route => route["UpstreamPathTemplate"]?.ToString())
+                .ToList();
+
+            Assert.All(customerRoutes, route => Assert.True(expectedCustomerRoutes.Contains(route),
+                $"❌ Route Keymoments ouverte au client sans décision explicite : '{route}'. L'écriture et le référentiel d'administration restent AAD seul."));
+
+            var missingRoutes = expectedCustomerRoutes.Except(customerRoutes).ToList();
+
+            Assert.True(missingRoutes.Count == 0,
+                $"❌ Routes Keymoments client attendues et absentes : [{string.Join(", ", missingRoutes)}]");
+        }
+
+        /// <summary>
         /// Ocelot valide au démarrage que chaque RouteKey d'un agrégat correspond à une route existante
         /// (<c>AllRoutesForAggregateExist</c>). Une clé orpheline fait échouer la validation de configuration
         /// et empêche le démarrage de la gateway entière, pas seulement de l'endpoint agrégé.

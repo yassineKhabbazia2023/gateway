@@ -105,7 +105,7 @@ HttpLogging → ForwardedHeaders → Swagger → TokenRevocationMiddleware
 | # | Handler | Rôle |
 |---|---------|------|
 | 1 | `TraceContextHandler` | Propage `traceparent`/`tracestate` (W3C) vers l'aval |
-| 2 | `ContactHandler` | Résout le contact depuis l'email du JWT (Contact API + cache) ; injecte `CurrentUser`, `ContactEmail`, `ContactType` (headers **nettoyés puis réinjectés** — anti-spoofing) |
+| 2 | `ContactHandler` | Résout le contact depuis l'email du JWT (Contact API + cache) ; injecte `CurrentUser`, `ContactEmail`, `ContactType` (headers **nettoyés puis réinjectés** — anti-spoofing). Aucun nom/prénom n'est propagé : l'aval historise le `contactId` et résout l'identité à la lecture, pour ne pas figer un nom qui peut changer |
 | 3 | `DownstreamExceptionHandler` | Log des erreurs downstream (5xx = Error, sinon Warning) |
 | 4 | `LogoutRevocationHandler` | Capte `X-Revoked-Jti`/`X-Revoked-Exp` des réponses logout → alimente le cache de révocation (headers retirés avant retour client) |
 | 5 | `FeatureFlagGateHandler` | 403 si le feature flag de la route est désactivé (OpenFeature/ConfigCat) |

@@ -370,7 +370,8 @@ nuget.config
 .vscode/tasks.json
 .vscode/settings.json
 
-# AI stuff
+# local AI stuff
+superpowers/
 .claude
 
 # Local environment files

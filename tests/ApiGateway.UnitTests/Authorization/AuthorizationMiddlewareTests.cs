@@ -1054,6 +1054,62 @@ public class AuthorizationMiddlewareTests
     }
 
     /// <summary>
+    /// A customer whose token is valid but who holds no role on the account must be rejected on a
+    /// <c>/accounts/{accountId}/</c> route that declares neither <c>RouteClaimsRequirement</c> nor
+    /// <c>RoleHandler</c>: the account role check is enforced by the middleware itself.
+    /// </summary>
+    [Theory]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/key-moments")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/key-moment")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/key-moment/document")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/key-moment/template")]
+    public async Task AuthorizationFilter_KeyMomentsRoute_CustomerWithoutRoleOnAccount_RejectsBeforeForwarding(
+        string method,
+        string path)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, string.Empty, "Customer");
+        ConfigureCustomerProspectDocumentServices(httpContext, 456, []);
+        _mockAccountService.Setup(service => service.CheckContactRoleAsync(789, 456, null)).ReturnsAsync(false);
+        var nextCalled = false;
+
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Which.Code.Should().Be(Errors.RoleRequiredCode);
+        nextCalled.Should().BeFalse();
+        _mockAccountService.Verify(service => service.CheckContactRoleAsync(789, 456, null), Times.Once);
+    }
+
+    /// <summary>
+    /// A customer holding a role on the account is forwarded on the same routes.
+    /// </summary>
+    [Theory]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/key-moments")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/key-moment")]
+    public async Task AuthorizationFilter_KeyMomentsRoute_CustomerWithRoleOnAccount_AllowsAccess(
+        string method,
+        string path)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, string.Empty, "Customer");
+        ConfigureCustomerProspectDocumentServices(httpContext, 456, []);
+        var nextCalled = false;
+
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        nextCalled.Should().BeTrue();
+        _mockAccountService.Verify(service => service.CheckContactRoleAsync(789, 456, null), Times.Once);
+    }
+
+    /// <summary>
     /// Creates an HTTP context for a secured Prospect document route.
     /// </summary>
     /// <param name="path">The Gateway route path.</param>

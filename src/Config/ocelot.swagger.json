@@ -208,6 +208,17 @@
           "Url": "https://appcegpulsebff#{env_id}#01.azurewebsites.net/desktop/api/v1/api.json"
         }
       ]
+    },
+    {
+      "Key": "Keymoments",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "Pulse.Back.Keymoments",
+          "Version": "v1",
+          "Url": "https://appcegpulsekmt#{env_id}#01.azurewebsites.net/api/v1/api.json"
+        }
+      ]
     }
   ]
 }
