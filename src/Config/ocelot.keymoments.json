@@ -308,6 +308,53 @@
     },
     {
       "SwaggerKey": "Keymoments",
+      "UpstreamPathTemplate": "/gtw/keymoments/api/accounts/{accountId}/exercices/{exerciceId}/preferences",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/exercices/{exerciceId}/preferences",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsekmt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET",
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isKeyMomentsEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Keymoments",
+      "UpstreamPathTemplate": "/gtw/keymoments/api/accounts/{accountId}/exercices/{exerciceId}/draft",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/exercices/{exerciceId}/draft",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsekmt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "GET"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isKeyMomentsEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Keymoments",
       "UpstreamPathTemplate": "/gtw/keymoments/api/accounts/{accountId}/publish",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/publish",
       "DownstreamScheme": "https",

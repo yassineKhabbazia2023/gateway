@@ -1110,6 +1110,63 @@ public class AuthorizationMiddlewareTests
     }
 
     /// <summary>
+    /// The editorial routes <c>/preferences</c> and <c>/draft</c> declare no
+    /// <c>RouteClaimsRequirement</c> on purpose: the role held on the account is the only barrier,
+    /// enforced by the middleware because the path carries an <c>/accounts/{accountId}/</c> segment.
+    /// A collaborator without that role must be rejected before the request is forwarded.
+    /// </summary>
+    [Theory]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/preferences")]
+    [InlineData("PUT", "/gtw/keymoments/api/accounts/456/exercices/12/preferences")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/draft")]
+    public async Task AuthorizationFilter_KeyMomentsEditorialRoute_CollaboratorWithoutRoleOnAccount_RejectsBeforeForwarding(
+        string method,
+        string path)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, string.Empty, "Collaborator");
+        ConfigureCollaboratorProspectDocumentServices(httpContext, []);
+        _mockAccountService.Setup(service => service.CheckContactRoleAsync(789, 456, null)).ReturnsAsync(false);
+        var nextCalled = false;
+
+        var action = async () => await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var result = await action.Should().ThrowAsync<GatewayException>();
+        result.Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        result.Which.Code.Should().Be(Errors.RoleRequiredCode);
+        nextCalled.Should().BeFalse();
+        _mockAccountService.Verify(service => service.CheckContactRoleAsync(789, 456, null), Times.Once);
+    }
+
+    /// <summary>
+    /// A collaborator holding a role on the account is forwarded on the same editorial routes.
+    /// </summary>
+    [Theory]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/preferences")]
+    [InlineData("PUT", "/gtw/keymoments/api/accounts/456/exercices/12/preferences")]
+    [InlineData("GET", "/gtw/keymoments/api/accounts/456/exercices/12/draft")]
+    public async Task AuthorizationFilter_KeyMomentsEditorialRoute_CollaboratorWithRoleOnAccount_AllowsAccess(
+        string method,
+        string path)
+    {
+        var httpContext = CreateProspectDocumentHttpContext(path, method, string.Empty, "Collaborator");
+        ConfigureCollaboratorProspectDocumentServices(httpContext, []);
+        var nextCalled = false;
+
+        await AuthorizationMiddleware.AuthorizationFilter(httpContext, () =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        nextCalled.Should().BeTrue();
+        _mockAccountService.Verify(service => service.CheckContactRoleAsync(789, 456, null), Times.Once);
+    }
+
+    /// <summary>
     /// Creates an HTTP context for a secured Prospect document route.
     /// </summary>
     /// <param name="path">The Gateway route path.</param>
