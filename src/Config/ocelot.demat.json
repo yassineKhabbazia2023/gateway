@@ -45,6 +45,29 @@
       "Metadata": {
         "featureFlag": "isDematMailCollectEnabled"
       }
+    },
+    {
+      "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/demat/api/accounts/{accountId}/demat-ready/closure",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/demat-ready/closure",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isDematMailCollectEnabled"
+      }
     }
   ]
 }

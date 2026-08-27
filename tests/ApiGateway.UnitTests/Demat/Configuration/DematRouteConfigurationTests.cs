@@ -9,6 +9,7 @@ public sealed class DematRouteConfigurationTests
 {
     private const string GetCurrentUserUpstream = "/gtw/demat/api/accounts/{accountId}/currentuser";
     private const string PostHubspotSubmissionsUpstream = "/gtw/demat/api/accounts/{accountId}/hubspot/submissions/currentuser";
+    private const string PostDematReadyClosureUpstream = "/gtw/demat/api/accounts/{accountId}/demat-ready/closure";
     private const string FeatureFlagKey = "isDematMailCollectEnabled";
 
     /// <summary>
@@ -50,6 +51,27 @@ public sealed class DematRouteConfigurationTests
         GetMethods(route).Should().Equal("POST");
         GetAuthenticationProviderKeys(route).Should().Equal("GIGYA MyPulse v2");
         GetHosts(route).Should().OnlyContain(host => host.Contains("reg", StringComparison.OrdinalIgnoreCase));
+        GetFeatureFlag(route).Should().Be(FeatureFlagKey);
+    }
+
+    /// <summary>
+    /// Verifies that closing an account's demat-ready status is routed to the Account service,
+    /// gated by the Demat feature flag, and reachable only by client authentication.
+    /// </summary>
+    [Fact]
+    public void PostDematReadyClosureRoute_IsRoutedToAccountAndClientOnly()
+    {
+        using var document = LoadOcelotConfiguration();
+
+        var route = GetRoute(document, PostDematReadyClosureUpstream);
+
+        route.GetProperty("SwaggerKey").GetString().Should().Be("Account");
+        route.GetProperty("DownstreamPathTemplate").GetString().Should().Be("/api/accounts/{accountId}/demat-ready/closure");
+        route.GetProperty("DownstreamScheme").GetString().Should().Be("https");
+
+        GetMethods(route).Should().Equal("POST");
+        GetAuthenticationProviderKeys(route).Should().Equal("GIGYA MyPulse v2");
+        GetHosts(route).Should().OnlyContain(host => host.Contains("acc", StringComparison.OrdinalIgnoreCase));
         GetFeatureFlag(route).Should().Be(FeatureFlagKey);
     }
 
