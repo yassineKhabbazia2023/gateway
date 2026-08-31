@@ -1,4 +1,4 @@
-namespace ApiGateway.Exceptions
+﻿namespace ApiGateway.Exceptions
 {
     public static class Errors
     {
@@ -107,5 +107,8 @@ namespace ApiGateway.Exceptions
 
         public static readonly string ProspectSignatoryEmailDomainForbiddenCode = "GTW036";
         public static readonly string ProspectSignatoryEmailDomainForbiddenMessage = "La création d'un prospect avec une adresse email '@rydge.fr' est interdite.";
+
+        public static readonly string SerenityChoiceAlreadyExistsCode = "GTW037";
+        public static readonly string SerenityChoiceAlreadyExistsMessage = "Un choix Sérénité a déjà été enregistré pour ce contact.";
     }
 }

@@ -7,6 +7,7 @@ using ApiGateway.FeatureFlags;
 using ApiGateway.FeatureFlags.Models;
 using ApiGateway.Models;
 using ApiGateway.Offer;
+using ApiGateway.Offer.Constants;
 using ApiGateway.ProspectExperience.Enum;
 using Pulse.ExceptionMiddleware.Exceptions;
 
@@ -97,4 +98,38 @@ public class ConnectServices(
 
         return invitedCustomerIDs;
     }
+
+    public async Task<bool> GetShouldDisplaySerenityModalAsync(int contactId)
+    {
+        // Account porte les criteres 1 (code de routage cible), 2 (adresse electronique dématérialisée) et 4 (choix deja exprimé), 
+        // On extrait les critères de ce MS en un appel unique
+        var eligibility = await accountService.GetSerenityEligibilityAsync(contactId);
+
+        // API Account injoignable, ou choix deja exprimé (vrai OU faux) : pas de modal.
+        if (eligibility is null || eligibility.HasMadeChoice)
+        {
+            return false;
+        }
+
+        var candidates = eligibility.CandidateAccountIds;
+        if (candidates.Length == 0)
+        {
+            return false;
+        }
+
+        // Critere 3 : écarter les entites qui ont deja souscrites a Pennylane.
+        var subscribed = await offerService.GetAccountIdsWithActiveSubscriptionAsync(candidates, OfferCodes.Pennylane);
+        if (subscribed is null)
+        {
+            // Offer injoignable : fail closed, on ne propose pas la modal sans avoir pu verifier.
+            logger.LogWarning("Serenity modal disabled for contact {ContactId}: Offer subscriptions could not be read", contactId);
+            return false;
+        }
+
+        // Except garantit que les critères 1, 2 et 3 portent sur UNE MEME entite.
+        return candidates.Except(subscribed).Any();
+    }
+
+    public Task SetSerenityModalChoiceAsync(int contactId, bool isAccepted)
+        => accountService.SetSerenityChoiceAsync(contactId, isAccepted);
 }

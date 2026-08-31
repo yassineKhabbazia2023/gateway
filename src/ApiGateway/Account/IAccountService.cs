@@ -1,4 +1,4 @@
-using ApiGateway.Models;
+﻿using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Models.Internal;
 
 namespace ApiGateway.Account;
@@ -30,4 +30,20 @@ public interface IAccountService
     Task<ProspectOnlyContactResult> GetProspectOnlyContactResultAsync(int contactId, CancellationToken ct);
 
     Task UpdateLastActivityDateAsync(int currentUserId, string contactType, int accountId);
+
+    /// <summary>
+    /// Gets the Serenity eligibility state of a contact: whether a choice was already made, and
+    /// otherwise the portfolio entities matching the Account-owned criteria.
+    /// </summary>
+    /// <param name="contactId">The contact identifier, resolved from the token.</param>
+    /// <returns>The eligibility state, or <c>null</c> when the Account service is unreachable.</returns>
+    Task<SerenityEligibility?> GetSerenityEligibilityAsync(int contactId);
+
+    /// <summary>
+    /// Persists the contact's Serenity choice. The choice is immutable.
+    /// </summary>
+    /// <param name="contactId">The contact identifier, resolved from the token.</param>
+    /// <param name="isAccepted">The expressed choice.</param>
+    /// <returns>A task.</returns>
+    Task SetSerenityChoiceAsync(int contactId, bool isAccepted);
 }

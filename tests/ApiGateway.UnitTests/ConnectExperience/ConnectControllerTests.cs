@@ -1,5 +1,6 @@
 ﻿using ApiGateway.Account;
 using ApiGateway.ConnectExperience.Controller;
+using ApiGateway.ConnectExperience.Models;
 using ApiGateway.ConnectExperience.Services;
 using ApiGateway.Constants;
 using ApiGateway.Contact;
@@ -241,5 +242,91 @@ public class ConnectControllerTests
         result!.Value.Should().BeEquivalentTo(new[] { 1, 2, 3 });
 
         _experienceServices.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Once);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Modal Serenite : aucun accountId dans la route, le contactId vient exclusivement du token.
+    // ---------------------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetSerenityModal_ShouldReturnDecision(bool shouldDisplay)
+    {
+        // Arrange
+        _experienceServices.Setup(s => s.GetShouldDisplaySerenityModalAsync(_contactId)).ReturnsAsync(shouldDisplay);
+
+        // Act
+        var result = await _sut.GetSerenityModal();
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SerenityModalResponse>(ok.Value);
+        response.ShouldDisplay.Should().Be(shouldDisplay);
+    }
+
+    [Fact]
+    public async Task GetSerenityModal_WhenContactIsUnknown_ShouldReturnBadRequest()
+    {
+        // Arrange
+        _contactService.Setup(s => s.GetContactAsync("bob@truc.io")).ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        // Act
+        var result = await _sut.GetSerenityModal();
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _experienceServices.Verify(s => s.GetShouldDisplaySerenityModalAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SetSerenityModalChoice_ShouldPersistWithTheResolvedContactId(bool isAccepted)
+    {
+        // Arrange
+        _experienceServices.Setup(s => s.SetSerenityModalChoiceAsync(_contactId, isAccepted)).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.SetSerenityModalChoice(new SerenityChoiceRequest(isAccepted));
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(_contactId, isAccepted), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetSerenityModalChoice_WhenChoiceAlreadyExists_ShouldReturnConflict()
+    {
+        // Arrange : le downstream Account a répondu 409, AccountService le relaie en GatewayException.
+        _experienceServices
+            .Setup(s => s.SetSerenityModalChoiceAsync(_contactId, true))
+            .ThrowsAsync(new ApiGateway.Exceptions.GatewayException(
+                StatusCodes.Status409Conflict,
+                ApiGateway.Exceptions.Errors.SerenityChoiceAlreadyExistsCode,
+                ApiGateway.Exceptions.Errors.SerenityChoiceAlreadyExistsMessage));
+
+        // Act
+        var result = await _sut.SetSerenityModalChoice(new SerenityChoiceRequest(true));
+
+        // Assert : 409 et non 500, et le code d'erreur reste exploitable par le front.
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        conflict.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        var error = Assert.IsType<Pulse.ExceptionMiddleware.Model.ErrorResponse>(conflict.Value);
+        error.ErrorCode.Should().Be(ApiGateway.Exceptions.Errors.SerenityChoiceAlreadyExistsCode);
+    }
+
+    [Fact]
+    public async Task SetSerenityModalChoice_WhenContactIsUnknown_ShouldReturnBadRequest()
+    {
+        // Arrange
+        _contactService.Setup(s => s.GetContactAsync("bob@truc.io")).ReturnsAsync((ApiGateway.Contact.Models.Contact?)null);
+
+        // Act
+        var result = await _sut.SetSerenityModalChoice(new SerenityChoiceRequest(true));
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(It.IsAny<int>(), It.IsAny<bool>()), Times.Never);
     }
 }

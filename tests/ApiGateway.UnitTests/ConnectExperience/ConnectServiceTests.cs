@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Pulse.ExceptionMiddleware.Exceptions;
 using ContactModel = ApiGateway.Contact.Models.Contact;
 using ApiGateway.Offer;
+using ApiGateway.Offer.Constants;
 
 namespace ApiGateway.UnitTests.ConnectExperience;
 
@@ -354,5 +355,156 @@ public class ExperienceServicesTests
         ex.Message.Should().Be(string.Format(Errors.NotFoundAccountMessage, accountId));
         _contactMock.Verify(x => x.SendEmailAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int[]>(), It.IsAny<string?>()), Times.Never);
         _accountMock.Verify(x => x.UpdateLastActivityDateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Modal Serenite : table de verite. La decision est vraie des qu'UNE entite du portefeuille
+    // remplit tous les criteres. Le critere 3 (souscription Pennylane) est evalue par Offer.
+    // ---------------------------------------------------------------------------------------------
+
+    [Theory]
+    // aucune entite souscrite => la modal s'affiche
+    [InlineData(false, new[] { 10 }, new int[0], true)]
+    // 10 est souscrite mais 20 reste eligible => la modal s'affiche
+    [InlineData(false, new[] { 10, 20 }, new[] { 10 }, true)]
+    // la seule candidate est souscrite => pas de modal
+    [InlineData(false, new[] { 10 }, new[] { 10 }, false)]
+    // toutes les candidates sont souscrites => pas de modal
+    [InlineData(false, new[] { 10, 20 }, new[] { 10, 20 }, false)]
+    // aucune entite candidate => pas de modal
+    [InlineData(false, new int[0], new int[0], false)]
+    // un choix a deja ete exprime => pas de modal
+    [InlineData(true, new int[0], new int[0], false)]
+    public async Task GetShouldDisplaySerenityModalAsync_ShouldApplyEveryCriterion(
+        bool hasMadeChoice,
+        int[] candidateAccountIds,
+        int[] subscribedAccountIds,
+        bool expected)
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
+            .ReturnsAsync(new SerenityEligibility { HasMadeChoice = hasMadeChoice, CandidateAccountIds = candidateAccountIds });
+        _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), OfferCodes.Pennylane))
+            .ReturnsAsync(subscribedAccountIds);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_WhenChoiceAlreadyMade_ShouldNotCallOffer()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
+            .ReturnsAsync(new SerenityEligibility { HasMadeChoice = true, CandidateAccountIds = [] });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        result.Should().BeFalse();
+        _offerMock.Verify(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_WhenPortfolioHasNoCandidate_ShouldNotCallOffer()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
+            .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [] });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        result.Should().BeFalse();
+        _offerMock.Verify(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_WhenAccountUnreachable_ShouldReturnFalse()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId)).ReturnsAsync((SerenityEligibility?)null);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        result.Should().BeFalse();
+        _offerMock.Verify(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_WhenOfferUnreachable_ShouldFailClosed()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
+            .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [10] });
+        _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), OfferCodes.Pennylane))
+            .ReturnsAsync((int[]?)null);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_ShouldQueryOfferWithTheCandidatesOnly()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
+            .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [10, 20] });
+        _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var service = CreateService();
+
+        // Act
+        await service.GetShouldDisplaySerenityModalAsync(contactId);
+
+        // Assert
+        _offerMock.Verify(
+            x => x.GetAccountIdsWithActiveSubscriptionAsync(
+                It.Is<int[]>(ids => ids.SequenceEqual(new[] { 10, 20 })),
+                OfferCodes.Pennylane),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetSerenityModalChoiceAsync_ShouldDelegateToAccountService()
+    {
+        // Arrange
+        const int contactId = 42;
+        _accountMock.Setup(x => x.SetSerenityChoiceAsync(contactId, true)).Returns(Task.CompletedTask);
+
+        var service = CreateService();
+
+        // Act
+        await service.SetSerenityModalChoiceAsync(contactId, true);
+
+        // Assert
+        _accountMock.Verify(x => x.SetSerenityChoiceAsync(contactId, true), Times.Once);
     }
 }

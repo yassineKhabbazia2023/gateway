@@ -69,6 +69,27 @@ public class OfferServiceTests
         result.Should().BeEquivalentTo(subscriptions);
     }
 
+    [Fact]
+    public async Task GetSubscriptionsAsync_WhenBodyIsJsonNull_ReturnsEmpty()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create<SubscriptionStatus[]?>(null)
+        };
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetSubscriptionsAsync(193216);
+
+        result.Should().BeEmpty();
+    }
+
     #region CreateSubscriptionAsync Tests
 
     [Fact]
@@ -298,6 +319,137 @@ public class OfferServiceTests
         // Assert
         capturedRequest.Should().NotBeNull();
         capturedRequest!.Headers.Contains("ContactEmail").Should().BeFalse();
+    }
+
+    #endregion
+
+    #region GetAccountIdsWithActiveSubscriptionAsync Tests
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenTooManyAccountIds_ShouldThrowWithoutCallingHttp()
+    {
+        // 201 ids : au-dela du plafond, on veut une erreur explicite et aucun appel HTTP.
+        var accountIds = Enumerable.Range(1, 201).ToArray();
+
+        var action = async () => await _offerService.GetAccountIdsWithActiveSubscriptionAsync(accountIds, "PENNYLANE");
+
+        await action.Should().ThrowAsync<ArgumentException>().WithMessage("*200*");
+        // MockBehavior.Strict sans setup SendAsync : tout appel HTTP ferait echouer le test.
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenAccountIdsNull_ReturnsEmptyWithoutCallingHttp()
+    {
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync(null!, "PENNYLANE");
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenAccountIdsEmpty_ReturnsEmptyWithoutCallingHttp()
+    {
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync([], "PENNYLANE");
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenSuccess_ReturnsIdsAndBuildsQuery()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(new[] { 11, 33 })
+        };
+
+        HttpRequestMessage? capturedRequest = null;
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync([11, 22, 33], "OFFER&CODE");
+
+        result.Should().BeEquivalentTo(new[] { 11, 33 });
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Method.Should().Be(HttpMethod.Get);
+        var url = capturedRequest.RequestUri!.ToString();
+        url.Should().Contain("/api/subscription/active-account-ids");
+        // offerCode echappe, un parametre accountId repete par id.
+        url.Should().Contain("offerCode=OFFER%26CODE");
+        url.Should().Contain("accountId=11&accountId=22&accountId=33");
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenResponseUnsuccessful_ReturnsNull()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.InternalServerError
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync([11], "PENNYLANE");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenBodyIsJsonNull_ReturnsEmpty()
+    {
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create<int[]?>(null)
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync([11], "PENNYLANE");
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAccountIdsWithActiveSubscriptionAsync_WhenExactlyAtCap_CallsHttp()
+    {
+        // 200 ids : pile le plafond, doit passer.
+        var httpResponse = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = JsonContent.Create(Array.Empty<int>())
+        };
+
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        var result = await _offerService.GetAccountIdsWithActiveSubscriptionAsync(
+            Enumerable.Range(1, 200).ToArray(), "PENNYLANE");
+
+        result.Should().BeEmpty();
     }
 
     #endregion

@@ -1,8 +1,10 @@
+﻿using ApiGateway.Exceptions;
 using ApiGateway.Models;
 using ApiGateway.ProspectExperience.Enum;
 using ApiGateway.ProspectExperience.Models.Internal;
 using ApiGateway.ProspectExperience.Services;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace ApiGateway.Account;
@@ -235,5 +237,49 @@ public class AccountService : IAccountService
         httpRequest.Headers.Add("CurrentUser", $"{currentUserId}");
         httpRequest.Headers.Add("ContactType", contactType);
         await _httpClient.SendAsync(httpRequest);
+    }
+
+    public async Task<SerenityEligibility?> GetSerenityEligibilityAsync(int contactId)
+    {
+        var url = "api/serenity-eligibility";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        httpRequest.Headers.Add("CurrentUser", $"{contactId}");
+        var response = await _httpClient.SendAsync(httpRequest);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning(
+                "GET {Url} returned {StatusCode} while resolving Serenity eligibility for contact {ContactId}",
+                url,
+                response.StatusCode,
+                contactId);
+            return null;
+        }
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        return await JsonSerializer.DeserializeAsync<SerenityEligibility>(stream, _jsonSerializerOptions);
+    }
+
+    public async Task SetSerenityChoiceAsync(int contactId, bool isAccepted)
+    {
+        var url = "api/serenity-choice";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { isAccepted }),
+        };
+        httpRequest.Headers.Add("CurrentUser", $"{contactId}");
+        var response = await _httpClient.SendAsync(httpRequest);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            // GatewayException et non ConflictException : seule cette branche est traduite en statut
+            // HTTP par CatchExceptions() et GatewayExceptionMiddleware, sinon le 409 sortirait en 500.
+            throw new GatewayException(
+                StatusCodes.Status409Conflict,
+                Errors.SerenityChoiceAlreadyExistsCode,
+                Errors.SerenityChoiceAlreadyExistsMessage);
+        }
+
+        response.EnsureSuccessStatusCode();
     }
 }

@@ -16,3 +16,16 @@ Accept: application/json
 GET {{ApiGateway_HostAddress}}/gtw/ged-compta
 Accept: application/json
 Authorization: Bearer "Token goes here" 
+###
+# Modal Sérénité : décision globale au portefeuille du contact connecté (aucun accountId).
+GET {{ApiGateway_HostAddress}}/gtw/connect/api/serenity-modal
+Accept: application/json
+Authorization: Bearer "Token goes here"
+
+###
+# Persistance du choix. Immuable : un second appel retourne 409 Conflict.
+POST {{ApiGateway_HostAddress}}/gtw/connect/api/serenity-modal
+Content-Type: application/json
+Authorization: Bearer "Token goes here"
+
+{ "isAccepted": false }
