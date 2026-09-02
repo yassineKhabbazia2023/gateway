@@ -494,8 +494,78 @@
     },
     {
       "SwaggerKey": "Keymoments",
+      "UpstreamPathTemplate": "/gtw/keymoments/api/templates/{templateId}/versions/{version}/content",
+      "DownstreamPathTemplate": "/api/templates/{templateId}/versions/{version}/content",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsekmt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isKeyMomentsEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Keymoments",
+      "UpstreamPathTemplate": "/gtw/keymoments/api/templates/{templateId}/versions/{version}",
+      "DownstreamPathTemplate": "/api/templates/{templateId}/versions/{version}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsekmt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isKeyMomentsEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Keymoments",
       "UpstreamPathTemplate": "/gtw/keymoments/api/templates/{templateId}/visible",
       "DownstreamPathTemplate": "/api/templates/{templateId}/visible",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsekmt#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "PUT",
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "Metadata": {
+        "featureFlag": "isKeyMomentsEnabled"
+      }
+    },
+    {
+      "SwaggerKey": "Keymoments",
+      "UpstreamPathTemplate": "/gtw/keymoments/api/templates/{templateId}",
+      "DownstreamPathTemplate": "/api/templates/{templateId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
