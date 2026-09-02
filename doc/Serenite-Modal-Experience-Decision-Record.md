@@ -265,3 +265,20 @@ L'étape 3 est celle qui compte : elle vérifie qu'un choix **négatif** éteint
    étroit. Commentaire `ponytail:` en place, découpage par lots comme voie de sortie.
 6. **Nommage hétérogène** : Offer dit `Serenite`, la Gateway dit `ApprovedPlatform`, le contrat front
    dit `serenity-modal`. Le nouveau code utilise `Serenity` partout pour coller à la route retenue.
+
+---
+
+## 9. Addendum — 2026-08-31 : ajout d'un feature flag dédié
+
+L'arbitrage #4 (« Non — seuls les critères métier ») est renversé : un flag `isSerenityRedirectionModalEnabled`
+est ajouté pour permettre de couper la modal indépendamment de `enableApprovedPlatform` (qui gouverne
+la souscription au plan, pas l'affichage de la modal).
+
+- `GET /gtw/connect/api/serenity-modal` et `POST /gtw/connect/api/serenity-modal` : flag désactivé →
+  `403 Forbidden` (`GTW038`, `SerenityModalDisabledCode`/`Message`) dans les deux cas, sans appeler
+  Account ni Offer côté GET, sans persister le choix côté POST.
+- Ciblage par email du contact connecté (`FeatureContext.FromEmail`), comme `enableApprovedPlatform`
+  et `isProspectExperienceEnabled`. `ConnectServices` prend désormais `userEmail` en paramètre sur les
+  deux méthodes ; `ConnectController` le résout via `IUserContext.User.GetEmail()`, déjà disponible
+  sans appel downstream supplémentaire.
+- Défaut dev (`appsettings.Development.json`) : `true`.

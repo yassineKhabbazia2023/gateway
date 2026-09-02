@@ -99,9 +99,19 @@ public class ConnectServices(
         return invitedCustomerIDs;
     }
 
-    public async Task<bool> GetShouldDisplaySerenityModalAsync(int contactId)
+    public async Task<bool> GetShouldDisplaySerenityModalAsync(int contactId, string userEmail)
     {
-        // Account porte les criteres 1 (code de routage cible), 2 (adresse electronique dématérialisée) et 4 (choix deja exprimé), 
+        var isSerenityRedirectionModalEnabled = await featureFlagService.IsEnabledAsync(
+            FeatureFlagKeys.IsSerenityRedirectionModalEnabled,
+            context: FeatureContext.FromEmail(userEmail));
+
+        if (!isSerenityRedirectionModalEnabled)
+        {
+            logger.LogWarning("Serenity modal decision rejected for contact {ContactId}: feature flag disabled", contactId);
+            throw new ForbiddenException(Errors.SerenityModalDisabledCode, Errors.SerenityModalDisabledMessage);
+        }
+
+        // Account porte les criteres 1 (code de routage cible), 2 (adresse electronique dématérialisée) et 4 (choix deja exprimé),
         // On extrait les critères de ce MS en un appel unique
         var eligibility = await accountService.GetSerenityEligibilityAsync(contactId);
 
@@ -130,6 +140,18 @@ public class ConnectServices(
         return candidates.Except(subscribed).Any();
     }
 
-    public Task SetSerenityModalChoiceAsync(int contactId, bool isAccepted)
-        => accountService.SetSerenityChoiceAsync(contactId, isAccepted);
+    public async Task SetSerenityModalChoiceAsync(int contactId, string userEmail, bool isAccepted)
+    {
+        var isSerenityRedirectionModalEnabled = await featureFlagService.IsEnabledAsync(
+            FeatureFlagKeys.IsSerenityRedirectionModalEnabled,
+            context: FeatureContext.FromEmail(userEmail));
+
+        if (!isSerenityRedirectionModalEnabled)
+        {
+            logger.LogWarning("Serenity modal choice rejected for contact {ContactId}: feature flag disabled", contactId);
+            throw new ForbiddenException(Errors.SerenityModalDisabledCode, Errors.SerenityModalDisabledMessage);
+        }
+
+        await accountService.SetSerenityChoiceAsync(contactId, isAccepted);
+    }
 }

@@ -8,4 +8,5 @@ public static class FeatureFlagKeys
     public const string AreMocksEnabled = "isMocksEnabled";
     public const string IsOcelotConfigEnabled = "isOcelotConfigEnabled";
     public const string IsQaSensitiveEndpointsEnabled = "isQaSensitiveEndpointsEnabled";
+    public const string IsSerenityRedirectionModalEnabled = "isSerenityRedirectionModalEnabled";
 }

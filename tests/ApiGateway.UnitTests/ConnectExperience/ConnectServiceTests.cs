@@ -383,6 +383,10 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
             .ReturnsAsync(new SerenityEligibility { HasMadeChoice = hasMadeChoice, CandidateAccountIds = candidateAccountIds });
         _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), OfferCodes.Pennylane))
@@ -391,10 +395,33 @@ public class ExperienceServicesTests
         var service = CreateService();
 
         // Act
-        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task GetShouldDisplaySerenityModalAsync_WhenFlagDisabled_ShouldThrowForbiddenWithoutCallingAccountOrOffer()
+    {
+        // Arrange
+        const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(act);
+        ex.Code.Should().Be(Errors.SerenityModalDisabledCode);
+        ex.Message.Should().Be(Errors.SerenityModalDisabledMessage);
+        _accountMock.Verify(x => x.GetSerenityEligibilityAsync(It.IsAny<int>()), Times.Never);
+        _offerMock.Verify(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -402,13 +429,17 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
             .ReturnsAsync(new SerenityEligibility { HasMadeChoice = true, CandidateAccountIds = [] });
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         result.Should().BeFalse();
@@ -420,13 +451,17 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
             .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [] });
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         result.Should().BeFalse();
@@ -438,12 +473,16 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId)).ReturnsAsync((SerenityEligibility?)null);
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         result.Should().BeFalse();
@@ -455,6 +494,10 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
             .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [10] });
         _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), OfferCodes.Pennylane))
@@ -463,7 +506,7 @@ public class ExperienceServicesTests
         var service = CreateService();
 
         // Act
-        var result = await service.GetShouldDisplaySerenityModalAsync(contactId);
+        var result = await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         result.Should().BeFalse();
@@ -474,6 +517,10 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.GetSerenityEligibilityAsync(contactId))
             .ReturnsAsync(new SerenityEligibility { HasMadeChoice = false, CandidateAccountIds = [10, 20] });
         _offerMock.Setup(x => x.GetAccountIdsWithActiveSubscriptionAsync(It.IsAny<int[]>(), It.IsAny<string>()))
@@ -482,7 +529,7 @@ public class ExperienceServicesTests
         var service = CreateService();
 
         // Act
-        await service.GetShouldDisplaySerenityModalAsync(contactId);
+        await service.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
         // Assert
         _offerMock.Verify(
@@ -497,14 +544,40 @@ public class ExperienceServicesTests
     {
         // Arrange
         const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _accountMock.Setup(x => x.SetSerenityChoiceAsync(contactId, true)).Returns(Task.CompletedTask);
 
         var service = CreateService();
 
         // Act
-        await service.SetSerenityModalChoiceAsync(contactId, true);
+        await service.SetSerenityModalChoiceAsync(contactId, userEmail, true);
 
         // Assert
         _accountMock.Verify(x => x.SetSerenityChoiceAsync(contactId, true), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetSerenityModalChoiceAsync_ShouldThrowForbidden_WhenFlagDisabled()
+    {
+        // Arrange
+        const int contactId = 42;
+        const string userEmail = "john@example.com";
+        _featureFlagMock
+            .Setup(x => x.IsEnabledAsync(FeatureFlagKeys.IsSerenityRedirectionModalEnabled, It.IsAny<bool>(), It.IsAny<FeatureContext?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        var act = async () => await service.SetSerenityModalChoiceAsync(contactId, userEmail, true);
+
+        // Assert
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(act);
+        ex.Code.Should().Be(Errors.SerenityModalDisabledCode);
+        ex.Message.Should().Be(Errors.SerenityModalDisabledMessage);
+        _accountMock.Verify(x => x.SetSerenityChoiceAsync(It.IsAny<int>(), It.IsAny<bool>()), Times.Never);
     }
 }

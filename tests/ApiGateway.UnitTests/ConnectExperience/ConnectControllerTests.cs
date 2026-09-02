@@ -254,7 +254,7 @@ public class ConnectControllerTests
     public async Task GetSerenityModal_ShouldReturnDecision(bool shouldDisplay)
     {
         // Arrange
-        _experienceServices.Setup(s => s.GetShouldDisplaySerenityModalAsync(_contactId)).ReturnsAsync(shouldDisplay);
+        _experienceServices.Setup(s => s.GetShouldDisplaySerenityModalAsync(_contactId, "bob@truc.io")).ReturnsAsync(shouldDisplay);
 
         // Act
         var result = await _sut.GetSerenityModal();
@@ -276,7 +276,7 @@ public class ConnectControllerTests
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result.Result);
-        _experienceServices.Verify(s => s.GetShouldDisplaySerenityModalAsync(It.IsAny<int>()), Times.Never);
+        _experienceServices.Verify(s => s.GetShouldDisplaySerenityModalAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
     }
 
     [Theory]
@@ -285,14 +285,14 @@ public class ConnectControllerTests
     public async Task SetSerenityModalChoice_ShouldPersistWithTheResolvedContactId(bool isAccepted)
     {
         // Arrange
-        _experienceServices.Setup(s => s.SetSerenityModalChoiceAsync(_contactId, isAccepted)).Returns(Task.CompletedTask);
+        _experienceServices.Setup(s => s.SetSerenityModalChoiceAsync(_contactId, "bob@truc.io", isAccepted)).Returns(Task.CompletedTask);
 
         // Act
         var result = await _sut.SetSerenityModalChoice(new SerenityChoiceRequest(isAccepted));
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(_contactId, isAccepted), Times.Once);
+        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(_contactId, "bob@truc.io", isAccepted), Times.Once);
     }
 
     [Fact]
@@ -300,7 +300,7 @@ public class ConnectControllerTests
     {
         // Arrange : le downstream Account a répondu 409, AccountService le relaie en GatewayException.
         _experienceServices
-            .Setup(s => s.SetSerenityModalChoiceAsync(_contactId, true))
+            .Setup(s => s.SetSerenityModalChoiceAsync(_contactId, "bob@truc.io", true))
             .ThrowsAsync(new ApiGateway.Exceptions.GatewayException(
                 StatusCodes.Status409Conflict,
                 ApiGateway.Exceptions.Errors.SerenityChoiceAlreadyExistsCode,
@@ -327,6 +327,6 @@ public class ConnectControllerTests
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
-        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(It.IsAny<int>(), It.IsAny<bool>()), Times.Never);
+        _experienceServices.Verify(s => s.SetSerenityModalChoiceAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
     }
 }

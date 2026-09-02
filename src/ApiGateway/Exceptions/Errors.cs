@@ -110,5 +110,8 @@
 
         public static readonly string SerenityChoiceAlreadyExistsCode = "GTW037";
         public static readonly string SerenityChoiceAlreadyExistsMessage = "Un choix Sérénité a déjà été enregistré pour ce contact.";
+
+        public static readonly string SerenityModalDisabledCode = "GTW038";
+        public static readonly string SerenityModalDisabledMessage = "La modal Sérénité est désactivée.";
     }
 }

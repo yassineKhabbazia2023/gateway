@@ -87,12 +87,14 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
     [HttpGet("serenity-modal")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SerenityModalResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<SerenityModalResponse>> GetSerenityModal()
     {
         try
         {
+            var userEmail = userContext.User.GetEmail();
             var contactId = await ResolveContactIdAsync();
-            var shouldDisplay = await experienceServices.GetShouldDisplaySerenityModalAsync(contactId);
+            var shouldDisplay = await experienceServices.GetShouldDisplaySerenityModalAsync(contactId, userEmail);
 
             return Ok(new SerenityModalResponse(shouldDisplay));
         }
@@ -111,13 +113,15 @@ public class ConnectController(IUserContext userContext, IConnectServices experi
     [HttpPost("serenity-modal")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SetSerenityModalChoice([FromBody] SerenityChoiceRequest request)
     {
         try
         {
+            var userEmail = userContext.User.GetEmail();
             var contactId = await ResolveContactIdAsync();
-            await experienceServices.SetSerenityModalChoiceAsync(contactId, request.IsAccepted);
+            await experienceServices.SetSerenityModalChoiceAsync(contactId, userEmail, request.IsAccepted);
 
             return NoContent();
         }
