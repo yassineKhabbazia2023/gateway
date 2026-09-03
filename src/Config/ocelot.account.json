@@ -2,6 +2,29 @@
   "Routes": [
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/serenity-choice/{contactId}/reset",
+      "DownstreamPathTemplate": "/api/serenity-choice/{contactId}/reset",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "QaSensitiveEndpointsHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/invoices/accounts/{accountId}",
       "DownstreamPathTemplate": "/api/invoices/{accountId}",
       "DownstreamScheme": "https",
