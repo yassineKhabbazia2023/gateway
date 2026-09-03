@@ -165,6 +165,29 @@
     },
     {
       "SwaggerKey": "Account",
+      "UpstreamPathTemplate": "/gtw/account/api/accounts/{accountId}/demat-email",
+      "DownstreamPathTemplate": "/api/accounts/{accountId}/demat-email",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulseacc#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "DELETE"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD"
+        ]
+      },
+      "DelegatingHandlers": [
+        "QaSensitiveEndpointsHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Account",
       "UpstreamPathTemplate": "/gtw/account/api/prospects/{accountId}/contacts/currentuser",
       "DownstreamPathTemplate": "/api/accounts/{accountId}/contacts/widget",
       "DownstreamScheme": "https",
