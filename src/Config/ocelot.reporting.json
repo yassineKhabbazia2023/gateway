@@ -45,8 +45,11 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "CORAPP001, CLRAPP001"
-      }
+        "GET": "CORAPP001, CLRAPP001, CLRAPNM001"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Reporting",
@@ -91,7 +94,7 @@
         ]
       },
       "RouteClaimsRequirement": {
-        "GET": "CORAPP001, CLRAPP001",
+        "GET": "CORAPP001, CLRAPP001, CLRAPNM001",
         "POST": "COADMI004, CORAP001, CORAPP001, CORAP002"
       }
     },
