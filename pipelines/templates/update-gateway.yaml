@@ -33,7 +33,7 @@ stages:
 - ${{ if eq(parameters.deployToDev, true) }}:
   - 'Deployment to DEV environment is no longer supported.': error
 
-- ${{ if and(parameters.deployToPrd, not(parameters.deployToRec), not(parameters.isHotfix)) }}:
+- ${{ if and(parameters.deployToPrd, not(parameters.deployToRec), not(parameters.isHotfix), ne(variables['Build.RequestedFor'], 'midcegpulsecmnprd0001')) }}:
   - 'Deploying to REC is mandatory before deploying to PROD.': error
 
 - ${{ if and(not(parameters.deployToItg), not(parameters.deployToRec), not(parameters.deployToPrd)) }}:
@@ -169,7 +169,7 @@ stages:
       displayName: Production-prd01
       pool: Pulse-Linux-prd
       dependsOn:
-      - ${{ if parameters.isHotfix }}:
+      - ${{ if or(parameters.isHotfix, not(parameters.deployToRec)) }}:
         - Build
       - ${{ else }}:
         - REC01
