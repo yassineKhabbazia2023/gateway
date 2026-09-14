@@ -43,6 +43,41 @@ namespace ApiGateway.UnitTests.Permissions
             Assert.NotEmpty(RoutesByFile.SelectMany(f => f.Value));
         }
 
+        #region Wallet
+
+        /// <summary>
+        /// Pins the optimized Wallet mapping and its security to the existing current-user route.
+        /// </summary>
+        [Fact]
+        public void WalletRoute_WhenConfigured_ShouldProxyAccountWithExistingSecurity()
+        {
+            var route = Assert.Single(RoutesByFile.SelectMany(file => file.Value),
+                route => route["UpstreamPathTemplate"]?.ToString() == "/gtw/wallet/api/currentuser");
+            var legacy = RoutesByFile["ocelot.account.json"].Single(
+                route => route["UpstreamPathTemplate"]?.ToString() == "/gtw/account/api/accounts/currentuser");
+
+            Assert.Contains(route, RoutesByFile["ocelot.wallet.json"]);
+            Assert.Equal("/api/wallet", route["DownstreamPathTemplate"]?.ToString());
+            Assert.Equal("Account", route["SwaggerKey"]?.ToString());
+            Assert.Equal("https", route["DownstreamScheme"]?.ToString());
+            Assert.Equal(new[] { "GET" }, route["UpstreamHttpMethod"]!.Values<string>());
+            Assert.Equal(new[] { "AAD", "GIGYA MyPulse v2" },
+                route["AuthenticationOptions"]!["AuthenticationProviderKeys"]!.Values<string>());
+            Assert.Equal("appcegpulseacc#{env_id}#01.azurewebsites.net",
+                route["DownstreamHostAndPorts"]![0]!["Host"]?.ToString());
+            Assert.Equal(443, route["DownstreamHostAndPorts"]![0]!["Port"]!.Value<int>());
+
+            foreach (var property in new[] { "AuthenticationOptions", "RouteClaimsRequirement", "DelegatingHandlers", "QoSOptions" })
+            {
+                Assert.True(JToken.DeepEquals(legacy[property], route[property]), property);
+            }
+
+            Assert.Null(route["FileCacheOptions"]);
+            Assert.Null(route["Key"]);
+        }
+
+        #endregion
+
         [Fact]
         public void EnsureSpecificRoutesAreBeforeGenericOnes()
         {

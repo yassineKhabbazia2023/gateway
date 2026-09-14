@@ -39,6 +39,16 @@ public static class HttpRequestMessageExtensions
         request.RequestUri = uriBuilder.Uri;
     }
 
+    /// <summary>
+    /// Applies the resolved contact identity and replaces caller-supplied contact query values
+    /// on current-user routes.
+    /// </summary>
+    /// <param name="request">The downstream request.</param>
+    /// <param name="contactEmail">The email resolved from the authenticated token.</param>
+    /// <param name="contactId">The resolved contact identifier.</param>
+    /// <param name="contactType">The resolved contact type.</param>
+    /// <param name="accountService">The account service used for download routes.</param>
+    /// <returns>A task representing request preparation.</returns>
     public static async Task PrepareRequestHeader(
         this HttpRequestMessage request, 
         string contactEmail, 
