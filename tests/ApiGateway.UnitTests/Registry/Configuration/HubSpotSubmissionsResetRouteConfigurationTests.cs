@@ -19,7 +19,7 @@ public sealed class HubSpotSubmissionsResetRouteConfigurationTests
     {
         using var document = LoadOcelotConfiguration();
 
-        var route = GetRoute(document, DeleteSubmissionsUpstream);
+        var route = GetRoute(document, DeleteSubmissionsUpstream, "DELETE");
 
         route.GetProperty("SwaggerKey").GetString().Should().Be("ContactRegistry");
         route.GetProperty("DownstreamPathTemplate").GetString().Should().Be("/api/hubspot/accounts/{accountId}/submissions");
@@ -31,11 +31,18 @@ public sealed class HubSpotSubmissionsResetRouteConfigurationTests
         GetDelegatingHandlers(route).Should().Contain("QaSensitiveEndpointsHandler");
     }
 
-    private static JsonElement GetRoute(JsonDocument document, string upstreamPathTemplate)
+    /// <summary>
+    /// Finds the route matching both the upstream path and HTTP method: Ocelot allows several
+    /// routes to share the same <c>UpstreamPathTemplate</c> as long as they are differentiated
+    /// by <c>UpstreamHttpMethod</c> (e.g. GET vs DELETE on the same submissions resource).
+    /// </summary>
+    private static JsonElement GetRoute(JsonDocument document, string upstreamPathTemplate, string upstreamHttpMethod)
     {
         return document.RootElement.GetProperty("Routes")
             .EnumerateArray()
-            .Single(candidate => candidate.GetProperty("UpstreamPathTemplate").GetString() == upstreamPathTemplate);
+            .Single(candidate =>
+                candidate.GetProperty("UpstreamPathTemplate").GetString() == upstreamPathTemplate &&
+                GetMethods(candidate).Contains(upstreamHttpMethod));
     }
 
     private static List<string> GetMethods(JsonElement route)
