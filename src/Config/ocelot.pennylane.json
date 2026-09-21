@@ -83,6 +83,36 @@
     },
     {
       "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/accounts/{accountId}/documents/archive/currentuser",
+      "DownstreamPathTemplate": "/api/documents/archive",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "DownstreamHeaderTransform": {
+        "Access-Control-Expose-Headers": "Content-Disposition"
+      },
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COGED0002,COPEN001,CLGEDPEN01"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
+    },
+    {
+      "SwaggerKey": "Pennylane",
       "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/roles?companyId={relativeCompanyId}&accountId={relativeAccountId}&contactId={relativeContactId}",
       "DownstreamPathTemplate": "/api/pennylane/roles?companyId={relativeCompanyId}",
       "DownstreamScheme": "https",
@@ -265,6 +295,33 @@
           "GIGYA MyPulse v2"
         ]
       }
+    },
+    {
+      "SwaggerKey": "Pennylane",
+      "UpstreamPathTemplate": "/gtw/pennylane/api/pennylane/signatories/import",
+      "DownstreamPathTemplate": "/api/pennylane/signatories/import",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "appcegpulsepnl#{env_id}#01.azurewebsites.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamHttpMethod": [
+        "POST"
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [
+          "AAD",
+          "GIGYA MyPulse v2"
+        ]
+      },
+      "RouteClaimsRequirement": {
+        "POST": "COUSER001, COADMI004, CLUSER004"
+      },
+      "DelegatingHandlers": [
+        "RoleHandler"
+      ]
     },
     {
       "SwaggerKey": "Pennylane",
